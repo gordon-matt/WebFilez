@@ -1,0 +1,78 @@
+import { useState } from 'react'
+import { FileManager } from './WebFilez.jsx'
+import './App.css'
+
+function ManagerView() {
+    const [location, setLocation] = useState(null)
+
+    return (
+        <>
+            <FileManager height="calc(100vh - 150px)" theme="auto" onNavigated={setLocation} />
+            <p className="demo-muted">
+                {location
+                    ? <>React heard <code>wf-navigated</code>: {location.rootId}:{location.path}</>
+                    : 'Drop files anywhere on the listing to upload them.'}
+            </p>
+        </>
+    )
+}
+
+function PickerView() {
+    const [isPicking, setIsPicking] = useState(false)
+    const [image, setImage] = useState(null)
+
+    // Public URLs come back absolute, because the API is on another origin.
+    const imageUrl = image && (image.publicUrl ?? image.url)
+
+    const handleSelected = ([file]) => {
+        setImage(file)
+        setIsPicking(false)
+    }
+
+    return (
+        <div className="demo-field">
+            <label htmlFor="hero-image">Hero image</label>
+            <div className="demo-field-row">
+                <input id="hero-image" readOnly value={imageUrl ?? ''} placeholder="No image chosen" />
+                <button type="button" onClick={() => setIsPicking(true)}>Browse…</button>
+                {image && <button type="button" onClick={() => setImage(null)}>Clear</button>}
+            </div>
+            {imageUrl && <img className="demo-preview" src={imageUrl} alt={image.name} />}
+
+            {isPicking && (
+                <div className="demo-modal" onClick={() => setIsPicking(false)}>
+                    <div className="demo-modal-body" onClick={e => e.stopPropagation()}>
+                        <FileManager
+                            root="media"
+                            selectionMode="single"
+                            accept="image/*"
+                            selectLabel="Use image"
+                            height="70vh"
+                            onSelected={handleSelected}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+export default function App() {
+    const [view, setView] = useState('manager')
+
+    return (
+        <>
+            <header className="demo-nav">
+                <span className="demo-brand">WebFilez <span>React demo</span></span>
+                <nav>
+                    <button type="button" aria-pressed={view === 'manager'} onClick={() => setView('manager')}>File manager</button>
+                    <button type="button" aria-pressed={view === 'picker'} onClick={() => setView('picker')}>Picker</button>
+                </nav>
+            </header>
+
+            <main className="demo-main">
+                {view === 'manager' ? <ManagerView /> : <PickerView />}
+            </main>
+        </>
+    )
+}

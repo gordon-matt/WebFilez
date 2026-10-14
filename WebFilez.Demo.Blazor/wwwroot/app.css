@@ -1,0 +1,68 @@
+/* The demo site's own look. WebFilez styles itself from webfilez.css. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    min-height: 100%;
+    background: #f5f6f8;
+    color: #171a21;
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: #4f46e5; }
+
+.demo-nav {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px 28px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e1e4ea;
+}
+
+.demo-brand { font-weight: 700; color: inherit; text-decoration: none; font-size: 16px; }
+.demo-brand span { margin-left: 6px; font-weight: 500; color: #687182; font-size: 13px; }
+
+.demo-nav nav { display: flex; gap: 4px; }
+.demo-nav nav a {
+    padding: 6px 12px; border-radius: 7px; color: #4a5160; text-decoration: none; font-weight: 550;
+}
+.demo-nav nav a:hover { background: #eef0f4; color: #171a21; }
+.demo-nav nav a.active { background: #eef0ff; color: #4f46e5; }
+
+.demo-main { max-width: 1440px; margin: 0 auto; padding: 20px 28px; }
+
+.demo-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.demo-toolbar h1 { margin: 0; font-size: 22px; }
+.demo-toolbar label { display: flex; align-items: center; gap: 8px; color: #4a5160; font-size: 14px; }
+.demo-toolbar select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid #d0d5dd; }
+
+.demo-hero { max-width: 720px; margin: 24px auto 32px; text-align: center; }
+.demo-hero h1 { font-size: 34px; letter-spacing: -0.02em; margin: 0 0 10px; }
+.demo-hero p { color: #4a5160; margin: 0; font-size: 16px; }
+
+.demo-muted { color: #687182; font-size: 14px; }
+
+.demo-field { max-width: 640px; margin: 0 auto; padding: 24px; background: #fff; border: 1px solid #e1e4ea; border-radius: 12px; }
+.demo-field label { display: block; font-weight: 600; margin-bottom: 6px; }
+.demo-field-row { display: flex; gap: 8px; }
+.demo-field-row input { flex: 1; min-width: 0; font: inherit; padding: 6px 10px; border: 1px solid #d0d5dd; border-radius: 6px; background: #f9fafb; }
+.demo-field-row button { font: inherit; padding: 6px 14px; border: 1px solid #d0d5dd; border-radius: 6px; background: #fff; cursor: pointer; }
+.demo-field-row button:hover { background: #f2f4f7; }
+.demo-preview { display: block; max-width: 100%; max-height: 260px; margin-top: 16px; border-radius: 8px; }
+
+/* Centred with flexbox, not transform: a transformed ancestor would trap the file manager's fixed-position menus. */
+.demo-modal {
+    position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+    padding: 16px; background: rgba(15, 23, 42, 0.45);
+}
+.demo-modal-body { width: min(1100px, 100%); box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3); border-radius: 8px; }
+
+@media (max-width: 640px) {
+    .demo-main { padding: 16px; }
+}
+
+#blazor-error-ui {
+    display: none; position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000;
+    padding: 10px 20px; background: #fef3c7; box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+}
+#blazor-error-ui .reload { margin-left: 8px; }

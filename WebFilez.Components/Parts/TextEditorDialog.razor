@@ -1,0 +1,139 @@
+@* A plain-text editor. Saves are guarded by the timestamp the file had when it was opened, so a
+   save never silently overwrites someone else's change. *@
+@if (file is not null)
+{
+    <div class="wf-backdrop"></div>
+    <div class="wf-dialog wf-dialog-editor" role="dialog" aria-modal="true" aria-label="@($"Edit {file.Name}")"
+         @onkeydown="OnKeyDown">
+        <div class="wf-dialog-header">
+            <Icon Name="file-code" />
+            <strong class="wf-clip" title="@file.Path">@file.Name</strong>
+            @if (IsDirty)
+            {
+                <span class="wf-badge">Unsaved</span>
+            }
+            @if (!file.CanSave)
+            {
+                <span class="wf-badge"><Icon Name="lock" /> Read only</span>
+            }
+            <span class="wf-spacer"></span>
+            <button type="button" class="wf-icon-button" aria-label="Close" @onclick="CloseAsync">
+                <Icon Name="x" />
+            </button>
+        </div>
+        <textarea class="wf-editor" spellcheck="false" @ref="textArea" readonly="@(!file.CanSave)"
+                  @bind="content" @bind:event="oninput"></textarea>
+        <div class="wf-dialog-actions">
+            <span class="wf-muted wf-small">@(file.CanSave ? "Ctrl+S to save" : "You can view but not change this file.")</span>
+            <span class="wf-spacer"></span>
+            <button type="button" class="wf-button" @onclick="CloseAsync">Close</button>
+            @if (file.CanSave)
+            {
+                <button type="button" class="wf-button wf-button-primary" disabled="@(!IsDirty || isSaving)" @onclick="SaveAsync">
+                    <Icon Name="save" /> @(isSaving ? "Saving…" : "Save")
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private TextFileContentDto? file;
+    private string rootId = string.Empty;
+    private string content = string.Empty;
+    private DateTime openedModifiedAt;
+    private bool isSaving;
+    private bool focusPending;
+    private ElementReference textArea;
+
+    [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [Parameter, EditorRequired] public ToastService Toasts { get; set; } = default!;
+
+    /// <summary>Asks before discarding unsaved changes; resolves to true to discard.</summary>
+    [Parameter] public Func<Task<bool>>? ConfirmDiscard { get; set; }
+
+    /// <summary>Raised after a successful save, so the listing can refresh sizes and dates.</summary>
+    [Parameter] public EventCallback<FileSystemItemDto> OnSaved { get; set; }
+
+    public bool IsOpen => file is not null;
+
+    private bool IsDirty => file is not null && !string.Equals(content, file.Content, StringComparison.Ordinal);
+
+    public async Task<bool> OpenAsync(string rootId, string path)
+    {
+        var result = await Service.ReadTextAsync(rootId, path);
+        if (!result.IsSuccess)
+        {
+            Toasts.ShowFailure(result);
+            return false;
+        }
+
+        this.rootId = rootId;
+        file = result.Value;
+        content = file.Content;
+        openedModifiedAt = file.ModifiedAt;
+        focusPending = true;
+
+        StateHasChanged();
+        return true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusPending && file is not null)
+        {
+            focusPending = false;
+            await Interop.FocusAsync(textArea);
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if ((e.CtrlKey || e.MetaKey) && e.Key is "s" or "S")
+        {
+            await SaveAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            await CloseAsync();
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (file is null || !file.CanSave || !IsDirty || isSaving)
+        {
+            return;
+        }
+
+        isSaving = true;
+        var result = await Service.SaveTextAsync(new SaveTextFileRequest(rootId, file.Path, content, openedModifiedAt));
+        isSaving = false;
+
+        if (!result.IsSuccess)
+        {
+            Toasts.ShowFailure(result);
+            return;
+        }
+
+        file = file with { Content = content, ModifiedAt = result.Value.ModifiedAt, SizeBytes = result.Value.SizeBytes };
+        openedModifiedAt = result.Value.ModifiedAt;
+        Toasts.Success($"Saved {file.Name}.");
+
+        await OnSaved.InvokeAsync(result.Value);
+    }
+
+    private async Task CloseAsync()
+    {
+        if (IsDirty && ConfirmDiscard is not null && !await ConfirmDiscard())
+        {
+            return;
+        }
+
+        file = null;
+        content = string.Empty;
+    }
+}

@@ -1,0 +1,27 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace WebFilez.Components;
+
+/// <summary>A file chosen in picker mode.</summary>
+/// <param name="Url">Downloads the file through the WebFilez API, with permission checks.</param>
+/// <param name="PublicUrl">The file's public address, when its root has one. Usually what a CMS field wants.</param>
+public sealed record SelectedFile(
+    string RootId,
+    string Path,
+    string Name,
+    long SizeBytes,
+    string MimeType,
+    string Url,
+    string? PublicUrl);
+
+/// <summary>A folder, as raised by <see cref="FileManager.OnNavigated"/>.</summary>
+public sealed record FileLocation(string RootId, string Path);
+
+/// <summary>The <c>detail</c> of the <c>wf-selected</c> DOM event.</summary>
+public sealed record FileSelection(IReadOnlyList<SelectedFile> Files);
+
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
+[JsonSerializable(typeof(FileSelection))]
+[JsonSerializable(typeof(FileLocation))]
+internal sealed partial class FileManagerEventJsonContext : JsonSerializerContext;

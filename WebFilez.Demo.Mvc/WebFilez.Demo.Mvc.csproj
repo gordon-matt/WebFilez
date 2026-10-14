@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<!-- Ships _framework/blazor.server.js, which .NET 10 only includes in apps with their own .razor files. -->
+		<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Compile Include="..\WebFilez.Demo.Blazor\DemoFiles.cs" Link="DemoFiles.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\WebFilez.AspNetCore\WebFilez.AspNetCore.csproj" />
+		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
+	</ItemGroup>
+
+</Project>

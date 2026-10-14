@@ -1,0 +1,213 @@
+@* Renders a folder in the selected layout. Purely presentational: it raises events and never
+   calls a service, so FileManager keeps all of the state in one place. *@
+
+@if (Items.Count == 0)
+{
+    <div class="wf-empty">
+        <Icon Name="folder-open" Class="wf-empty-icon" />
+        <p>@(HasFilter ? "Nothing matches the filter." : "This folder is empty.")</p>
+        @if (!HasFilter && CanUpload)
+        {
+            <p class="wf-muted wf-small">Drop files here to upload them.</p>
+        }
+    </div>
+}
+else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
+{
+    <table class="wf-table @(ViewMode == ListingViewMode.Compact ? "wf-table-compact" : null)">
+        <thead>
+            <tr>
+                @if (ShowCheckboxes)
+                {
+                    <th class="wf-col-check" @onclick:stopPropagation="true">
+                        <input type="checkbox" class="wf-check" aria-label="Select all"
+                               checked="@AreAllSelected" @onchange="ToggleSelectAll" />
+                    </th>
+                }
+                <th class="wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Name)" @onclick:stopPropagation="true">
+                    Name @SortIndicator(ListingSortField.Name)
+                </th>
+                <th class="wf-col-size wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Size)" @onclick:stopPropagation="true">
+                    Size @SortIndicator(ListingSortField.Size)
+                </th>
+                <th class="wf-col-modified wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Modified)" @onclick:stopPropagation="true">
+                    Modified @SortIndicator(ListingSortField.Modified)
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Items)
+            {
+                <tr @key="item.Path"
+                    class="@ItemClass(item)"
+                    data-wf-draggable="@(CanDrag(item) ? "true" : null)"
+                    draggable="@(CanDrag(item) ? "true" : "false")"
+                    @ondragstart="() => OnDragStart.InvokeAsync(item)" @ondragend="OnDragEnd"
+                    @ondragover:preventDefault="@item.IsDirectory"
+                    @ondrop="e => DropOnto(item, e)"
+                    @onclick="e => OnItemClick.InvokeAsync((item, e))" @onclick:stopPropagation="true"
+                    @ondblclick="() => OnItemActivate.InvokeAsync(item)"
+                    @oncontextmenu="e => OnItemContextMenu.InvokeAsync((item, e))"
+                    @oncontextmenu:preventDefault="true" @oncontextmenu:stopPropagation="true">
+                    @if (ShowCheckboxes)
+                    {
+                        <td class="wf-col-check" @onclick:stopPropagation="true">
+                            <input type="checkbox" class="wf-check" aria-label="@($"Select {item.Name}")"
+                                   checked="@SelectedPaths.Contains(item.Path)" disabled="@(!IsSelectable(item))"
+                                   @onchange="() => OnToggleSelect.InvokeAsync(item)" />
+                        </td>
+                    }
+                    <td>
+                        <div class="wf-name-cell">
+                            @if (ViewMode == ListingViewMode.List && item.HasThumbnail)
+                            {
+                                <span class="wf-face wf-face-small wf-checkered">
+                                    <img loading="lazy" alt="" src="@Urls.Thumbnail(RootId, item, 128)" />
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="wf-face wf-face-small"><FileIcon Kind="item.Kind" /></span>
+                            }
+                            <span class="wf-name" title="@item.Name">@item.Name</span>
+                        </div>
+                    </td>
+                    <td class="wf-col-size wf-num">@(item.IsDirectory ? "" : Format.Size(item.SizeBytes))</td>
+                    <td class="wf-col-modified" title="@Format.Full(item.ModifiedAt)">@Format.Relative(item.ModifiedAt)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="wf-grid @(ViewMode == ListingViewMode.Gallery ? "wf-grid-gallery" : null)" role="listbox" aria-multiselectable="true">
+        @foreach (var item in Items)
+        {
+            <div @key="item.Path"
+                 class="wf-tile @ItemClass(item)"
+                 role="option" aria-selected="@(SelectedPaths.Contains(item.Path) ? "true" : "false")"
+                 title="@item.Name"
+                 data-wf-draggable="@(CanDrag(item) ? "true" : null)"
+                 draggable="@(CanDrag(item) ? "true" : "false")"
+                 @ondragstart="() => OnDragStart.InvokeAsync(item)" @ondragend="OnDragEnd"
+                 @ondragover:preventDefault="@item.IsDirectory"
+                 @ondrop="e => DropOnto(item, e)"
+                 @onclick="e => OnItemClick.InvokeAsync((item, e))" @onclick:stopPropagation="true"
+                 @ondblclick="() => OnItemActivate.InvokeAsync(item)"
+                 @oncontextmenu="e => OnItemContextMenu.InvokeAsync((item, e))"
+                 @oncontextmenu:preventDefault="true" @oncontextmenu:stopPropagation="true">
+                @if (ShowCheckboxes)
+                {
+                    <input type="checkbox" class="wf-check wf-tile-check" aria-label="@($"Select {item.Name}")"
+                           checked="@SelectedPaths.Contains(item.Path)" disabled="@(!IsSelectable(item))"
+                           @onclick:stopPropagation="true"
+                           @onchange="() => OnToggleSelect.InvokeAsync(item)" />
+                }
+
+                @if (item.HasThumbnail)
+                {
+                    <div class="wf-face wf-checkered">
+                        <img loading="lazy" alt="" draggable="false" src="@Urls.Thumbnail(RootId, item, ViewMode == ListingViewMode.Gallery ? 512 : 256)" />
+                    </div>
+                }
+                else
+                {
+                    <div class="wf-face"><FileIcon Kind="item.Kind" /></div>
+                }
+
+                @if (ViewMode != ListingViewMode.Gallery)
+                {
+                    <span class="wf-tile-label">@item.Name</span>
+                    <span class="wf-tile-meta">@(item.IsDirectory ? "Folder" : Format.Size(item.SizeBytes))</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<FileSystemItemDto> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
+
+    [Parameter] public ListingViewMode ViewMode { get; set; }
+
+    [Parameter] public ListingSortField SortBy { get; set; }
+
+    [Parameter] public bool Descending { get; set; }
+
+    [Parameter] public IReadOnlySet<string> SelectedPaths { get; set; } = new HashSet<string>();
+
+    /// <summary>Items waiting to be moved by a paste, drawn faded as desktop file managers do.</summary>
+    [Parameter] public IReadOnlySet<string> CutPaths { get; set; } = new HashSet<string>();
+
+    [Parameter] public bool HasFilter { get; set; }
+
+    [Parameter] public bool CanUpload { get; set; }
+
+    [Parameter] public bool ShowCheckboxes { get; set; } = true;
+
+    /// <summary>In picker mode, items that can't be picked are drawn muted and can't be checked.</summary>
+    [Parameter] public Func<FileSystemItemDto, bool> IsSelectable { get; set; } = _ => true;
+
+    [Parameter] public Func<FileSystemItemDto, bool> CanDrag { get; set; } = _ => false;
+
+    [Parameter] public EventCallback<(FileSystemItemDto Item, MouseEventArgs Args)> OnItemClick { get; set; }
+
+    [Parameter] public EventCallback<FileSystemItemDto> OnItemActivate { get; set; }
+
+    [Parameter] public EventCallback<FileSystemItemDto> OnToggleSelect { get; set; }
+
+    [Parameter] public EventCallback<(FileSystemItemDto Item, MouseEventArgs Args)> OnItemContextMenu { get; set; }
+
+    [Parameter] public EventCallback<bool> OnSelectAll { get; set; }
+
+    [Parameter] public EventCallback<ListingSortField> OnSort { get; set; }
+
+    [Parameter] public EventCallback<FileSystemItemDto> OnDragStart { get; set; }
+
+    [Parameter] public EventCallback OnDragEnd { get; set; }
+
+    [Parameter] public EventCallback<(string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+
+    private bool AreAllSelected => Items.Count > 0 && Items.Where(IsSelectable).All(i => SelectedPaths.Contains(i.Path));
+
+    private string ItemClass(FileSystemItemDto item)
+    {
+        var classes = new List<string>(4);
+
+        if (SelectedPaths.Contains(item.Path))
+        {
+            classes.Add("wf-selected");
+        }
+
+        if (CutPaths.Contains(item.Path))
+        {
+            classes.Add("wf-cut");
+        }
+
+        if (item.IsHidden)
+        {
+            classes.Add("wf-hidden-item");
+        }
+
+        if (!IsSelectable(item) && !item.IsDirectory)
+        {
+            classes.Add("wf-unselectable");
+        }
+
+        return string.Join(' ', classes);
+    }
+
+    private Task DropOnto(FileSystemItemDto item, DragEventArgs e) =>
+        item.IsDirectory ? OnDropOnto.InvokeAsync((item.Path, e)) : Task.CompletedTask;
+
+    private Task ToggleSelectAll() => OnSelectAll.InvokeAsync(!AreAllSelected);
+
+    private RenderFragment? SortIndicator(ListingSortField field) => SortBy != field
+        ? null
+        : @<Icon Name="@(Descending ? "chevron-down" : "arrow-up")" Class="wf-sort-indicator" />;
+}

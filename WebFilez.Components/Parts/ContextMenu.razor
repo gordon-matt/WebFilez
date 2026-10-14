@@ -1,0 +1,86 @@
+@* A fixed-position menu with a full-viewport layer behind it, so any click outside dismisses it. *@
+@if (IsVisible && Entries.Count > 0)
+{
+    <div class="wf-menu-layer" @onclick="OnClose" @oncontextmenu="OnClose" @oncontextmenu:preventDefault="true"></div>
+    <div class="wf-menu" role="menu" style="@($"left: {X.ToString(CultureInfo.InvariantCulture)}px; top: {Y.ToString(CultureInfo.InvariantCulture)}px")"
+         @ref="element" @oncontextmenu:preventDefault="true">
+        @foreach (var entry in TrimSeparators(Entries))
+        {
+            if (entry.IsSeparator)
+            {
+                <div class="wf-menu-separator" role="separator"></div>
+            }
+            else
+            {
+                <button type="button" role="menuitem" class="wf-menu-item @(entry.IsDanger ? "wf-menu-danger" : null)"
+                        @onclick="() => SelectAsync(entry)">
+                    <Icon Name="@entry.Icon" />
+                    <span>@entry.Label</span>
+                    @if (entry.Shortcut is not null)
+                    {
+                        <kbd class="wf-menu-shortcut">@entry.Shortcut</kbd>
+                    }
+                </button>
+            }
+        }
+    </div>
+}
+
+@code {
+    private ElementReference element;
+    private bool positionPending;
+
+    [Parameter] public bool IsVisible { get; set; }
+
+    [Parameter] public double X { get; set; }
+
+    [Parameter] public double Y { get; set; }
+
+    [Parameter] public IReadOnlyList<MenuEntry> Entries { get; set; } = [];
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet() => positionPending = IsVisible;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (positionPending && IsVisible && Entries.Count > 0)
+        {
+            positionPending = false;
+            await Interop.FitToViewportAsync(element);
+        }
+    }
+
+    private async Task SelectAsync(MenuEntry entry)
+    {
+        await OnClose.InvokeAsync();
+        await entry.OnSelect();
+    }
+
+    /// <summary>Drops leading, trailing and doubled separators left by entries that were filtered out.</summary>
+    private static IEnumerable<MenuEntry> TrimSeparators(IReadOnlyList<MenuEntry> entries)
+    {
+        MenuEntry? previous = null;
+        var result = new List<MenuEntry>(entries.Count);
+
+        foreach (var entry in entries)
+        {
+            if (entry.IsSeparator && (previous is null || previous.IsSeparator))
+            {
+                continue;
+            }
+
+            result.Add(entry);
+            previous = entry;
+        }
+
+        if (result.Count > 0 && result[^1].IsSeparator)
+        {
+            result.RemoveAt(result.Count - 1);
+        }
+
+        return result;
+    }
+}

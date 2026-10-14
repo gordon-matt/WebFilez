@@ -1,0 +1,19 @@
+@inherits LayoutComponentBase
+
+<div class="demo-shell">
+    <header class="demo-nav">
+        <a class="demo-brand" href="">WebFilez <span>Blazor demo</span></a>
+        <nav>
+            <NavLink href="" Match="NavLinkMatch.All">File manager</NavLink>
+            <NavLink href="picker">Picker</NavLink>
+            <a href="api/webfilez/roots" target="_blank">API</a>
+        </nav>
+    </header>
+    <main class="demo-main">
+        @Body
+    </main>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Something went wrong. <a href="." class="reload">Reload</a>
+</div>

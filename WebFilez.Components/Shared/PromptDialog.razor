@@ -1,0 +1,87 @@
+@* Asks for a single line of text, typically a file name. Awaitable, like ConfirmDialog. *@
+@if (isVisible)
+{
+    <div class="wf-backdrop" @onclick="() => Close(null)"></div>
+    <div class="wf-dialog wf-dialog-small" role="dialog" aria-modal="true" aria-labelledby="@titleId">
+        <form @onsubmit="Submit" @onsubmit:preventDefault>
+            <div class="wf-dialog-body">
+                <h2 class="wf-dialog-title" id="@titleId">@title</h2>
+                <label class="wf-label" for="@inputId">@label</label>
+                <input id="@inputId" class="wf-input" @ref="input" @bind="value" @bind:event="oninput"
+                       @onkeydown="OnKeyDown" autocomplete="off" spellcheck="false" />
+            </div>
+            <div class="wf-dialog-actions">
+                <button type="button" class="wf-button" @onclick="() => Close(null)">Cancel</button>
+                <button type="submit" class="wf-button wf-button-primary" disabled="@string.IsNullOrWhiteSpace(value)">@confirmLabel</button>
+            </div>
+        </form>
+    </div>
+}
+
+@code {
+    private readonly string titleId = $"wf-prompt-{Guid.NewGuid():N}";
+    private readonly string inputId = $"wf-prompt-input-{Guid.NewGuid():N}";
+    private ElementReference input;
+    private bool isVisible;
+    private bool focusPending;
+    private bool selectStemOnly;
+    private string title = string.Empty;
+    private string label = string.Empty;
+    private string value = string.Empty;
+    private string confirmLabel = "OK";
+    private TaskCompletionSource<string?>? completion;
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    /// <summary>Completes with the entered text, or null if cancelled.</summary>
+    /// <param name="selectStemOnly">Pre-select the name without its extension, as Explorer does on rename.</param>
+    public Task<string?> ShowAsync(string title, string label, string initialValue, string confirmLabel = "OK", bool selectStemOnly = false)
+    {
+        completion?.TrySetResult(null);
+
+        this.title = title;
+        this.label = label;
+        value = initialValue;
+        this.confirmLabel = confirmLabel;
+        this.selectStemOnly = selectStemOnly;
+
+        isVisible = true;
+        focusPending = true;
+        completion = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        StateHasChanged();
+        return completion.Task;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusPending && isVisible)
+        {
+            focusPending = false;
+            await Interop.FocusAsync(input, selectStemOnly);
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close(null);
+        }
+    }
+
+    private void Submit()
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            Close(value.Trim());
+        }
+    }
+
+    private void Close(string? result)
+    {
+        isVisible = false;
+        completion?.TrySetResult(result);
+        completion = null;
+    }
+}

@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Files";
+}
+
+<h1 class="demo-title">Files</h1>
+
+<component type="typeof(FileManager)" render-mode="Server" param-Height="@("calc(100vh - 170px)")" />
+
+<p id="demo-status" class="demo-muted">Drop files anywhere on the listing to upload them.</p>
+
+@section Scripts {
+    <script>
+        // The component raises wf-navigated, so the page can follow along without any Blazor code.
+        document.addEventListener('wf-navigated', e => {
+            document.getElementById('demo-status').textContent = `In ${e.detail.rootId}:${e.detail.path}`;
+        });
+    </script>
+}

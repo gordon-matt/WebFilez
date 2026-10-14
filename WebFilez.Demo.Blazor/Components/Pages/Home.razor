@@ -1,0 +1,33 @@
+@page "/"
+
+<PageTitle>WebFilez demo</PageTitle>
+
+<div class="demo-toolbar">
+    <h1>Files</h1>
+    <label>
+        Theme
+        <select @bind="theme">
+            <option value="@Constants.Themes.Light">Light</option>
+            <option value="@Constants.Themes.Dark">Dark</option>
+            <option value="@Constants.Themes.Auto">Follow the system</option>
+        </select>
+    </label>
+</div>
+
+<FileManager Theme="@theme" Height="calc(100vh - 170px)" OnNavigated="location => current = location" />
+
+<p class="demo-muted">
+    @if (current is null)
+    {
+        <text>Drop files anywhere on the listing to upload them.</text>
+    }
+    else
+    {
+        <text>In <code>@current.RootId:@current.Path</code></text>
+    }
+</p>
+
+@code {
+    private string theme = Constants.Themes.Light;
+    private FileLocation? current;
+}

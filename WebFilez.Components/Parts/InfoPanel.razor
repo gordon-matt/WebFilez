@@ -1,0 +1,176 @@
+@inject NavigationManager Navigation
+<aside class="wf-info" aria-label="Details">
+    <div class="wf-info-header">
+        <strong>Details</strong>
+        <span class="wf-spacer"></span>
+        <button type="button" class="wf-icon-button" aria-label="Close details" @onclick="OnClose">
+            <Icon Name="x" />
+        </button>
+    </div>
+
+    @if (SelectionCount > 1)
+    {
+        <div class="wf-info-body">
+            <div class="wf-info-preview"><Icon Name="copy" Class="wf-info-icon" /></div>
+            <p class="wf-info-name">@Format.Plural(SelectionCount, "item") selected</p>
+            <dl class="wf-info-list">
+                <dt>Total size</dt>
+                <dd>@Format.Size(SelectedBytes) <span class="wf-muted">(files only)</span></dd>
+            </dl>
+        </div>
+    }
+    else if (Detail is null)
+    {
+        <div class="wf-info-body wf-muted">Loading…</div>
+    }
+    else
+    {
+        <div class="wf-info-body">
+            <div class="wf-info-preview">
+                @if (Item is { HasThumbnail: true } item)
+                {
+                    <img class="wf-checkered" alt="" src="@Urls.Thumbnail(RootId, item, 512)" />
+                }
+                else
+                {
+                    <FileIcon Kind="Detail.Kind" Class="wf-info-icon" />
+                }
+            </div>
+            <p class="wf-info-name" title="@Detail.Name">@Detail.Name</p>
+
+            <dl class="wf-info-list">
+                <dt>Type</dt>
+                <dd>@(Detail.IsDirectory ? "Folder" : Detail.MimeType)</dd>
+
+                <dt>Size</dt>
+                <dd>
+                    @if (!Detail.IsDirectory)
+                    {
+                        @Format.Size(Detail.SizeBytes)
+                    }
+                    else if (size is not null)
+                    {
+                        @Format.Size(size.SizeBytes)
+                        <span class="wf-muted"> · @Format.Plural(size.FileCount, "file")</span>
+                    }
+                    else
+                    {
+                        <button type="button" class="wf-link-button" disabled="@isCalculating" @onclick="CalculateSizeAsync">
+                            @(isCalculating ? "Calculating…" : "Calculate")
+                        </button>
+                    }
+                </dd>
+
+                @if (Detail.Width is int width && Detail.Height is int height)
+                {
+                    <dt>Dimensions</dt>
+                    <dd>@width × @height px</dd>
+                }
+
+                <dt>Modified</dt>
+                <dd>@Format.Full(Detail.ModifiedAt)</dd>
+
+                <dt>Created</dt>
+                <dd>@Format.Full(Detail.CreatedAt)</dd>
+
+                <dt>Location</dt>
+                <dd class="wf-break">@Detail.Path</dd>
+
+                @if (Detail.PublicUrl is not null)
+                {
+                    <dt>Public URL</dt>
+                    <dd class="wf-row">
+                        <a class="wf-break" href="@Urls.Public(Detail.PublicUrl)" target="_blank" rel="noopener">@Detail.PublicUrl</a>
+                        <button type="button" class="wf-icon-button wf-icon-button-small" title="Copy URL" @onclick="CopyUrlAsync">
+                            <Icon Name="copy" />
+                        </button>
+                    </dd>
+                }
+
+                <dt>Access</dt>
+                <dd>@DescribePermissions(Detail.Permissions)</dd>
+            </dl>
+        </div>
+    }
+</aside>
+
+@code {
+    private DirectorySizeDto? size;
+    private bool isCalculating;
+    private string? sizeFor;
+
+    [Parameter] public FileDetailDto? Detail { get; set; }
+
+    /// <summary>The listed item, when the details are for one, so a thumbnail can be shown.</summary>
+    [Parameter] public FileSystemItemDto? Item { get; set; }
+
+    [Parameter] public int SelectionCount { get; set; }
+
+    [Parameter] public long SelectedBytes { get; set; }
+
+    [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
+
+    [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [Parameter] public ToastService? Toasts { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        string? key = Detail is null ? null : $"{RootId}|{Detail.Path}";
+        if (key != sizeFor)
+        {
+            size = null;
+            sizeFor = key;
+        }
+    }
+
+    private async Task CalculateSizeAsync()
+    {
+        if (Detail is null)
+        {
+            return;
+        }
+
+        isCalculating = true;
+        var result = await Service.GetDirectorySizeAsync(RootId, Detail.Path);
+        isCalculating = false;
+
+        if (result.IsSuccess)
+        {
+            size = result.Value;
+        }
+        else
+        {
+            Toasts?.ShowFailure(result);
+        }
+    }
+
+    private async Task CopyUrlAsync()
+    {
+        if (Detail?.PublicUrl is { } url && await Interop.CopyTextAsync(new Uri(new Uri(Navigation.BaseUri), Urls.Public(url)).ToString()))
+        {
+            Toasts?.Success("Copied the URL.");
+        }
+    }
+
+    private static string DescribePermissions(FilePermission permissions)
+    {
+        if (permissions.Has(FilePermission.Full))
+        {
+            return "Full access";
+        }
+
+        if (permissions.Has(FilePermission.Contributor))
+        {
+            return "Can add files";
+        }
+
+        return permissions.Has(FilePermission.ReadOnly) ? "Read only" : "Limited";
+    }
+}

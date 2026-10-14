@@ -1,0 +1,25 @@
+@implements IDisposable
+
+<div class="wf-toaster" role="status" aria-live="polite">
+    @foreach (var toast in Service.Toasts)
+    {
+        <div class="wf-toast wf-toast-@toast.Level.ToString().ToLowerInvariant()" @key="toast.Id">
+            <Icon Name="@(toast.Level switch { ToastService.ToastLevel.Error => "alert", ToastService.ToastLevel.Info => "info", _ => "check" })" />
+            <span class="wf-toast-message">@toast.Message</span>
+            <button type="button" class="wf-icon-button" aria-label="Dismiss" @onclick="() => Service.Dismiss(toast.Id)">
+                <Icon Name="x" />
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public ToastService Service { get; set; } = default!;
+
+    protected override void OnInitialized() => Service.Changed += OnChanged;
+
+    // Toasts expire on a timer thread, outside the renderer's synchronization context.
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Service.Changed -= OnChanged;
+}

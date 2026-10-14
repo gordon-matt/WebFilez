@@ -1,0 +1,174 @@
+@* Full-window preview. Arrow keys step through the folder's media, as in a photo viewer. *@
+@if (Current is not null)
+{
+    <div class="wf-preview" role="dialog" aria-modal="true" aria-label="@Current.Name"
+         tabindex="-1" @ref="element" @onkeydown="OnKeyDown">
+        <div class="wf-preview-bar">
+            <span class="wf-preview-title" title="@Current.Name">@Current.Name</span>
+            @if (Items.Count > 1 && Index >= 0)
+            {
+                <span class="wf-muted wf-small">@(Index + 1) of @Items.Count</span>
+            }
+            <span class="wf-spacer"></span>
+            @if (Current.Permissions.Has(FilePermission.Download))
+            {
+                <button type="button" class="wf-icon-button" title="Download" @onclick="() => OnDownload.InvokeAsync(Current)">
+                    <Icon Name="download" />
+                </button>
+            }
+            <button type="button" class="wf-icon-button" title="Close (Esc)" @onclick="OnClose">
+                <Icon Name="x" />
+            </button>
+        </div>
+
+        <div class="wf-preview-stage" @onclick="OnClose">
+            @if (Index > 0)
+            {
+                <button type="button" class="wf-preview-nav wf-preview-prev" aria-label="Previous" @onclick="() => StepAsync(-1)" @onclick:stopPropagation="true">
+                    <Icon Name="chevron-left" />
+                </button>
+            }
+
+            <div class="wf-preview-content" @onclick:stopPropagation="true">
+                @switch (Current.Kind)
+                {
+                    case FileKind.Image:
+                        <img class="wf-checkered" src="@InlineUrl" alt="@Current.Name" />
+                        break;
+                    case FileKind.Video:
+                        <video src="@InlineUrl" controls autoplay></video>
+                        break;
+                    case FileKind.Audio:
+                        <div class="wf-preview-audio">
+                            <Icon Name="music" Class="wf-info-icon" />
+                            <audio src="@InlineUrl" controls autoplay></audio>
+                        </div>
+                        break;
+                    case FileKind.Pdf:
+                        <iframe src="@InlineUrl" title="@Current.Name"></iframe>
+                        break;
+                    case FileKind.Text or FileKind.Code:
+                        @if (textError is not null)
+                        {
+                            <div class="wf-preview-message">@textError</div>
+                        }
+                        else if (text is null)
+                        {
+                            <div class="wf-preview-message">Loading…</div>
+                        }
+                        else
+                        {
+                            <pre class="wf-preview-text">@text</pre>
+                        }
+                        break;
+                    default:
+                        <div class="wf-preview-message">There is no preview for this type of file.</div>
+                        break;
+                }
+            </div>
+
+            @if (Index >= 0 && Index < Items.Count - 1)
+            {
+                <button type="button" class="wf-preview-nav wf-preview-next" aria-label="Next" @onclick="() => StepAsync(1)" @onclick:stopPropagation="true">
+                    <Icon Name="chevron-right" />
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private ElementReference element;
+    private string? loadedFor;
+    private string? text;
+    private string? textError;
+    private bool focusPending;
+
+    [Parameter] public FileSystemItemDto? Current { get; set; }
+
+    /// <summary>The items arrow keys move between.</summary>
+    [Parameter] public IReadOnlyList<FileSystemItemDto> Items { get; set; } = [];
+
+    [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
+
+    [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [Parameter] public EventCallback<FileSystemItemDto> OnNavigate { get; set; }
+
+    [Parameter] public EventCallback<FileSystemItemDto> OnDownload { get; set; }
+
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private int Index => Current is null ? -1 : Items.ToList().FindIndex(i => i.Path == Current.Path);
+
+    private string InlineUrl => Current is null ? string.Empty : Urls.Download(RootId, Current.Path, inline: true);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        string? key = Current is null ? null : $"{RootId}|{Current.Path}|{Current.ModifiedAt.Ticks}";
+        if (key == loadedFor)
+        {
+            return;
+        }
+
+        if (loadedFor is null)
+        {
+            focusPending = true;
+        }
+
+        loadedFor = key;
+        text = null;
+        textError = null;
+
+        if (Current is { Kind: FileKind.Text or FileKind.Code })
+        {
+            var result = await Service.ReadTextAsync(RootId, Current.Path);
+            if (result.IsSuccess)
+            {
+                text = result.Value.Content;
+            }
+            else
+            {
+                textError = result.GetDisplayMessage();
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusPending && Current is not null)
+        {
+            focusPending = false;
+            await Interop.FocusAsync(element);
+        }
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case "Escape":
+                await OnClose.InvokeAsync();
+                break;
+            case "ArrowLeft":
+                await StepAsync(-1);
+                break;
+            case "ArrowRight":
+                await StepAsync(1);
+                break;
+        }
+    }
+
+    private async Task StepAsync(int delta)
+    {
+        int next = Index + delta;
+        if (next >= 0 && next < Items.Count)
+        {
+            await OnNavigate.InvokeAsync(Items[next]);
+        }
+    }
+}

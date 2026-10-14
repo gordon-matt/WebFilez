@@ -1,0 +1,49 @@
+@page "/picker"
+
+<PageTitle>Image picker - WebFilez demo</PageTitle>
+
+<section class="demo-hero">
+    <h1>Pick an image</h1>
+    <p>The same component as a picker, as a CMS would use it for an image field.</p>
+</section>
+
+<div class="demo-field">
+    <label for="hero-image">Hero image</label>
+    <div class="demo-field-row">
+        <input id="hero-image" readonly value="@(selected?.PublicUrl ?? selected?.Url)" placeholder="No image chosen" />
+        <button type="button" @onclick="() => isPicking = true">Browse…</button>
+        @if (selected is not null)
+        {
+            <button type="button" @onclick="() => selected = null">Clear</button>
+        }
+    </div>
+    @if (selected is not null)
+    {
+        <img class="demo-preview" src="@(selected.PublicUrl ?? selected.Url)" alt="@selected.Name" />
+    }
+</div>
+
+@if (isPicking)
+{
+    <div class="demo-modal" @onclick="() => isPicking = false">
+        <div class="demo-modal-body" role="dialog" aria-label="Choose an image" @onclick:stopPropagation="true">
+            <FileManager Root="media"
+                         SelectionMode="@Constants.SelectionModes.Single"
+                         Accept="image/*"
+                         SelectLabel="Use image"
+                         Height="70vh"
+                         OnSelected="OnSelected" />
+        </div>
+    </div>
+}
+
+@code {
+    private bool isPicking;
+    private SelectedFile? selected;
+
+    private void OnSelected(IReadOnlyList<SelectedFile> files)
+    {
+        selected = files.FirstOrDefault();
+        isPicking = false;
+    }
+}

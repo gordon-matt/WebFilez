@@ -1,0 +1,300 @@
+@implements IAsyncDisposable
+
+<div class="wf-root @Class" data-theme="@Theme" tabindex="-1" @ref="rootElement" @attributes="AdditionalAttributes">
+    <div class="wf-shell @(IsPicker ? "wf-picker" : null)" style="height: @Height">
+
+        @* ------------------------------------------------------------- toolbar *@
+        <div class="wf-toolbar">
+            <div class="wf-toolbar-row">
+                @if (ShowTree)
+                {
+                    <button type="button" class="wf-icon-button" title="@(isTreeOpen ? "Hide folders" : "Show folders")"
+                            aria-pressed="@(isTreeOpen ? "true" : "false")" @onclick="() => isTreeOpen = !isTreeOpen">
+                        <Icon Name="panel-left" />
+                    </button>
+                }
+                <button type="button" class="wf-icon-button" title="Up one level (Backspace)"
+                        disabled="@(CurrentPath == Constants.RootPath)" @onclick="GoUpAsync">
+                    <Icon Name="arrow-up" />
+                </button>
+
+                @if (listing is not null)
+                {
+                    <Breadcrumbs Items="listing.Breadcrumbs" OnNavigate="p => NavigateAsync(rootId!, p)" OnDropOnto="e => DropOntoAsync(rootId!, e.Path, e.Args)" />
+                }
+
+                <span class="wf-spacer"></span>
+
+                <label class="wf-search">
+                    <Icon Name="search" />
+                    <input type="search" placeholder="Filter" aria-label="Filter this folder"
+                           @bind="filter" @bind:event="oninput" @bind:after="OnFilterChangedAsync" />
+                </label>
+            </div>
+
+            <div class="wf-toolbar-row">
+                @if (Can(FilePermission.Create))
+                {
+                    <div class="wf-dropdown">
+                        <button type="button" class="wf-button wf-button-primary" aria-haspopup="menu"
+                                aria-expanded="@(openMenu == "new" ? "true" : "false")" @onclick='() => ToggleMenu("new")'>
+                            <Icon Name="plus" /> <span class="wf-hide-narrow">New</span>
+                        </button>
+                        @if (openMenu == "new")
+                        {
+                            <div class="wf-menu-layer" @onclick="() => openMenu = null"></div>
+                            <div class="wf-menu wf-menu-dropdown" role="menu">
+                                <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(CreateFolderAsync)">
+                                    <Icon Name="folder-plus" /> <span>Folder</span>
+                                </button>
+                                <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(CreateTextFileAsync)">
+                                    <Icon Name="file-plus" /> <span>Text file</span>
+                                </button>
+                                <div class="wf-menu-separator" role="separator"></div>
+                                <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(() => PickFilesAsync(false))">
+                                    <Icon Name="upload" /> <span>Upload files…</span>
+                                </button>
+                                <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(() => PickFilesAsync(true))">
+                                    <Icon Name="folder-up" /> <span>Upload folder…</span>
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    <button type="button" class="wf-button" title="Upload files" @onclick="() => PickFilesAsync(false)">
+                        <Icon Name="upload" /> <span class="wf-hide-narrow">Upload</span>
+                    </button>
+                }
+
+                @if (selection.Count > 0)
+                {
+                    @if (Can(FilePermission.Create))
+                    {
+                        <span class="wf-toolbar-divider"></span>
+                    }
+                    @if (CanOnSelection(FilePermission.Download))
+                    {
+                        <button type="button" class="wf-icon-button" title="Download" @onclick="DownloadSelectionAsync"><Icon Name="download" /></button>
+                    }
+                    @if (CanOnSelection(FilePermission.Read) && Can(FilePermission.Create))
+                    {
+                        <button type="button" class="wf-icon-button" title="Copy (Ctrl+C)" @onclick="() => SetClipboard(isCut: false)"><Icon Name="copy" /></button>
+                    }
+                    @if (CanOnSelection(FilePermission.Move | FilePermission.Delete))
+                    {
+                        <button type="button" class="wf-icon-button" title="Cut (Ctrl+X)" @onclick="() => SetClipboard(isCut: true)"><Icon Name="scissors" /></button>
+                    }
+                    @if (selection.Count == 1 && CanOnSelection(FilePermission.Rename))
+                    {
+                        <button type="button" class="wf-icon-button" title="Rename (F2)" @onclick="RenameAsync"><Icon Name="pencil" /></button>
+                    }
+                    @if (CanOnSelection(FilePermission.Delete))
+                    {
+                        <button type="button" class="wf-icon-button wf-icon-button-danger" title="Delete (Del)" @onclick="DeleteAsync"><Icon Name="trash" /></button>
+                    }
+                }
+
+                @if (clipboard is not null && Can(FilePermission.Create))
+                {
+                    <span class="wf-toolbar-divider"></span>
+                    <button type="button" class="wf-button" title="Paste (Ctrl+V)" @onclick="() => PasteAsync()">
+                        <Icon Name="clipboard" /> <span class="wf-hide-narrow">Paste @clipboard.Paths.Count</span>
+                    </button>
+                    <button type="button" class="wf-icon-button" title="Clear clipboard" @onclick="() => clipboard = null"><Icon Name="x" /></button>
+                }
+
+                <span class="wf-spacer"></span>
+
+                <div class="wf-segmented wf-kind-filter" role="group" aria-label="Show">
+                    @foreach (var option in KindFilters)
+                    {
+                        <button type="button" class="@(kindFilter == option.Filter ? "wf-active" : null)" title="@option.Label"
+                                aria-pressed="@(kindFilter == option.Filter ? "true" : "false")" @onclick="() => SetKindFilterAsync(option.Filter)">
+                            <Icon Name="@option.Icon" /> <span class="wf-hide-narrow">@option.Label</span>
+                        </button>
+                    }
+                </div>
+
+                <div class="wf-segmented" role="group" aria-label="View">
+                    @foreach (var option in ViewModes)
+                    {
+                        <button type="button" class="@(viewMode == option.Mode ? "wf-active" : null)" title="@option.Label"
+                                aria-pressed="@(viewMode == option.Mode ? "true" : "false")" @onclick="() => SetViewModeAsync(option.Mode)">
+                            <Icon Name="@option.Icon" />
+                        </button>
+                    }
+                </div>
+
+                <div class="wf-dropdown">
+                    <button type="button" class="wf-icon-button" title="Sort and options" aria-haspopup="menu"
+                            aria-expanded="@(openMenu == "options" ? "true" : "false")" @onclick='() => ToggleMenu("options")'>
+                        <Icon Name="sliders" />
+                    </button>
+                    @if (openMenu == "options")
+                    {
+                        <div class="wf-menu-layer" @onclick="() => openMenu = null"></div>
+                        <div class="wf-menu wf-menu-dropdown wf-menu-end" role="menu">
+                            <div class="wf-menu-heading">Sort by</div>
+                            @foreach (var field in Enum.GetValues<ListingSortField>())
+                            {
+                                <button type="button" role="menuitemradio" aria-checked="@(sortBy == field ? "true" : "false")"
+                                        class="wf-menu-item" @onclick="() => RunMenuAsync(() => SortByAsync(field))">
+                                    <Icon Name="@(sortBy != field ? "x" : descending ? "chevron-down" : "arrow-up")" Class="@(sortBy != field ? "wf-invisible" : null)" />
+                                    <span>@field</span>
+                                </button>
+                            }
+                            <div class="wf-menu-separator" role="separator"></div>
+                            @if (CanShowHidden)
+                            {
+                                <button type="button" role="menuitemcheckbox" aria-checked="@(showHidden ? "true" : "false")"
+                                        class="wf-menu-item" @onclick="() => RunMenuAsync(ToggleHiddenAsync)">
+                                    <Icon Name="check" Class="@(showHidden ? null : "wf-invisible")" /> <span>Show hidden files</span>
+                                </button>
+                            }
+                            <button type="button" role="menuitemcheckbox" aria-checked="@(isInfoOpen ? "true" : "false")"
+                                    class="wf-menu-item" @onclick="() => RunMenuAsync(ToggleInfoAsync)">
+                                <Icon Name="check" Class="@(isInfoOpen ? null : "wf-invisible")" /> <span>Details panel</span>
+                            </button>
+                            <div class="wf-menu-separator" role="separator"></div>
+                            <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(LoadAsync)">
+                                <Icon Name="refresh" /> <span>Refresh</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ------------------------------------------------------------- body *@
+        <div class="wf-body">
+            @if (ShowTree && isTreeOpen && roots.Count > 0)
+            {
+                <div class="wf-tree-pane">
+                    <FolderTree @ref="tree" Service="Service" Roots="roots" RootId="@rootId" CurrentPath="@CurrentPath"
+                                OnNavigate="e => NavigateAsync(e.RootId, e.Path)"
+                                OnDropOnto="e => DropOntoAsync(e.RootId, e.Path, e.Args)" />
+                </div>
+            }
+
+            <div class="wf-listing" @ref="listingElement"
+                 @onclick="ClearSelection"
+                 @oncontextmenu="ShowBackgroundMenu" @oncontextmenu:preventDefault="true">
+                @if (loadError is not null)
+                {
+                    <div class="wf-empty">
+                        <Icon Name="alert" Class="wf-empty-icon" />
+                        <p>@loadError</p>
+                        <button type="button" class="wf-button" @onclick="LoadAsync" @onclick:stopPropagation="true">Try again</button>
+                    </div>
+                }
+                else if (listing is null)
+                {
+                    <div class="wf-empty"><span class="wf-spinner" role="status" aria-label="Loading"></span></div>
+                }
+                else
+                {
+                    <FileListing Items="listing.Items"
+                                 RootId="@(rootId!)"
+                                 Urls="urls"
+                                 ViewMode="viewMode"
+                                 SortBy="sortBy"
+                                 Descending="descending"
+                                 SelectedPaths="selection"
+                                 CutPaths="CutPaths"
+                                 HasFilter="@(!string.IsNullOrWhiteSpace(filter) || kindFilter != KindFilter.All)"
+                                 CanUpload="Can(FilePermission.Create)"
+                                 ShowCheckboxes="@(SelectionMode != Constants.SelectionModes.Single)"
+                                 IsSelectable="IsSelectable"
+                                 CanDrag="CanDrag"
+                                 OnItemClick="OnItemClickAsync"
+                                 OnItemActivate="ActivateAsync"
+                                 OnToggleSelect="ToggleSelectAsync"
+                                 OnItemContextMenu="ShowItemMenuAsync"
+                                 OnSelectAll="SelectAllAsync"
+                                 OnSort="SortByAsync"
+                                 OnDragStart="OnDragStart"
+                                 OnDragEnd="() => dragPaths = null"
+                                 OnDropOnto="e => DropOntoAsync(rootId!, e.Path, e.Args)" />
+
+                    @if (listing.TotalCount > listing.Items.Count)
+                    {
+                        <div class="wf-more">
+                            <button type="button" class="wf-button" @onclick="LoadMoreAsync" @onclick:stopPropagation="true">
+                                Show more (@listing.Items.Count.ToString("N0") of @listing.TotalCount.ToString("N0"))
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (isInfoOpen && listing is not null)
+            {
+                <InfoPanel Detail="detail"
+                           Item="DetailItem"
+                           SelectionCount="selection.Count"
+                           SelectedBytes="SelectedItems.Sum(i => i.SizeBytes)"
+                           RootId="@(rootId!)"
+                           Urls="urls"
+                           Service="Service"
+                           Interop="interop"
+                           Toasts="toasts"
+                           OnClose="() => isInfoOpen = false" />
+            }
+        </div>
+
+        @* ------------------------------------------------------------- status bar *@
+        <div class="wf-status">
+            @if (listing is not null)
+            {
+                <span>@Format.Plural(listing.TotalCount, "item")</span>
+                <span class="wf-muted wf-hide-narrow">@Format.Size(listing.TotalSizeBytes)</span>
+                @if (selection.Count > 0)
+                {
+                    <span class="wf-muted">@selection.Count selected</span>
+                }
+                @if (!Can(FilePermission.Create | FilePermission.Modify | FilePermission.Delete))
+                {
+                    <span class="wf-badge"><Icon Name="lock" /> Read only</span>
+                }
+            }
+            <span class="wf-spacer"></span>
+            @if (IsPicker)
+            {
+                <span class="wf-muted wf-small wf-hide-narrow">@PickerHint</span>
+                <button type="button" class="wf-button wf-button-primary" disabled="@(!CanConfirmSelection)" @onclick="ConfirmSelectionAsync">
+                    <Icon Name="check-circle" /> @SelectLabel
+                </button>
+            }
+        </div>
+    </div>
+
+    @* ------------------------------------------------------------- overlays *@
+    <ContextMenu IsVisible="contextMenu is not null"
+                 X="menuX" Y="menuY"
+                 Entries="@(contextMenu ?? [])"
+                 Interop="interop"
+                 OnClose="() => contextMenu = null" />
+
+    <PreviewDialog Current="previewItem"
+                   Items="PreviewableItems"
+                   RootId="@(rootId ?? string.Empty)"
+                   Urls="urls"
+                   Service="Service"
+                   Interop="interop"
+                   OnNavigate="item => previewItem = item"
+                   OnDownload="item => DownloadAsync([item])"
+                   OnClose="ClosePreviewAsync" />
+
+    <TextEditorDialog @ref="editor"
+                      Service="Service"
+                      Interop="interop"
+                      Toasts="toasts"
+                      ConfirmDiscard="ConfirmDiscardAsync"
+                      OnSaved="_ => LoadAsync()" />
+
+    <UploadTray Uploads="uploads" OnCancel="CancelUploadAsync" OnDismiss="() => uploads.Clear()" />
+
+    <PromptDialog @ref="prompt" Interop="interop" />
+    <ConfirmDialog @ref="confirm" Interop="interop" />
+    <Toaster Service="toasts" />
+</div>

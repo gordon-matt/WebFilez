@@ -1,0 +1,19 @@
+<Icon Name="@IconName" Class="@($"wf-kind wf-kind-{Kind.ToString().ToLowerInvariant()} {Class}")" />
+
+@code {
+    [Parameter] public FileKind Kind { get; set; }
+
+    [Parameter] public string? Class { get; set; }
+
+    private string IconName => Kind switch
+    {
+        FileKind.Folder => "folder",
+        FileKind.Image => "image",
+        FileKind.Video => "file-video",
+        FileKind.Audio => "music",
+        FileKind.Archive => "archive",
+        FileKind.Code => "file-code",
+        FileKind.Text or FileKind.Document or FileKind.Pdf => "file-text",
+        _ => "file",
+    };
+}

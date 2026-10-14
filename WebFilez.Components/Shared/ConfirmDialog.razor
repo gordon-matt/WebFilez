@@ -1,0 +1,84 @@
+@* Driven from C#, so callers can await a decision instead of wiring callbacks. *@
+@if (isVisible)
+{
+    <div class="wf-backdrop" @onclick="() => Close(false)"></div>
+    <div class="wf-dialog wf-dialog-small" role="alertdialog" aria-modal="true" aria-labelledby="@titleId"
+         tabindex="-1" @ref="element" @onkeydown="OnKeyDown">
+        <div class="wf-dialog-body">
+            <h2 class="wf-dialog-title" id="@titleId">@title</h2>
+            <p>@message</p>
+            @if (!string.IsNullOrEmpty(detail))
+            {
+                <p class="wf-muted wf-small">@detail</p>
+            }
+        </div>
+        <div class="wf-dialog-actions">
+            <button type="button" class="wf-button" @ref="cancelButton" @onclick="() => Close(false)">Cancel</button>
+            <button type="button" class="wf-button @(isDestructive ? "wf-button-danger" : "wf-button-primary")" @ref="confirmButton" @onclick="() => Close(true)">
+                @confirmLabel
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly string titleId = $"wf-confirm-{Guid.NewGuid():N}";
+    private ElementReference element;
+    private ElementReference cancelButton;
+    private ElementReference confirmButton;
+    private bool isVisible;
+    private bool focusPending;
+    private string title = string.Empty;
+    private string message = string.Empty;
+    private string? detail;
+    private string confirmLabel = "OK";
+    private bool isDestructive;
+    private TaskCompletionSource<bool>? completion;
+
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    /// <summary>Shows the dialog and completes when the user answers.</summary>
+    public Task<bool> ShowAsync(string title, string message, string confirmLabel = "OK", bool isDestructive = false, string? detail = null)
+    {
+        completion?.TrySetResult(false);
+
+        this.title = title;
+        this.message = message;
+        this.detail = detail;
+        this.confirmLabel = confirmLabel;
+        this.isDestructive = isDestructive;
+
+        isVisible = true;
+        focusPending = true;
+        completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        StateHasChanged();
+        return completion.Task;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusPending && isVisible)
+        {
+            focusPending = false;
+            // Enter then answers through whichever button has focus. Destructive actions start on
+            // Cancel, so a reflexive Enter can't delete anything.
+            await Interop.FocusAsync(isDestructive ? cancelButton : confirmButton);
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Close(false);
+        }
+    }
+
+    private void Close(bool confirmed)
+    {
+        isVisible = false;
+        completion?.TrySetResult(confirmed);
+        completion = null;
+    }
+}

@@ -1,0 +1,137 @@
+@* The navigation pane: every root, with folders loaded one level at a time as they open. *@
+
+<nav class="wf-tree" aria-label="Folders">
+    @foreach (var root in Roots)
+    {
+        @Node(root.Id, Constants.RootPath, root.Name, hasChildren: true, depth: 0)
+    }
+</nav>
+
+@code {
+    private readonly Dictionary<string, IReadOnlyList<FolderNodeDto>> children = [];
+    private readonly HashSet<string> expanded = [];
+    private readonly HashSet<string> loading = [];
+
+    [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
+
+    [Parameter, EditorRequired] public IReadOnlyList<FileRootDto> Roots { get; set; } = [];
+
+    [Parameter] public string? RootId { get; set; }
+
+    [Parameter] public string CurrentPath { get; set; } = Constants.RootPath;
+
+    [Parameter] public EventCallback<(string RootId, string Path)> OnNavigate { get; set; }
+
+    [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Open the path to the current folder, so the tree always shows where the listing is.
+        if (RootId is null)
+        {
+            return;
+        }
+
+        string accumulated = Constants.RootPath;
+        await ExpandAsync(RootId, accumulated);
+
+        foreach (string segment in VirtualPath.GetSegments(CurrentPath).SkipLast(1))
+        {
+            accumulated = VirtualPath.Combine(accumulated, segment);
+            await ExpandAsync(RootId, accumulated);
+        }
+    }
+
+    /// <summary>Drops cached children so the next render reloads them, after a change on disk.</summary>
+    public async Task RefreshAsync(string rootId, string path)
+    {
+        children.Remove(Key(rootId, path));
+        if (expanded.Contains(Key(rootId, path)))
+        {
+            await LoadAsync(rootId, path);
+        }
+
+        StateHasChanged();
+    }
+
+    private RenderFragment Node(string rootId, string path, string name, bool hasChildren, int depth) => __builder =>
+    {
+        string key = Key(rootId, path);
+        bool isOpen = expanded.Contains(key);
+        bool isCurrent = rootId == RootId && path == CurrentPath;
+
+        <div class="wf-tree-row @(isCurrent ? "wf-tree-current" : null)" style="padding-left: @(depth * 14 + 4)px"
+             @ondragover:preventDefault="true"
+             @ondrop="e => OnDropOnto.InvokeAsync((rootId, path, e))">
+            @if (hasChildren)
+            {
+                <button type="button" class="wf-tree-toggle" aria-label="@(isOpen ? "Collapse" : "Expand") @name"
+                        aria-expanded="@(isOpen ? "true" : "false")" @onclick="() => ToggleAsync(rootId, path)">
+                    <Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" />
+                </button>
+            }
+            else
+            {
+                <span class="wf-tree-toggle"></span>
+            }
+            <button type="button" class="wf-tree-label" title="@name" @onclick="() => OnNavigate.InvokeAsync((rootId, path))">
+                <Icon Name="@(depth == 0 ? "hard-drive" : isOpen ? "folder-open" : "folder")" Class="wf-kind-folder" />
+                <span>@name</span>
+            </button>
+        </div>
+
+        @if (isOpen)
+        {
+            if (children.TryGetValue(key, out var nodes))
+            {
+                foreach (var child in nodes)
+                {
+                    @Node(rootId, child.Path, child.Name, child.HasChildren, depth + 1)
+                }
+            }
+            else if (loading.Contains(key))
+            {
+                <div class="wf-tree-row wf-muted wf-small" style="padding-left: @((depth + 1) * 14 + 26)px">Loading…</div>
+            }
+        }
+    };
+
+    private async Task ToggleAsync(string rootId, string path)
+    {
+        string key = Key(rootId, path);
+        if (!expanded.Remove(key))
+        {
+            await ExpandAsync(rootId, path);
+        }
+    }
+
+    private async Task ExpandAsync(string rootId, string path)
+    {
+        expanded.Add(Key(rootId, path));
+        if (!children.ContainsKey(Key(rootId, path)))
+        {
+            await LoadAsync(rootId, path);
+        }
+    }
+
+    private async Task LoadAsync(string rootId, string path)
+    {
+        string key = Key(rootId, path);
+        if (!loading.Add(key))
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Service.GetFoldersAsync(rootId, path);
+            children[key] = result.IsSuccess ? result.Value : [];
+        }
+        finally
+        {
+            loading.Remove(key);
+        }
+    }
+
+    private static string Key(string rootId, string path) => $"{rootId}|{path}";
+}

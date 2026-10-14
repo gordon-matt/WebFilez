@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Demos/">
+    <Project Path="WebFilez.Demo.Blazor/WebFilez.Demo.Blazor.csproj" />
+    <Project Path="WebFilez.Demo.Mvc/WebFilez.Demo.Mvc.csproj" />
+    <Project Path="webfilez.demo.react/webfilez.demo.react.esproj">
+      <Build />
+      <Deploy />
+    </Project>
+  </Folder>
+  <Project Path="WebFilez.Core/WebFilez.Core.csproj" />
+  <Project Path="WebFilez.Services/WebFilez.Services.csproj" />
+  <Project Path="WebFilez.AspNetCore/WebFilez.AspNetCore.csproj" />
+  <Project Path="WebFilez.Components/WebFilez.Components.csproj" />
+  <Project Path="WebFilez.CustomElements/WebFilez.CustomElements.csproj" />
+  <Project Path="WebFilez.Tests/WebFilez.Tests.csproj" />
+</Solution>

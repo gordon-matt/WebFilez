@@ -1,0 +1,45 @@
+<nav class="wf-breadcrumbs" aria-label="Folder path">
+    @for (int i = 0; i < Items.Count; i++)
+    {
+        var crumb = Items[i];
+        bool isLast = i == Items.Count - 1;
+
+        @if (i > 0)
+        {
+            <Icon Name="chevron-right" Class="wf-breadcrumb-separator" />
+        }
+
+        @if (isLast)
+        {
+            <span class="wf-breadcrumb wf-breadcrumb-current" aria-current="page" title="@crumb.Name">
+                @if (i == 0)
+                {
+                    <Icon Name="hard-drive" />
+                }
+                @crumb.Name
+            </span>
+        }
+        else
+        {
+            <button type="button" class="wf-breadcrumb" title="@crumb.Name"
+                    @onclick="() => OnNavigate.InvokeAsync(crumb.Path)"
+                    @ondragover:preventDefault="true"
+                    @ondrop="e => OnDropOnto.InvokeAsync((crumb.Path, e))">
+                @if (i == 0)
+                {
+                    <Icon Name="hard-drive" />
+                }
+                @crumb.Name
+            </button>
+        }
+    }
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<BreadcrumbDto> Items { get; set; } = [];
+
+    [Parameter] public EventCallback<string> OnNavigate { get; set; }
+
+    /// <summary>Dropping dragged items on a crumb moves them into that folder.</summary>
+    [Parameter] public EventCallback<(string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+}

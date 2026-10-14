@@ -1,0 +1,87 @@
+@if (Uploads.Count > 0)
+{
+    <div class="wf-upload-tray" role="region" aria-label="Uploads">
+        <div class="wf-upload-header">
+            <strong>@Summary</strong>
+            <span class="wf-spacer"></span>
+            @if (Uploads.All(u => u.IsComplete))
+            {
+                <button type="button" class="wf-icon-button" aria-label="Dismiss" @onclick="OnDismiss">
+                    <Icon Name="x" />
+                </button>
+            }
+        </div>
+        <ul class="wf-upload-list">
+            @foreach (var upload in Uploads)
+            {
+                <li @key="upload.Id" class="@(upload.Error is not null ? "wf-upload-failed" : upload.IsComplete ? "wf-upload-done" : null)">
+                    <div class="wf-upload-line">
+                        <span class="wf-upload-name" title="@upload.FileName">@upload.FileName</span>
+                        @if (upload.Error is not null)
+                        {
+                            <Icon Name="alert" Class="wf-text-danger" />
+                        }
+                        else if (upload.IsComplete)
+                        {
+                            <Icon Name="check" Class="wf-text-success" />
+                        }
+                        else
+                        {
+                            <span class="wf-muted wf-small">@upload.Percent%</span>
+                            <button type="button" class="wf-icon-button wf-icon-button-small" aria-label="@($"Cancel {upload.FileName}")"
+                                    @onclick="() => OnCancel.InvokeAsync(upload.Id)">
+                                <Icon Name="x" />
+                            </button>
+                        }
+                    </div>
+                    @if (upload.Error is not null)
+                    {
+                        <div class="wf-small wf-text-danger">@upload.Error</div>
+                    }
+                    else if (!upload.IsComplete)
+                    {
+                        <div class="wf-progress"><div class="wf-progress-bar" style="width: @(upload.Percent)%"></div></div>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public List<UploadProgress> Uploads { get; set; } = [];
+
+    [Parameter] public EventCallback<long> OnCancel { get; set; }
+
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private string Summary
+    {
+        get
+        {
+            int pending = Uploads.Count(u => !u.IsComplete);
+            int failed = Uploads.Count(u => u.Error is not null);
+
+            return pending > 0
+                ? $"Uploading {Format.Plural(pending, "file")}…"
+                : failed > 0 ? $"{Format.Plural(failed, "upload")} failed" : "Uploads complete";
+        }
+    }
+
+    public sealed class UploadProgress
+    {
+        public long Id { get; init; }
+
+        public string FileName { get; init; } = string.Empty;
+
+        public long BytesSent { get; set; }
+
+        public long TotalBytes { get; set; }
+
+        public bool IsComplete { get; set; }
+
+        public string? Error { get; set; }
+
+        public int Percent => TotalBytes <= 0 ? (IsComplete ? 100 : 0) : (int)Math.Min(100, BytesSent * 100 / TotalBytes);
+    }
+}

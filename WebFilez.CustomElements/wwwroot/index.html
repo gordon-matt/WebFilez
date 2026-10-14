@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebFilez custom element</title>
+    <base href="/" />
+    <link rel="stylesheet" href="_content/WebFilez.Components/webfilez.css" />
+    <style>
+        body { margin: 0; background: #f5f6f8; color: #171a21; font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+        .site-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 28px; background: #fff; border-bottom: 1px solid #e1e4ea; }
+        .site-nav strong span { margin-left: 6px; font-weight: 500; color: #687182; font-size: 13px; }
+        .site-nav nav { display: flex; gap: 4px; }
+        .site-nav button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font: inherit; font-weight: 550; color: #4a5160; cursor: pointer; }
+        .site-nav button[aria-pressed="true"] { background: #eef0ff; color: #4f46e5; }
+        .site-main { max-width: 1440px; margin: 0 auto; padding: 28px; }
+        #status { color: #687182; }
+    </style>
+</head>
+<body>
+    <header class="site-nav">
+        <strong>WebFilez <span>plain HTML, custom element</span></strong>
+        <nav>
+            <button type="button" data-view="manager" aria-pressed="true">File manager</button>
+            <button type="button" data-view="picker" aria-pressed="false">Image picker</button>
+        </nav>
+    </header>
+
+    <main class="site-main">
+        <section data-panel="manager">
+            <wf-file-manager height="70vh" theme="auto"></wf-file-manager>
+        </section>
+        <section data-panel="picker" hidden>
+            <wf-file-manager height="60vh" selection-mode="single" accept="image/*" select-label="Use image"></wf-file-manager>
+            <p id="status">Pick an image.</p>
+        </section>
+    </main>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>
+        const tabs = document.querySelectorAll('.site-nav button');
+        tabs.forEach(button => button.addEventListener('click', () => {
+            tabs.forEach(b => b.setAttribute('aria-pressed', b === button));
+            document.querySelectorAll('[data-panel]').forEach(p => p.hidden = p.dataset.panel !== button.dataset.view);
+        }));
+
+        document.addEventListener('wf-selected', e => {
+            const [file] = e.detail.files;
+            document.getElementById('status').textContent = `Picked ${file.name} (${file.publicUrl ?? file.url}).`;
+        });
+    </script>
+</body>
+</html>

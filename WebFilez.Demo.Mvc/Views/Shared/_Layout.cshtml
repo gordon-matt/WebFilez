@@ -1,0 +1,35 @@
+@{
+    string path = Context.Request.Path.Value ?? "/";
+    string NavClass(bool active) => active ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] ?? "WebFilez MVC demo")</title>
+    @* Blazor resolves the components' script and its circuit relative to the base URL. *@
+    <base href="~/" />
+    <link rel="stylesheet" href="~/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/_content/WebFilez.Components/webfilez.css" asp-append-version="true" />
+</head>
+<body>
+    <header class="demo-nav">
+        <a class="demo-brand" href="~/">WebFilez <span>MVC demo</span></a>
+        <nav>
+            <a href="~/" class="@NavClass(path == "/")">File manager</a>
+            <a href="~/picker" class="@NavClass(path.StartsWith("/picker", StringComparison.OrdinalIgnoreCase))">Picker</a>
+        </nav>
+    </header>
+    <main class="demo-main">
+        @RenderBody()
+    </main>
+
+    <div id="blazor-error-ui">
+        Something went wrong. <a href="" class="reload">Reload</a>
+    </div>
+
+    <script src="~/_framework/blazor.server.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,51 @@
+@{
+    ViewData["Title"] = "Image picker";
+}
+
+<section class="demo-hero">
+    <h1>Pick an image</h1>
+    <p>The picker fills an ordinary form field through the <code>wf-selected</code> DOM event.</p>
+</section>
+
+<form class="demo-field" method="get">
+    <label for="hero-image">Hero image</label>
+    <div class="demo-field-row">
+        <input id="hero-image" name="heroImage" readonly placeholder="No image chosen" value="@Context.Request.Query["heroImage"]" />
+        <button type="button" id="browse">Browse…</button>
+        <button type="submit">Save</button>
+    </div>
+    <img id="hero-preview" class="demo-preview" alt="" hidden />
+</form>
+
+<dialog id="picker" class="demo-dialog">
+    <component type="typeof(FileManager)" render-mode="Server"
+               param-Root="@("media")"
+               param-SelectionMode="@Constants.SelectionModes.Single"
+               param-Accept="@("image/*")"
+               param-SelectLabel="@("Use image")"
+               param-Height="@("70vh")" />
+</dialog>
+
+@section Scripts {
+    <script>
+        const dialog = document.getElementById('picker');
+        const input = document.getElementById('hero-image');
+        const preview = document.getElementById('hero-preview');
+
+        const show = url => {
+            preview.src = url;
+            preview.hidden = !url;
+        };
+
+        show(input.value);
+        document.getElementById('browse').addEventListener('click', () => dialog.showModal());
+        dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+
+        dialog.addEventListener('wf-selected', e => {
+            const [file] = e.detail.files;
+            input.value = file.publicUrl ?? file.url;
+            show(input.value);
+            dialog.close();
+        });
+    </script>
+}

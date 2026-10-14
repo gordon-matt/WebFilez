@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<Description>WebFilez as a standard custom element (&lt;wf-file-manager&gt;) for React, Vue, Angular or plain HTML pages.</Description>
+		<!-- Host pages reference _framework/blazor.webassembly.js by name, so keep file names stable. -->
+		<WasmFingerprintAssets>false</WasmFingerprintAssets>
+		<InvariantGlobalization>true</InvariantGlobalization>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.CustomElements" Version="10.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.12" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
+	</ItemGroup>
+
+</Project>
