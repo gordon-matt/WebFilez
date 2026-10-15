@@ -10,8 +10,9 @@ namespace WebFilez.Storage.AzureBlob;
 
 /// <summary>
 /// Stores a root in an Azure Blob container. Folders are prefixes. An empty folder is a
-/// zero-length blob whose name ends in <c>/</c>, which is what makes it show up before anything
-/// is put inside it.
+/// zero-length hidden marker blob inside that prefix, which is what makes it show up before
+/// anything is put inside it. The blob client drops a trailing slash, so the marker is a child
+/// named <see cref="AzureBlobPaths.DirectoryMarkerName"/> rather than a blob name ending in <c>/</c>.
 /// </summary>
 public sealed class AzureBlobStorageProvider : IStorageProvider
 {
@@ -128,6 +129,11 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
                     continue;
                 }
 
+                if (rest.EndsWith(WebFilez.Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
                 if (!rest.Contains('/') && seen.Add(rest))
                 {
                     yield return new StorageEntry(
@@ -143,11 +149,17 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         }
     }
 
-    public Task CreateDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
+    public async Task CreateDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
-        string name = AzureBlobPaths.ListingPrefix(location.NativePath);
-        var blob = Container(location.Root).GetBlobClient(name);
-        return UploadAsync(blob, Stream.Null, overwrite: true, "application/x-directory", cancellationToken);
+        var container = Container(location.Root);
+        if (location.NativePath.Length > 0 && await container.GetBlobClient(location.NativePath).ExistsAsync(cancellationToken))
+        {
+            throw new StorageException($"'{Path.GetFileName(location.NativePath)}' already exists.");
+        }
+
+        string marker = AzureBlobPaths.DirectoryMarker(location.NativePath);
+        await using var empty = new MemoryStream();
+        await UploadAsync(container.GetBlobClient(marker), empty, overwrite: true, "application/x-directory", cancellationToken);
     }
 
     public async Task CreateEmptyFileAsync(StorageLocation location, CancellationToken cancellationToken = default)
@@ -188,8 +200,11 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         bool overwrite,
         CancellationToken cancellationToken = default)
     {
-        await using var content = new FileStream(localFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await WriteAsync(location, content, overwrite, cancellationToken);
+        await using (var content = new FileStream(localFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
+        {
+            await WriteAsync(location, content, overwrite, cancellationToken);
+        }
+
         File.Delete(localFile);
     }
 

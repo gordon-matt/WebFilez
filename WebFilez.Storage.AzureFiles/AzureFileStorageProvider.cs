@@ -174,8 +174,11 @@ public sealed class AzureFileStorageProvider : IStorageProvider
         bool overwrite,
         CancellationToken cancellationToken = default)
     {
-        await using var content = new FileStream(localFile, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await WriteAsync(location, content, overwrite, cancellationToken);
+        await using (var content = new FileStream(localFile, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, FileOptions.Asynchronous))
+        {
+            await WriteAsync(location, content, overwrite, cancellationToken);
+        }
+
         File.Delete(localFile);
     }
 

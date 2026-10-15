@@ -22,7 +22,7 @@ Features in this version:
 | --- | --- |
 | `WebFilez.Core` | DTOs, enums, `IFileManagerService`, `VirtualPath`, `ApiRoutes`. No dependencies beyond Ardalis.Result. |
 | `WebFilez.Services` | The file manager, the file system provider, options, access extension points, archives, thumbnails and transfers. |
-| `WebFilez.Storage.Azure` | The Azure Blob Storage provider. Register it with `AddWebFilezAzureBlob()`. |
+| `WebFilez.Storage.AzureBlob` | The Azure Blob Storage provider. Register it with `AddWebFilezAzureBlob()`. |
 | `WebFilez.Storage.AzureFiles` | The Azure Files provider. Register it with `AddWebFilezAzureFiles()`. |
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. |
@@ -34,7 +34,7 @@ Features in this version:
 
 The component talks to `IFileManagerService`. On Blazor Server (and therefore MVC) that is the real service, in-process. In WebAssembly it is an HTTP client that calls the API. Either way, bytes always travel over HTTP: uploads, downloads, thumbnails and zips go to the endpoints from `MapWebFilezApi()`, so every host needs the API mapped somewhere.
 
-There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, `WebFilez.Storage.Azure` adds Azure Blob Storage, and `WebFilez.Storage.AzureFiles` adds Azure Files. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
+There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, `WebFilez.Storage.AzureBlob` adds Azure Blob Storage, and `WebFilez.Storage.AzureFiles` adds Azure Files. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
 
 ## Getting started
 
@@ -210,7 +210,7 @@ builder.Services.AddWebFilezAzureFiles();
 
 `Path` is the folder inside the container or share. `Settings.Prefix` overrides it when you want the prefix separate from `Path`. The container or share is not created for you, and an Azure Files root also needs that directory to exist already.
 
-Blob folders are prefixes, and an empty folder is a zero-length blob whose name ends in `/`. Blob names are case-sensitive. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
+Blob folders are prefixes. An empty folder is a hidden zero-length marker blob inside that prefix, because the blob client drops a trailing slash from a blob name. Blob names are case-sensitive. For local blob testing, point `ConnectionString` at the [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) emulator (`UseDevelopmentStorage=true` on `127.0.0.1:10000`). Azurite emulates Blob, Queue, and Table only, so it cannot stand in for an Azure file share. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
 
 ```json
 {

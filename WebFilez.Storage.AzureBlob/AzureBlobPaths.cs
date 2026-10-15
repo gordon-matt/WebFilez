@@ -27,4 +27,12 @@ internal static class AzureBlobPaths
     /// <summary>The prefix passed to a hierarchy listing, always ending in a slash except for the container root.</summary>
     public static string ListingPrefix(string blobName) =>
         blobName.Length == 0 ? string.Empty : blobName.TrimEnd('/') + "/";
+
+    /// <summary>
+    /// Empty-folder marker. The blob client drops a trailing slash from a blob name, so an empty
+    /// folder is a hidden child blob rather than a blob whose name ends in <c>/</c>.
+    /// </summary>
+    public const string DirectoryMarkerName = ".folder.webfilez.tmp";
+
+    public static string DirectoryMarker(string blobName) => ListingPrefix(blobName) + DirectoryMarkerName;
 }
