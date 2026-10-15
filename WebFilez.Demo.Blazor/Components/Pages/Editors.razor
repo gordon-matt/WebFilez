@@ -1,0 +1,125 @@
+@page "/editors"
+@implements IAsyncDisposable
+
+<PageTitle>Rich text editor - WebFilez demo</PageTitle>
+
+<section class="demo-hero">
+    <h1>Rich text editor</h1>
+    <p>TinyMCE, CKEditor and Froala each open WebFilez when you browse for an image.</p>
+</section>
+
+<EditorSurface @ref="surface" />
+
+<dialog id="wf-editor-picker" class="demo-dialog" aria-label="Choose an image">
+    @if (isPicking)
+    {
+        <FileManager Root="media"
+                     SelectionMode="@Constants.SelectionModes.Single"
+                     Accept="image/*"
+                     SelectLabel="Insert image"
+                     Height="70vh"
+                     OnSelected="OnSelected" />
+    }
+</dialog>
+
+@code {
+    [Inject]
+    private IJSRuntime Js { get; set; } = default!;
+
+    private EditorSurface? surface;
+    private IJSObjectReference? module;
+    private IJSObjectReference? session;
+    private DotNetObjectReference<Editors>? self;
+    private bool isPicking;
+    private bool dialogOpen;
+    private bool started;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await StartAsync();
+        }
+
+        if (module is null)
+        {
+            return;
+        }
+
+        if (isPicking && !dialogOpen)
+        {
+            dialogOpen = true;
+            await module.InvokeVoidAsync("openDialog");
+        }
+        else if (!isPicking && dialogOpen)
+        {
+            dialogOpen = false;
+            await module.InvokeVoidAsync("closeDialog");
+        }
+    }
+
+    private async Task StartAsync()
+    {
+        if (started || surface is null)
+        {
+            return;
+        }
+
+        started = true;
+        module = await Js.InvokeAsync<IJSObjectReference>("import", "/editors.js");
+        self = DotNetObjectReference.Create(this);
+        session = await module.InvokeAsync<IJSObjectReference>("mount", surface.Root, self);
+    }
+
+    [JSInvokable]
+    public void OpenPicker()
+    {
+        isPicking = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void PickerClosed()
+    {
+        if (!isPicking)
+        {
+            return;
+        }
+
+        isPicking = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSelected(IReadOnlyList<SelectedFile> files)
+    {
+        var file = files.FirstOrDefault();
+        isPicking = false;
+        if (module is not null)
+        {
+            await module.InvokeVoidAsync("complete", file?.PublicUrl ?? file?.Url);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (session is not null)
+            {
+                await session.InvokeVoidAsync("dispose");
+                await session.DisposeAsync();
+            }
+
+            if (module is not null)
+            {
+                await module.DisposeAsync();
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+            // The circuit is already gone.
+        }
+
+        self?.Dispose();
+    }
+}

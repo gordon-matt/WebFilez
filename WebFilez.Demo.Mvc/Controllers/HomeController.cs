@@ -11,6 +11,9 @@ public sealed class HomeController : Controller
     [HttpGet("/picker")]
     public IActionResult Picker() => View();
 
+    [HttpGet("/editors")]
+    public IActionResult Editors() => View();
+
     [HttpGet("/error")]
     public IActionResult Error() => Problem();
 }

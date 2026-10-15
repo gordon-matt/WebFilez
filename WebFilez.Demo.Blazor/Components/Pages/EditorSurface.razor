@@ -1,0 +1,31 @@
+<div @ref="Root" id="wf-editors" class="demo-editors">
+    <p class="demo-muted" data-editor-status hidden></p>
+
+    <section class="demo-editor">
+        <h2>TinyMCE</h2>
+        <p class="demo-muted">In the image dialog, choose Browse files.</p>
+        <textarea data-editor="tinymce" id="wf-tinymce">Write something, then insert an image from the media library.</textarea>
+    </section>
+
+    <section class="demo-editor">
+        <h2>CKEditor</h2>
+        <p class="demo-muted">Choose Browse images, or Image and then Browse Server.</p>
+        <textarea data-editor="ckeditor" id="wf-ckeditor">Write something, then insert an image from the media library.</textarea>
+    </section>
+
+    <section class="demo-editor">
+        <h2>Froala</h2>
+        <p class="demo-muted">Open the image popup, then choose Browse.</p>
+        <textarea data-editor="froala" id="wf-froala">Write something, then insert an image from the media library.</textarea>
+    </section>
+</div>
+
+@code {
+    public ElementReference Root { get; private set; }
+
+    private bool rendered;
+
+    protected override bool ShouldRender() => !rendered;
+
+    protected override void OnAfterRender(bool firstRender) => rendered = true;
+}

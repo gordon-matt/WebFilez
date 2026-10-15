@@ -1,0 +1,70 @@
+@{
+    ViewData["Title"] = "Rich text editor";
+}
+
+<section class="demo-hero">
+    <h1>Rich text editor</h1>
+    <p>TinyMCE, CKEditor and Froala each open WebFilez when you browse for an image.</p>
+</section>
+
+<div id="wf-editors" class="demo-editors">
+    <p class="demo-muted" data-editor-status hidden></p>
+
+    <section class="demo-editor">
+        <h2>TinyMCE</h2>
+        <p class="demo-muted">In the image dialog, choose Browse files.</p>
+        <textarea data-editor="tinymce" id="wf-tinymce">Write something, then insert an image from the media library.</textarea>
+    </section>
+
+    <section class="demo-editor">
+        <h2>CKEditor</h2>
+        <p class="demo-muted">Choose Browse images, or Image and then Browse Server.</p>
+        <textarea data-editor="ckeditor" id="wf-ckeditor">Write something, then insert an image from the media library.</textarea>
+    </section>
+
+    <section class="demo-editor">
+        <h2>Froala</h2>
+        <p class="demo-muted">Open the image popup, then choose Browse.</p>
+        <textarea data-editor="froala" id="wf-froala">Write something, then insert an image from the media library.</textarea>
+    </section>
+</div>
+
+<dialog id="wf-editor-picker" class="demo-dialog" aria-label="Choose an image">
+    <component type="typeof(FileManager)" render-mode="Server"
+               param-Root="@("media")"
+               param-SelectionMode="@Constants.SelectionModes.Single"
+               param-Accept="@("image/*")"
+               param-SelectLabel="@("Insert image")"
+               param-Height="@("70vh")" />
+</dialog>
+
+@section Scripts {
+    <script type="module">
+        const dialog = document.getElementById('wf-editor-picker');
+        const { mount } = await import('/editors.js');
+        let applyPick = null;
+
+        mount(document.getElementById('wf-editors'), apply => {
+            applyPick = apply;
+            if (!dialog.open) {
+                dialog.showModal();
+            }
+        });
+
+        dialog.addEventListener('close', () => {
+            applyPick = null;
+        });
+
+        dialog.addEventListener('wf-selected', event => {
+            const file = event.detail.files?.[0];
+            const apply = applyPick;
+            applyPick = null;
+            if (file && apply) {
+                apply(file.publicUrl ?? file.url);
+            }
+            if (dialog.open) {
+                dialog.close();
+            }
+        });
+    </script>
+}

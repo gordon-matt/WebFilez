@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FileManager } from './WebFilez.jsx'
+import { EditorsView } from './Editors.jsx'
 import './App.css'
 
 function ManagerView() {
@@ -70,11 +71,14 @@ export default function App() {
                 <nav>
                     <button type="button" aria-pressed={view === 'manager'} onClick={() => setView('manager')}>File manager</button>
                     <button type="button" aria-pressed={view === 'picker'} onClick={() => setView('picker')}>Picker</button>
+                    <button type="button" aria-pressed={view === 'editors'} onClick={() => setView('editors')}>Rich Text Editor</button>
                 </nav>
             </header>
 
             <main className="demo-main">
-                {view === 'manager' ? <ManagerView /> : <PickerView />}
+                {view === 'manager' && <ManagerView />}
+                {view === 'picker' && <PickerView />}
+                {view === 'editors' && <EditorsView />}
             </main>
         </>
     )
