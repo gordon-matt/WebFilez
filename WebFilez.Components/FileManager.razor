@@ -277,7 +277,8 @@
                  X="menuX" Y="menuY"
                  Entries="@(contextMenu ?? [])"
                  Interop="interop"
-                 OnClose="() => contextMenu = null" />
+                 OnClose="() => contextMenu = null"
+                 OnSelect="OnContextActionAsync" />
 
     <PreviewDialog Current="previewItem"
                    Items="PreviewableItems"

@@ -34,9 +34,6 @@ public enum ListingViewMode
 
     /// <summary>Dense rows, no thumbnails.</summary>
     Compact = 2,
-
-    /// <summary>Large thumbnails, no labels. For image folders.</summary>
-    Gallery = 3,
 }
 
 /// <summary>The type filter buttons above the listing.</summary>

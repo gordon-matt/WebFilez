@@ -20,7 +20,6 @@ public sealed partial class FileManager
         (ListingViewMode.Tiles, "grid", "Tiles"),
         (ListingViewMode.List, "list", "List"),
         (ListingViewMode.Compact, "compact", "Compact"),
-        (ListingViewMode.Gallery, "gallery", "Gallery"),
     ];
 
     private static readonly (KindFilter Filter, string Icon, string Label)[] KindFilters =
@@ -95,7 +94,7 @@ public sealed partial class FileManager
     /// <summary><c>light</c>, <c>dark</c>, <c>auto</c> (follow the OS) or <c>bootstrap</c> (follow the page's Bootstrap 5.3 colours).</summary>
     [Parameter] public string Theme { get; set; } = Constants.Themes.Light;
 
-    /// <summary>Initial layout: <c>tiles</c>, <c>list</c>, <c>compact</c> or <c>gallery</c>. The user's last choice wins once made.</summary>
+    /// <summary>Initial layout: <c>tiles</c>, <c>list</c> or <c>compact</c>. The user's last choice wins once made.</summary>
     [Parameter] public string? View { get; set; }
 
     /// <summary>Any CSS height. The component fills it and scrolls inside.</summary>

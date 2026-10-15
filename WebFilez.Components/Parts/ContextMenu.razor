@@ -13,7 +13,7 @@
             else
             {
                 <button type="button" role="menuitem" class="wf-menu-item @(entry.IsDanger ? "wf-menu-danger" : null)"
-                        @onclick="() => SelectAsync(entry)">
+                        @onclick="() => OnSelect.InvokeAsync(entry)">
                     <Icon Name="@entry.Icon" />
                     <span>@entry.Label</span>
                     @if (entry.Shortcut is not null)
@@ -42,6 +42,12 @@
 
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>
+    /// Raised on the owner, so the action's state changes render there. Handling the click inside
+    /// this component would leave the owner's fields updated with nothing redrawn.
+    /// </summary>
+    [Parameter] public EventCallback<MenuEntry> OnSelect { get; set; }
+
     protected override void OnParametersSet() => positionPending = IsVisible;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -51,12 +57,6 @@
             positionPending = false;
             await Interop.FitToViewportAsync(element);
         }
-    }
-
-    private async Task SelectAsync(MenuEntry entry)
-    {
-        await OnClose.InvokeAsync();
-        await entry.OnSelect();
     }
 
     /// <summary>Drops leading, trailing and doubled separators left by entries that were filtered out.</summary>

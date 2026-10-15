@@ -81,7 +81,7 @@ else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
 }
 else
 {
-    <div class="wf-grid @(ViewMode == ListingViewMode.Gallery ? "wf-grid-gallery" : null)" role="listbox" aria-multiselectable="true">
+    <div class="wf-grid" role="listbox" aria-multiselectable="true">
         @foreach (var item in Items)
         {
             <div @key="item.Path"
@@ -108,7 +108,7 @@ else
                 @if (item.HasThumbnail)
                 {
                     <div class="wf-face wf-checkered">
-                        <img loading="lazy" alt="" draggable="false" src="@Urls.Thumbnail(RootId, item, ViewMode == ListingViewMode.Gallery ? 512 : 256)" />
+                        <img loading="lazy" alt="" draggable="false" src="@Urls.Thumbnail(RootId, item, 256)" />
                     </div>
                 }
                 else
@@ -116,11 +116,8 @@ else
                     <div class="wf-face"><FileIcon Kind="item.Kind" /></div>
                 }
 
-                @if (ViewMode != ListingViewMode.Gallery)
-                {
-                    <span class="wf-tile-label">@item.Name</span>
-                    <span class="wf-tile-meta">@(item.IsDirectory ? "Folder" : Format.Size(item.SizeBytes))</span>
-                }
+                <span class="wf-tile-label">@item.Name</span>
+                <span class="wf-tile-meta">@(item.IsDirectory ? "Folder" : Format.Size(item.SizeBytes))</span>
             </div>
         }
     </div>

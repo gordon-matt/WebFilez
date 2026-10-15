@@ -155,6 +155,12 @@ public sealed partial class FileManager
         return entries;
     }
 
+    private async Task OnContextActionAsync(MenuEntry entry)
+    {
+        contextMenu = null;
+        await entry.OnSelect();
+    }
+
     private async Task ShowDetailsAsync()
     {
         isInfoOpen = true;

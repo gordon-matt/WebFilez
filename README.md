@@ -5,7 +5,7 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 Features in this version:
 
 - Browse several roots, each with its own path, permissions and optional public URL
-- Folder tree, breadcrumbs, tiles, list, compact and gallery views, sorting, filtering by name and kind, paging
+- Folder tree, breadcrumbs, tiles, list and compact views, sorting, filtering by name and kind, paging
 - Upload by picker or drag and drop, including whole folders, with progress, cancel and overwrite prompts
 - Optional resizing of large uploaded images
 - Create, rename, delete, copy, cut, paste, duplicate, and drag-and-drop moves (also across roots)
@@ -100,7 +100,7 @@ Add the stylesheet to `App.razor`, and `@using WebFilez.Components` to `_Imports
 
 The component must render interactively. In Blazor WebAssembly, call `AddWebFilezHttpClient(apiBaseUrl)` instead of `AddWebFilez`, and host the API in a server project.
 
-Parameters: `Root`, `Path`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`, `gallery`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `Kind`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
+Parameters: `Root`, `Path`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `Kind`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
 
 `Kind` fixes the listing to `images`, `documents`, `media`, `archives`, `folders`, or `all`, and hides the type buttons. `images` and `media` still show folders, so the user can open them. `folders` shows directories only. `Accept` still decides which of the listed files the Select button accepts. Double-clicking an accepted file selects it.
 
