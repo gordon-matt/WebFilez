@@ -63,7 +63,10 @@ export default function App() {
     return (
         <>
             <header className="demo-nav">
-                <span className="demo-brand">WebFilez <span>React demo</span></span>
+                <span className="demo-brand">
+                    <img src="/img/Logo.png" alt="WebFilez" />
+                    <span>React demo</span>
+                </span>
                 <nav>
                     <button type="button" aria-pressed={view === 'manager'} onClick={() => setView('manager')}>File manager</button>
                     <button type="button" aria-pressed={view === 'picker'} onClick={() => setView('picker')}>Picker</button>

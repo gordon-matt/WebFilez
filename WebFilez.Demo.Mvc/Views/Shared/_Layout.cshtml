@@ -8,6 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@(ViewData["Title"] ?? "WebFilez MVC demo")</title>
+    <link rel="icon" type="image/png" href="~/img/Icon.png" asp-append-version="true" />
     @* Blazor resolves the components' script and its circuit relative to the base URL. *@
     <base href="~/" />
     <link rel="stylesheet" href="~/site.css" asp-append-version="true" />
@@ -15,7 +16,10 @@
 </head>
 <body>
     <header class="demo-nav">
-        <a class="demo-brand" href="~/">WebFilez <span>MVC demo</span></a>
+        <a class="demo-brand" href="~/">
+            <img src="~/img/Logo.png" alt="WebFilez" asp-append-version="true" />
+            <span>MVC demo</span>
+        </a>
         <nav>
             <a href="~/" class="@NavClass(path == "/")">File manager</a>
             <a href="~/picker" class="@NavClass(path.StartsWith("/picker", StringComparison.OrdinalIgnoreCase))">Picker</a>
