@@ -90,7 +90,9 @@ Add the stylesheet to `App.razor`, and `@using WebFilez.Components` to `_Imports
 <FileManager Height="600px" Theme="auto" OnNavigated="location => current = location" />
 
 <FileManager Root="media"
+             Path="42/7"
              SelectionMode="single"
+             Kind="images"
              Accept="image/*"
              SelectLabel="Use this image"
              OnSelected="files => imageUrl = files[0].PublicUrl ?? files[0].Url" />
@@ -98,7 +100,11 @@ Add the stylesheet to `App.razor`, and `@using WebFilez.Components` to `_Imports
 
 The component must render interactively. In Blazor WebAssembly, call `AddWebFilezHttpClient(apiBaseUrl)` instead of `AddWebFilez`, and host the API in a server project.
 
-Parameters: `Root`, `Path`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`, `gallery`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
+Parameters: `Root`, `Path`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`, `gallery`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `Kind`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
+
+`Kind` fixes the listing to `images`, `documents`, `media`, `archives`, `folders`, or `all`, and hides the type buttons. `images` and `media` still show folders, so the user can open them. `folders` shows directories only. `Accept` still decides which of the listed files the Select button accepts. Double-clicking an accepted file selects it.
+
+The component's root element carries `data-wf-root`, `data-wf-path`, and `data-wf-public-url` for the folder that is open. `data-wf-public-url` is present when the root has a `PublicUrl`, ends with a slash, and can be read synchronously. `wf-navigated` carries the same address as `publicUrl`. A folder field can store that value without a Select button. File and folder items include `PublicUrl` as well; folder addresses end with a slash.
 
 ### MVC
 
@@ -123,8 +129,9 @@ In the layout, add the stylesheet and `<script src="~/_framework/blazor.server.j
 Parameters are passed as `param-Name`. Event callbacks aren't available this way, so the component also raises DOM events that bubble from its element:
 
 ```js
-document.addEventListener('wf-navigated', e => console.log(e.detail.rootId, e.detail.path));
+document.addEventListener('wf-navigated', e => console.log(e.detail.rootId, e.detail.path, e.detail.publicUrl));
 document.addEventListener('wf-selected', e => console.log(e.detail.files));
+const folder = document.querySelector('[data-wf-public-url]')?.getAttribute('data-wf-public-url');
 ```
 
 ### React and plain HTML
@@ -142,7 +149,7 @@ document.addEventListener('wf-selected', e => console.log(e.detail.files));
 
 ```html
 <link rel="stylesheet" href="/_content/WebFilez.Components/webfilez.css" />
-<wf-file-manager height="600px" theme="auto" selection-mode="single" accept="image/*"></wf-file-manager>
+<wf-file-manager height="600px" theme="auto" root="media" path="42/7" selection-mode="single" kind="images" accept="image/*"></wf-file-manager>
 <script src="/_framework/blazor.webassembly.js"></script>
 ```
 

@@ -51,7 +51,7 @@ public static class Constants
     /// <summary>DOM events raised on the component's root element, for hosts that aren't Blazor.</summary>
     public static class DomEvents
     {
-        /// <summary><c>detail</c> is <c>{ root, path }</c>.</summary>
+        /// <summary><c>detail</c> is <c>{ rootId, path, publicUrl }</c>. <c>publicUrl</c> is the open folder.</summary>
         public const string Navigated = "wf-navigated";
 
         /// <summary><c>detail</c> is <c>{ files: [...] }</c>, one entry per selected file.</summary>

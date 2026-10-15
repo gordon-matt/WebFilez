@@ -14,7 +14,7 @@ public sealed class FileRoot
 
     /// <summary>
     /// The URL the folder is publicly served at, such as <c>/uploads</c> when it sits under
-    /// <c>wwwroot</c>. When set, items carry a <c>PublicUrl</c> and picker mode returns it.
+    /// <c>wwwroot</c>. When set, files and folders carry a <c>PublicUrl</c> and picker mode returns it.
     /// </summary>
     public string? PublicUrl { get; set; }
 

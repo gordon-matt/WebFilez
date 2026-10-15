@@ -22,6 +22,18 @@ public class FileKindsTests
     public void IsInlineSafe_RefusesTypesThatCanRunScript(string mimeType, bool expected) =>
         Assert.Equal(expected, FileKinds.IsInlineSafe(mimeType));
 
+    [Theory]
+    [InlineData(FileKind.Image, KindFilter.Images, true)]
+    [InlineData(FileKind.Pdf, KindFilter.Images, false)]
+    [InlineData(FileKind.Video, KindFilter.Media, true)]
+    [InlineData(FileKind.Audio, KindFilter.Media, true)]
+    [InlineData(FileKind.Image, KindFilter.Media, false)]
+    [InlineData(FileKind.Folder, KindFilter.Folders, true)]
+    [InlineData(FileKind.Image, KindFilter.Folders, false)]
+    [InlineData(FileKind.Pdf, KindFilter.All, true)]
+    public void Matches_KeepsTheRequestedKind(FileKind kind, KindFilter filter, bool expected) =>
+        Assert.Equal(expected, FileKinds.Matches(kind, filter));
+
     [Fact]
     public void Classify_UsesTheExtension()
     {

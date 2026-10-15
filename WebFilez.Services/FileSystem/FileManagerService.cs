@@ -122,7 +122,8 @@ public sealed partial class FileManagerService(
             filtered.Count,
             pageNumber,
             pageSize,
-            filtered.Sum(i => i.SizeBytes)));
+            filtered.Sum(i => i.SizeBytes),
+            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, directory: true)));
     }
 
     public async Task<Result<IReadOnlyList<FolderNodeDto>>> GetFoldersAsync(
@@ -213,7 +214,7 @@ public sealed partial class FileManagerService(
             target.Permissions,
             width,
             height,
-            isDirectory ? null : FileItems.BuildPublicUrl(target.Root, target.VirtualPath)));
+            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, isDirectory)));
     }
 
     public async Task<Result<DirectorySizeDto>> GetDirectorySizeAsync(

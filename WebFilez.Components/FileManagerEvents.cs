@@ -16,7 +16,8 @@ public sealed record SelectedFile(
     string? PublicUrl);
 
 /// <summary>A folder, as raised by <see cref="FileManager.OnNavigated"/>.</summary>
-public sealed record FileLocation(string RootId, string Path);
+/// <param name="PublicUrl">Public address of the open folder, with a trailing slash, when its root has one.</param>
+public sealed record FileLocation(string RootId, string Path, string? PublicUrl = null);
 
 /// <summary>The <c>detail</c> of the <c>wf-selected</c> DOM event.</summary>
 public sealed record FileSelection(IReadOnlyList<SelectedFile> Files);

@@ -11,8 +11,8 @@ public sealed record FileRootDto(
     bool CanShowHiddenFiles);
 
 /// <param name="PublicUrl">
-/// Where the file can be fetched without going through the file manager, when the root has a
-/// <c>PublicUrl</c>. This is what picker mode hands back to the host page.
+/// Where the file or folder can be fetched without going through the file manager, when the root
+/// has a <c>PublicUrl</c>. Folder addresses end with a slash. This is what picker mode hands back.
 /// </param>
 public sealed record FileSystemItemDto(
     string Name,
@@ -39,7 +39,8 @@ public sealed record DirectoryListingDto(
     int TotalCount,
     int PageNumber,
     int PageSize,
-    long TotalSizeBytes);
+    long TotalSizeBytes,
+    string? PublicUrl = null);
 
 public sealed record ListingRequest(
     string RootId,

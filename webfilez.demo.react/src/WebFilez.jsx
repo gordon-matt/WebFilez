@@ -4,9 +4,9 @@ import { useEffect, useRef } from 'react'
  * A React wrapper for the <wf-file-manager> custom element. Attributes are kebab-case versions of
  * the Blazor component's parameters; index.html loads the runtime that defines the element.
  *
- * onNavigated receives { rootId, path }. onSelected receives the picked files, each with
+ * onNavigated receives { rootId, path, publicUrl }. onSelected receives the picked files, each with
  * { rootId, path, name, sizeBytes, mimeType, url, publicUrl }, when selectionMode is "single" or
- * "multiple".
+ * "multiple". kind locks the listing (images, media, folders, and so on).
  */
 export function FileManager({
     root,
@@ -16,6 +16,7 @@ export function FileManager({
     height = '600px',
     selectionMode = 'none',
     accept,
+    kind,
     selectLabel,
     showTree = true,
     readOnly = false,
@@ -53,6 +54,7 @@ export function FileManager({
             height={height}
             selection-mode={selectionMode}
             accept={accept}
+            kind={kind}
             select-label={selectLabel}
             show-tree={String(showTree)}
             read-only={String(readOnly)}

@@ -26,10 +26,14 @@ internal static class FileItems
             IsHidden(entry),
             permissions,
             HasThumbnail: !isDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
-            PublicUrl: isDirectory ? null : BuildPublicUrl(root, virtualPath));
+            PublicUrl: BuildPublicUrl(root, virtualPath, isDirectory));
     }
 
-    public static string? BuildPublicUrl(FileRoot root, string virtualPath)
+    /// <summary>
+    /// Public address of a file or folder. Folder addresses end with a slash, including the
+    /// root itself, so a host can tell a directory from a file without a second lookup.
+    /// </summary>
+    public static string? BuildPublicUrl(FileRoot root, string virtualPath, bool directory = false)
     {
         if (string.IsNullOrWhiteSpace(root.PublicUrl))
         {
@@ -39,7 +43,8 @@ internal static class FileItems
         string escaped = string.Concat(VirtualPath.GetSegments(virtualPath)
             .Select(s => Constants.PathSeparator + Uri.EscapeDataString(s)));
 
-        return root.PublicUrl.TrimEnd(Constants.PathSeparator) + escaped;
+        string url = root.PublicUrl.TrimEnd(Constants.PathSeparator) + escaped;
+        return directory ? url + Constants.PathSeparator : url;
     }
 
     public static bool IsHidden(FileSystemInfo entry) =>

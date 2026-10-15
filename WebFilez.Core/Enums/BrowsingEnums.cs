@@ -47,4 +47,7 @@ public enum KindFilter
     Documents = 2,
     Media = 3,
     Archives = 4,
+
+    /// <summary>Directories only. Files stay out of the listing.</summary>
+    Folders = 5,
 }

@@ -223,6 +223,7 @@ public static class FileKinds
         KindFilter.Documents => kind is FileKind.Document or FileKind.Pdf or FileKind.Text or FileKind.Code,
         KindFilter.Media => kind is FileKind.Video or FileKind.Audio,
         KindFilter.Archives => kind == FileKind.Archive,
+        KindFilter.Folders => kind == FileKind.Folder,
         _ => true,
     };
 

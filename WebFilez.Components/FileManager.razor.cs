@@ -46,6 +46,8 @@ public sealed partial class FileManager
     private IReadOnlyList<FileRootDto> roots = [];
     private string? rootId;
     private DirectoryListingDto? listing;
+    private string? appliedKind;
+    private bool kindLocked;
     private string? loadError;
     private (string? Root, string? Path)? appliedParameters;
 
@@ -108,6 +110,13 @@ public sealed partial class FileManager
     /// <summary>In picker mode, which files may be picked, as an HTML <c>accept</c> list: <c>image/*,.pdf</c>.</summary>
     [Parameter] public string? Accept { get; set; }
 
+    /// <summary>
+    /// Fixes the listing to one kind: <c>images</c>, <c>documents</c>, <c>media</c>, <c>archives</c>,
+    /// <c>folders</c> (or <c>folder</c>), or <c>all</c>. Folders stay visible for every kind except
+    /// <c>folders</c>, which shows directories only. While this is set the type buttons are hidden.
+    /// </summary>
+    [Parameter] public string? Kind { get; set; }
+
     [Parameter] public string SelectLabel { get; set; } = "Select";
 
     [Parameter] public bool ShowTree { get; set; } = true;
@@ -125,6 +134,8 @@ public sealed partial class FileManager
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string CurrentPath => listing?.Path ?? VirtualPath.Normalize(Path);
+
+    private string? CurrentPublicUrl => urls.Public(listing?.PublicUrl);
 
     private bool IsPicker => SelectionMode is Constants.SelectionModes.Single or Constants.SelectionModes.Multiple;
 
@@ -162,10 +173,17 @@ public sealed partial class FileManager
 
     protected override async Task OnParametersSetAsync()
     {
+        bool kindChanged = UpdateKind();
+
         // Only a change the host made moves the component. Re-rendering with the same Root and
         // Path must not throw the user back to where they started.
         if (appliedParameters == (Root, Path))
         {
+            if (kindChanged && rootId is not null && listing is not null)
+            {
+                await LoadAsync();
+            }
+
             return;
         }
 
@@ -234,9 +252,10 @@ public sealed partial class FileManager
 
         if (notify && listing is not null)
         {
-            await OnNavigated.InvokeAsync(new FileLocation(listing.RootId, listing.Path));
+            var location = new FileLocation(listing.RootId, listing.Path, urls.Public(listing.PublicUrl));
+            await OnNavigated.InvokeAsync(location);
             await DispatchAsync(Constants.DomEvents.Navigated, JsonSerializer.Serialize(
-                new FileLocation(listing.RootId, listing.Path), FileManagerEventJsonContext.Default.FileLocation));
+                location, FileManagerEventJsonContext.Default.FileLocation));
         }
 
         if (isInfoOpen)
@@ -547,6 +566,41 @@ public sealed partial class FileManager
         {
             await interop.DispatchAsync(rootElement, eventName, detailJson);
         }
+    }
+
+    /// <summary>
+    /// Applies <see cref="Kind"/> when the host changes it. Returns whether a listing already on
+    /// screen has to be loaded again. The first open loads through <see cref="OpenAsync"/>.
+    /// </summary>
+    private bool UpdateKind()
+    {
+        if (string.Equals(appliedKind, Kind, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        appliedKind = Kind;
+        if (string.IsNullOrWhiteSpace(Kind) || !TryParseKind(Kind, out KindFilter parsed))
+        {
+            kindLocked = false;
+            return false;
+        }
+
+        kindLocked = true;
+        bool changed = kindFilter != parsed;
+        kindFilter = parsed;
+        return changed && appliedParameters is not null;
+    }
+
+    private static bool TryParseKind(string value, out KindFilter filter)
+    {
+        if (value.Equals("folder", StringComparison.OrdinalIgnoreCase))
+        {
+            filter = KindFilter.Folders;
+            return true;
+        }
+
+        return Enum.TryParse(value, ignoreCase: true, out filter);
     }
 
     private static ListingViewMode ParseView(string? value) =>

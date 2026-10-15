@@ -1,6 +1,7 @@
 @implements IAsyncDisposable
 
-<div class="wf-root @Class" data-theme="@Theme" tabindex="-1" @ref="rootElement" @attributes="AdditionalAttributes">
+<div class="wf-root @Class" data-theme="@Theme" tabindex="-1" @ref="rootElement" @attributes="AdditionalAttributes"
+     data-wf-root="@rootId" data-wf-path="@CurrentPath" data-wf-public-url="@CurrentPublicUrl">
     <div class="wf-shell @(IsPicker ? "wf-picker" : null)" style="height: @Height">
 
         @* ------------------------------------------------------------- toolbar *@
@@ -105,15 +106,18 @@
 
                 <span class="wf-spacer"></span>
 
-                <div class="wf-segmented wf-kind-filter" role="group" aria-label="Show">
-                    @foreach (var option in KindFilters)
-                    {
-                        <button type="button" class="@(kindFilter == option.Filter ? "wf-active" : null)" title="@option.Label"
-                                aria-pressed="@(kindFilter == option.Filter ? "true" : "false")" @onclick="() => SetKindFilterAsync(option.Filter)">
-                            <Icon Name="@option.Icon" /> <span class="wf-hide-narrow">@option.Label</span>
-                        </button>
-                    }
-                </div>
+                @if (!kindLocked)
+                {
+                    <div class="wf-segmented wf-kind-filter" role="group" aria-label="Show">
+                        @foreach (var option in KindFilters)
+                        {
+                            <button type="button" class="@(kindFilter == option.Filter ? "wf-active" : null)" title="@option.Label"
+                                    aria-pressed="@(kindFilter == option.Filter ? "true" : "false")" @onclick="() => SetKindFilterAsync(option.Filter)">
+                                <Icon Name="@option.Icon" /> <span class="wf-hide-narrow">@option.Label</span>
+                            </button>
+                        }
+                    </div>
+                }
 
                 <div class="wf-segmented" role="group" aria-label="View">
                     @foreach (var option in ViewModes)
