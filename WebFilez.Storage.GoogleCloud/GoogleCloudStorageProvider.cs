@@ -5,7 +5,6 @@ using Google;
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Storage.v1.Data;
 using Google.Cloud.Storage.V1;
-using WebFilez;
 using WebFilez.Services;
 using WebFilez.Services.Storage;
 using GcsObject = Google.Apis.Storage.v1.Data.Object;
@@ -19,9 +18,12 @@ namespace WebFilez.Storage.GoogleCloud;
 /// </summary>
 public sealed class GoogleCloudStorageProvider : IStorageProvider
 {
+    /// <summary>Value of <see cref="FileRoot.Provider"/> that selects this provider.</summary>
+    public const string ProviderKey = "google-cloud";
+
     private readonly ConcurrentDictionary<string, StorageClient> clients = new(StringComparer.Ordinal);
 
-    public string Key => StorageProviders.GoogleCloud;
+    public string Key => ProviderKey;
 
     public StringComparison NameComparison => StringComparison.Ordinal;
 

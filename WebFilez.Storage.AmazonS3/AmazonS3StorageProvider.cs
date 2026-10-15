@@ -3,7 +3,6 @@ using System.Net;
 using System.Runtime.CompilerServices;
 using Amazon.S3;
 using Amazon.S3.Model;
-using WebFilez;
 using WebFilez.Services;
 using WebFilez.Services.Storage;
 
@@ -15,9 +14,12 @@ namespace WebFilez.Storage.AmazonS3;
 /// </summary>
 public sealed class AmazonS3StorageProvider : IStorageProvider
 {
+    /// <summary>Value of <see cref="FileRoot.Provider"/> that selects this provider.</summary>
+    public const string ProviderKey = "amazon-s3";
+
     private readonly ConcurrentDictionary<string, IAmazonS3> clients = new(StringComparer.Ordinal);
 
-    public string Key => StorageProviders.AmazonS3;
+    public string Key => ProviderKey;
 
     public StringComparison NameComparison => StringComparison.Ordinal;
 

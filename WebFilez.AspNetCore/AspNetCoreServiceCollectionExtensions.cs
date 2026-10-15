@@ -27,7 +27,7 @@ public static class AspNetCoreServiceCollectionExtensions
                 {
                     // Only the file system provider means Path as a directory. A blob prefix such
                     // as "photos" must not be rewritten into a folder under the content root.
-                    if (StorageProviders.IsFileSystem(root.Provider)
+                    if (FileSystemStorageProvider.IsFileSystem(root.Provider)
                         && !string.IsNullOrWhiteSpace(root.Path)
                         && !Path.IsPathRooted(root.Path))
                     {

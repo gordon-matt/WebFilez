@@ -2,7 +2,6 @@ using System.Net.Sockets;
 using System.Text;
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection;
-using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 using WebFilez.Storage.AzureBlob;
 using WebFilez.Tests.Infrastructure;
@@ -178,7 +177,7 @@ public class AzureBlobAzuriteTests : IAsyncLifetime
     {
         Id = id,
         Name = name,
-        Provider = StorageProviders.AzureBlob,
+        Provider = AzureBlobStorageProvider.ProviderKey,
         Path = path,
         Settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {

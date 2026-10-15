@@ -17,7 +17,10 @@ public sealed class AzureFileStorageProvider : IStorageProvider
 {
     private readonly ConcurrentDictionary<string, ShareServiceClient> clients = new(StringComparer.Ordinal);
 
-    public string Key => StorageProviders.AzureFile;
+    /// <summary>Value of <see cref="FileRoot.Provider"/> that selects this provider.</summary>
+    public const string ProviderKey = "azure-file";
+
+    public string Key => ProviderKey;
 
     public StringComparison NameComparison => StringComparison.OrdinalIgnoreCase;
 

@@ -16,9 +16,12 @@ namespace WebFilez.Storage.AzureBlob;
 /// </summary>
 public sealed class AzureBlobStorageProvider : IStorageProvider
 {
+    /// <summary>Value of <see cref="FileRoot.Provider"/> that selects this provider.</summary>
+    public const string ProviderKey = "azure-blob";
+
     private readonly ConcurrentDictionary<string, BlobServiceClient> clients = new(StringComparer.Ordinal);
 
-    public string Key => StorageProviders.AzureBlob;
+    public string Key => ProviderKey;
 
     public StringComparison NameComparison => StringComparison.Ordinal;
 

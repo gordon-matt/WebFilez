@@ -8,7 +8,14 @@ namespace WebFilez.Services.Storage;
 /// </summary>
 public sealed class FileSystemStorageProvider : IStorageProvider
 {
-    public string Key => StorageProviders.FileSystem;
+    /// <summary>Value of <see cref="FileRoot.Provider"/> that selects this provider. An empty value does too.</summary>
+    public const string ProviderKey = "filesystem";
+
+    /// <summary>True when <paramref name="provider"/> is empty or <see cref="ProviderKey"/>.</summary>
+    public static bool IsFileSystem(string? provider) =>
+        string.IsNullOrWhiteSpace(provider) || provider.Equals(ProviderKey, StringComparison.OrdinalIgnoreCase);
+
+    public string Key => ProviderKey;
 
     public StringComparison NameComparison => PhysicalPaths.Comparison;
 

@@ -10,7 +10,9 @@ public sealed class StorageProviderSelector(IEnumerable<IStorageProvider> provid
 {
     public IStorageProvider Get(FileRoot root)
     {
-        string key = StorageProviders.IsFileSystem(root.Provider) ? StorageProviders.FileSystem : root.Provider.Trim();
+        string key = FileSystemStorageProvider.IsFileSystem(root.Provider)
+            ? FileSystemStorageProvider.ProviderKey
+            : root.Provider.Trim();
 
         var match = providers.FirstOrDefault(provider => provider.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
         if (match is not null)
@@ -24,6 +26,6 @@ public sealed class StorageProviderSelector(IEnumerable<IStorageProvider> provid
 
         throw new InvalidOperationException(
             $"No storage provider is registered for '{key}'. Registered providers: {registered}. " +
-            "Add the provider's package and register it, for example services.AddWebFilezAzureBlob(), services.AddWebFilezAmazonS3(), or services.AddWebFilezGoogleCloud().");
+            "Add the provider's package and register it.");
     }
 }

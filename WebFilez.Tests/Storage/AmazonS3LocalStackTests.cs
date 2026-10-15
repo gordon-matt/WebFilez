@@ -4,7 +4,6 @@ using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.DependencyInjection;
-using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 using WebFilez.Storage.AmazonS3;
 using WebFilez.Tests.Infrastructure;
@@ -215,7 +214,7 @@ public class AmazonS3LocalStackTests : IAsyncLifetime
     {
         Id = id,
         Name = name,
-        Provider = StorageProviders.AmazonS3,
+        Provider = AmazonS3StorageProvider.ProviderKey,
         Path = path,
         Settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {

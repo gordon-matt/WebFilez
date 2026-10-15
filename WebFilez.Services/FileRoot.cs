@@ -10,10 +10,11 @@ public sealed class FileRoot
     public string? Name { get; set; }
 
     /// <summary>
-    /// Which <see cref="Storage.IStorageProvider"/> holds this root. <c>filesystem</c> when empty.
-    /// Other values, such as <c>azure-blob</c>, <c>azure-file</c>, <c>amazon-s3</c> or <c>google-cloud</c>, need that provider registered with the host.
+    /// Which <see cref="Storage.IStorageProvider"/> holds this root. Empty, or
+    /// <see cref="Storage.FileSystemStorageProvider.ProviderKey"/>, uses the file system.
+    /// Any other value must match the <c>Key</c> published by that provider's package.
     /// </summary>
-    public string Provider { get; set; } = Storage.StorageProviders.FileSystem;
+    public string Provider { get; set; } = Storage.FileSystemStorageProvider.ProviderKey;
 
     /// <summary>
     /// Where the root lives. For the file system provider this is a directory, and a relative path

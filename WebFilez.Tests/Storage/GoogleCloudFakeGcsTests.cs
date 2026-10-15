@@ -4,7 +4,6 @@ using System.Text;
 using Google;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.DependencyInjection;
-using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 using WebFilez.Storage.GoogleCloud;
 using WebFilez.Tests.Infrastructure;
@@ -206,7 +205,7 @@ public class GoogleCloudFakeGcsTests : IAsyncLifetime
     {
         Id = id,
         Name = name,
-        Provider = StorageProviders.GoogleCloud,
+        Provider = GoogleCloudStorageProvider.ProviderKey,
         Path = path,
         Settings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {

@@ -282,7 +282,7 @@ builder.Services.AddWebFilez(builder.Configuration);
 - `IFileRootProvider` supplies the roots for the current request. The default reads `WebFilezOptions.Roots`. Use it for per-user or per-tenant roots, or roots stored in a database.
 - `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access.
 - `IFileActivitySink` is told about every successful change and download, with the kind, root, path and target. Use it for an audit log, a search index or cache invalidation. Exceptions thrown from it are logged and swallowed.
-- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`. Add others with `AddSingleton<IStorageProvider, ...>()` or a package such as `AddWebFilezAzureBlob()`, `AddWebFilezAmazonS3()`, or `AddWebFilezGoogleCloud()`. Registering before or after `AddWebFilez` both work.
+- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`, and its key is `FileSystemStorageProvider.ProviderKey`. Every other package publishes its own key, such as `AzureBlobStorageProvider.ProviderKey`, and is registered with `AddSingleton<IStorageProvider, ...>()` or that package's `Add` method. Registering before or after `AddWebFilez` both work. `WebFilez.Services` is the contract those packages reference.
 
 ## Running the demos
 

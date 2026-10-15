@@ -1,13 +1,14 @@
 namespace WebFilez.Services.Storage;
 
 /// <summary>
-/// Where a root's files actually live. The file system provider is built in; a host adds others,
-/// such as Azure Blob Storage, by registering another implementation. Register it before or after
-/// <c>AddWebFilez</c>. The root's <see cref="FileRoot.Provider"/> selects one by <see cref="Key"/>.
+/// Where a root's files actually live. The file system provider is built in. Any other store is a
+/// separate package that implements this interface and publishes its own <see cref="Key"/>.
+/// Register it before or after <c>AddWebFilez</c>. The root's <see cref="FileRoot.Provider"/>
+/// selects one by that key.
 /// </summary>
 public interface IStorageProvider
 {
-    /// <summary>Stable key matched to <see cref="FileRoot.Provider"/>, for example <c>filesystem</c>.</summary>
+    /// <summary>Stable key matched to <see cref="FileRoot.Provider"/>. Defined by the provider's package.</summary>
     string Key { get; }
 
     /// <summary>How this provider compares names. Object names are case-sensitive; Windows disks and Azure Files are not.</summary>
