@@ -24,6 +24,6 @@ public sealed class StorageProviderSelector(IEnumerable<IStorageProvider> provid
 
         throw new InvalidOperationException(
             $"No storage provider is registered for '{key}'. Registered providers: {registered}. " +
-            "Add the provider's package and register it, for example services.AddWebFilezAzureBlob() or services.AddWebFilezAzureFiles().");
+            "Add the provider's package and register it, for example services.AddWebFilezAzureBlob(), services.AddWebFilezAmazonS3(), or services.AddWebFilezGoogleCloud().");
     }
 }

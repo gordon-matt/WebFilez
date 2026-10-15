@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<Description>Amazon S3 provider for WebFilez. Register it with AddWebFilezAmazonS3().</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\WebFilez.Services\WebFilez.Services.csproj" />
+		<PackageReference Include="AWSSDK.S3" Version="4.0.104.4" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="WebFilez.Tests" />
+	</ItemGroup>
+
+</Project>

@@ -1,8 +1,10 @@
 using Microsoft.Extensions.FileProviders;
 using WebFilez;
 using WebFilez.Demo;
+using WebFilez.Storage.AmazonS3;
 using WebFilez.Storage.AzureBlob;
 using WebFilez.Storage.AzureFiles;
+using WebFilez.Storage.GoogleCloud;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,8 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddWebFilez(builder.Configuration);
 builder.Services.AddWebFilezAzureBlob();
 builder.Services.AddWebFilezAzureFiles();
+builder.Services.AddWebFilezAmazonS3();
+builder.Services.AddWebFilezGoogleCloud();
 
 var app = builder.Build();
 

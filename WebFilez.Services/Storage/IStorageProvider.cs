@@ -10,7 +10,7 @@ public interface IStorageProvider
     /// <summary>Stable key matched to <see cref="FileRoot.Provider"/>, for example <c>filesystem</c>.</summary>
     string Key { get; }
 
-    /// <summary>How this provider compares names. Blob names are case-sensitive; Windows disks and Azure Files are not.</summary>
+    /// <summary>How this provider compares names. Object names are case-sensitive; Windows disks and Azure Files are not.</summary>
     StringComparison NameComparison { get; }
 
     /// <summary>

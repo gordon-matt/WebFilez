@@ -24,6 +24,8 @@ Features in this version:
 | `WebFilez.Services` | The file manager, the file system provider, options, access extension points, archives, thumbnails and transfers. |
 | `WebFilez.Storage.AzureBlob` | The Azure Blob Storage provider. Register it with `AddWebFilezAzureBlob()`. |
 | `WebFilez.Storage.AzureFiles` | The Azure Files provider. Register it with `AddWebFilezAzureFiles()`. |
+| `WebFilez.Storage.AmazonS3` | The Amazon S3 provider. Register it with `AddWebFilezAmazonS3()`. |
+| `WebFilez.Storage.GoogleCloud` | The Google Cloud Storage provider. Register it with `AddWebFilezGoogleCloud()`. |
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
@@ -34,7 +36,7 @@ Features in this version:
 
 The component talks to `IFileManagerService`. On Blazor Server (and therefore MVC) that is the real service, in-process. In WebAssembly it is an HTTP client that calls the API. Either way, bytes always travel over HTTP: uploads, downloads, thumbnails and zips go to the endpoints from `MapWebFilezApi()`, so every host needs the API mapped somewhere.
 
-There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, `WebFilez.Storage.AzureBlob` adds Azure Blob Storage, and `WebFilez.Storage.AzureFiles` adds Azure Files. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
+There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, and optional packages add Azure Blob Storage, Azure Files, Amazon S3 and Google Cloud Storage. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
 
 ## Getting started
 
@@ -187,12 +189,14 @@ The component fills its container's width and the `Height` you give it, and adap
 
 ## Storage providers
 
-`Provider` selects where a root is stored. Leave it out, or set `filesystem`, and the root is a directory on disk. `azure-blob` stores it in an Azure Blob container. `azure-file` stores it in an Azure file share, which has real directories. Register the providers beside `AddWebFilez`:
+`Provider` selects where a root is stored. Leave it out, or set `filesystem`, and the root is a directory on disk. `azure-blob` stores it in an Azure Blob container. `azure-file` stores it in an Azure file share, which has real directories. `amazon-s3` stores it in an S3 bucket. `google-cloud` stores it in a Cloud Storage bucket. Register the providers beside `AddWebFilez`:
 
 ```csharp
 builder.Services.AddWebFilez(builder.Configuration);
 builder.Services.AddWebFilezAzureBlob();
 builder.Services.AddWebFilezAzureFiles();
+builder.Services.AddWebFilezAmazonS3();
+builder.Services.AddWebFilezGoogleCloud();
 ```
 
 ```json
@@ -208,7 +212,7 @@ builder.Services.AddWebFilezAzureFiles();
 }
 ```
 
-`Path` is the folder inside the container or share. `Settings.Prefix` overrides it when you want the prefix separate from `Path`. The container or share is not created for you, and an Azure Files root also needs that directory to exist already.
+`Path` is the folder inside the container, bucket or share. `Settings.Prefix` overrides it when you want the prefix separate from `Path`. The container, bucket or share is not created for you, and an Azure Files root also needs that directory to exist already.
 
 Blob folders are prefixes. An empty folder is a hidden zero-length marker blob inside that prefix, because the blob client drops a trailing slash from a blob name. Blob names are case-sensitive. For local blob testing, point `ConnectionString` at the [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) emulator (`UseDevelopmentStorage=true` on `127.0.0.1:10000`). Azurite emulates Blob, Queue, and Table only, so it cannot stand in for an Azure file share. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
 
@@ -225,7 +229,37 @@ Blob folders are prefixes. An empty folder is a hidden zero-length marker blob i
 }
 ```
 
-A host can add AWS, Google Cloud, or anything else by implementing `IStorageProvider` and registering it. The `Key` is the value used in `Provider`:
+```json
+{
+  "Id": "photos",
+  "Name": "Photos",
+  "Provider": "amazon-s3",
+  "Path": "campaigns",
+  "Settings": {
+    "AccessKey": "...",
+    "SecretKey": "...",
+    "Region": "us-east-1",
+    "Bucket": "files"
+  }
+}
+```
+
+```json
+{
+  "Id": "archive",
+  "Name": "Archive",
+  "Provider": "google-cloud",
+  "Path": "campaigns",
+  "Settings": {
+    "Bucket": "files",
+    "CredentialFile": "C:\\keys\\storage.json"
+  }
+}
+```
+
+S3 and Cloud Storage folders are prefixes, with the same hidden marker as Azure Blob, and object names are case-sensitive. The bucket is not created for you. For local S3 testing, set `ServiceUrl` to a [LocalStack](https://docs.localstack.cloud/) endpoint (`http://127.0.0.1:4566`) and any access key. For local Cloud Storage testing, set `ServiceUrl` to [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`http://127.0.0.1:4443`) and leave the credentials out. `CredentialJson` is the other way to pass a Google service-account key.
+
+A host can add anything else by implementing `IStorageProvider` and registering it. The `Key` is the value used in `Provider`:
 
 ```csharp
 builder.Services.AddSingleton<IStorageProvider, MyStorageProvider>();
@@ -248,7 +282,7 @@ builder.Services.AddWebFilez(builder.Configuration);
 - `IFileRootProvider` supplies the roots for the current request. The default reads `WebFilezOptions.Roots`. Use it for per-user or per-tenant roots, or roots stored in a database.
 - `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access.
 - `IFileActivitySink` is told about every successful change and download, with the kind, root, path and target. Use it for an audit log, a search index or cache invalidation. Exceptions thrown from it are logged and swallowed.
-- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`. Add others with `AddSingleton<IStorageProvider, ...>()` or a package such as `AddWebFilezAzureBlob()` or `AddWebFilezAzureFiles()`. Registering before or after `AddWebFilez` both work.
+- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`. Add others with `AddSingleton<IStorageProvider, ...>()` or a package such as `AddWebFilezAzureBlob()`, `AddWebFilezAmazonS3()`, or `AddWebFilezGoogleCloud()`. Registering before or after `AddWebFilez` both work.
 
 ## Running the demos
 

@@ -11,7 +11,7 @@ public sealed class FileRoot
 
     /// <summary>
     /// Which <see cref="Storage.IStorageProvider"/> holds this root. <c>filesystem</c> when empty.
-    /// Other values, such as <c>azure-blob</c> or <c>azure-file</c>, need that provider registered with the host.
+    /// Other values, such as <c>azure-blob</c>, <c>azure-file</c>, <c>amazon-s3</c> or <c>google-cloud</c>, need that provider registered with the host.
     /// </summary>
     public string Provider { get; set; } = Storage.StorageProviders.FileSystem;
 
