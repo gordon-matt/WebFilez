@@ -1,4 +1,4 @@
-# WebFilez
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Logo-Light.png" alt="Logo" width="350" />
 
 An embeddable web file manager for .NET 10, in the spirit of elFinder and Responsive File Manager. It is written in Blazor and also runs in ASP.NET Core MVC, React, or any HTML page through a custom element.
 
