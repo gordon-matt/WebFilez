@@ -1,6 +1,6 @@
 namespace WebFilez.Services;
 
-/// <summary>A folder on disk exposed to the file manager under a stable id.</summary>
+/// <summary>A folder exposed to the file manager under a stable id, wherever its provider stores it.</summary>
 public sealed class FileRoot
 {
     /// <summary>Stable identifier used in API requests and URLs. Keep it short and URL-safe.</summary>
@@ -9,8 +9,24 @@ public sealed class FileRoot
     /// <summary>Display name. Defaults to <see cref="Id"/>.</summary>
     public string? Name { get; set; }
 
-    /// <summary>Physical folder. A relative path is resolved against the app's content root.</summary>
+    /// <summary>
+    /// Which <see cref="Storage.IStorageProvider"/> holds this root. <c>filesystem</c> when empty.
+    /// Other values, such as <c>azure-blob</c> or <c>azure-file</c>, need that provider registered with the host.
+    /// </summary>
+    public string Provider { get; set; } = Storage.StorageProviders.FileSystem;
+
+    /// <summary>
+    /// Where the root lives. For the file system provider this is a directory, and a relative path
+    /// is resolved against the content root. For other providers it is a prefix inside the store,
+    /// such as a blob folder, and is left as written.
+    /// </summary>
     public string Path { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Provider-specific settings, such as an Azure connection string and container. The file
+    /// system provider does not use this.
+    /// </summary>
+    public Dictionary<string, string> Settings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// The URL the folder is publicly served at, such as <c>/uploads</c> when it sits under

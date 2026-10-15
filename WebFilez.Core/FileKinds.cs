@@ -202,20 +202,12 @@ public static class FileKinds
     /// unrecognised are always sent as attachments. Only media the browser decodes rather than
     /// executes, plus PDF and plain text, is listed.
     /// </remarks>
-    public static bool IsInlineSafe(string? mimeType)
-    {
-        if (string.IsNullOrEmpty(mimeType)
-            || mimeType.Equals("image/svg+xml", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+    public static bool IsInlineSafe(string? mimeType) => !string.IsNullOrEmpty(mimeType)
+            && !mimeType.Equals("image/svg+xml", StringComparison.OrdinalIgnoreCase) && (mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
             || mimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase)
             || mimeType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
             || mimeType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase)
-            || mimeType.Equals("text/plain", StringComparison.OrdinalIgnoreCase);
-    }
+            || mimeType.Equals("text/plain", StringComparison.OrdinalIgnoreCase));
 
     public static bool Matches(FileKind kind, KindFilter filter) => filter switch
     {

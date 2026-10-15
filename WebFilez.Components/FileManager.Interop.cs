@@ -8,15 +8,9 @@ public sealed partial class FileManager
 {
     private readonly HashSet<long> cancelledUploads = [];
 
-    private Task PickFilesAsync(bool directories)
-    {
-        if (!Can(FilePermission.Create))
-        {
-            return Task.CompletedTask;
-        }
-
-        return interop.PickFilesAsync(rootElement, directories, IsPicker ? Accept : null).AsTask();
-    }
+    private Task PickFilesAsync(bool directories) => !Can(FilePermission.Create)
+            ? Task.CompletedTask
+            : interop.PickFilesAsync(rootElement, directories, IsPicker ? Accept : null).AsTask();
 
     [JSInvokable]
     public async Task OnShortcut(string combo)
@@ -45,24 +39,31 @@ public sealed partial class FileManager
             case "ctrl+a" when SelectionMode != Constants.SelectionModes.Single:
                 await SelectAllAsync(true);
                 break;
+
             case "Delete" when CanOnSelection(FilePermission.Delete):
                 await DeleteAsync();
                 break;
+
             case "F2" when selection.Count == 1 && CanOnSelection(FilePermission.Rename):
                 await RenameAsync();
                 break;
+
             case "ctrl+c" when CanOnSelection(FilePermission.Read) && Can(FilePermission.Create):
                 SetClipboard(isCut: false);
                 break;
+
             case "ctrl+x" when CanOnSelection(FilePermission.Move | FilePermission.Delete):
                 SetClipboard(isCut: true);
                 break;
+
             case "ctrl+v" when clipboard is not null && Can(FilePermission.Create):
                 await PasteAsync();
                 break;
+
             case "Enter" when SelectedItems is [var item]:
                 await ActivateAsync(item);
                 break;
+
             case "Backspace":
                 await GoUpAsync();
                 break;

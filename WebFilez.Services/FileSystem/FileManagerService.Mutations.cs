@@ -1,3 +1,5 @@
+using WebFilez.Services.Storage;
+
 namespace WebFilez.Services.FileSystem;
 
 public sealed partial class FileManagerService
@@ -28,18 +30,19 @@ public sealed partial class FileManagerService
 
         try
         {
-            Directory.CreateDirectory(created.Value.PhysicalPath);
+            await parent.Value.Storage.CreateDirectoryAsync(created.Value.Location, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not create directory {Physical}", created.Value.PhysicalPath);
+            logger.LogError(ex, "Could not create directory {Path}", created.Value.VirtualPath);
             return Result<FileSystemItemDto>.Error($"'{name.Value}' could not be created.");
         }
 
         await RecordAsync(new FileActivity(FileActivityKind.CreateFolder, request.RootId, created.Value.VirtualPath), cancellationToken);
 
+        var createdEntry = await parent.Value.Storage.GetAsync(created.Value.Location, cancellationToken);
         return Result<FileSystemItemDto>.Success(FileItems.ToItem(
-            new DirectoryInfo(created.Value.PhysicalPath),
+            createdEntry ?? new StorageEntry(name.Value, true, 0, DateTime.UtcNow, DateTime.UtcNow, false, false),
             parent.Value.Root,
             created.Value.VirtualPath,
             created.Value.Permissions));
@@ -69,20 +72,19 @@ public sealed partial class FileManagerService
 
         try
         {
-            await using (new FileStream(created.Value.PhysicalPath, FileMode.CreateNew, FileAccess.Write))
-            {
-            }
+            await parent.Value.Storage.CreateEmptyFileAsync(created.Value.Location, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not create file {Physical}", created.Value.PhysicalPath);
+            logger.LogError(ex, "Could not create file {Path}", created.Value.VirtualPath);
             return Result<FileSystemItemDto>.Error($"'{name.Value}' could not be created.");
         }
 
         await RecordAsync(new FileActivity(FileActivityKind.CreateFile, request.RootId, created.Value.VirtualPath), cancellationToken);
 
+        var createdEntry = await parent.Value.Storage.GetAsync(created.Value.Location, cancellationToken);
         return Result<FileSystemItemDto>.Success(FileItems.ToItem(
-            new FileInfo(created.Value.PhysicalPath),
+            createdEntry ?? new StorageEntry(name.Value, false, 0, DateTime.UtcNow, DateTime.UtcNow, false, false),
             parent.Value.Root,
             created.Value.VirtualPath,
             created.Value.Permissions));
@@ -104,13 +106,13 @@ public sealed partial class FileManagerService
             return RejectRoot<FileSystemItemDto>(nameof(request.Path), "renamed");
         }
 
-        bool isDirectory = Directory.Exists(target.PhysicalPath);
-        if (!isDirectory && !File.Exists(target.PhysicalPath))
+        var existing = await target.Storage.GetAsync(target.Location, cancellationToken);
+        if (existing is null)
         {
             return Result<FileSystemItemDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
 
-        var name = fileNamePolicy.Apply(request.NewName, isDirectory, nameof(request.NewName));
+        var name = fileNamePolicy.Apply(request.NewName, existing.IsDirectory, nameof(request.NewName));
         if (!name.IsSuccess)
         {
             return name.To<FileSystemItemDto>();
@@ -121,33 +123,26 @@ public sealed partial class FileManagerService
 
         // The new name has to be reachable afterwards, or a rename to ".secret" or to an
         // excluded name would make the item vanish from the UI and become unmanageable.
-        if (!PathResolver.TryMapToDisk(target.Root, newVirtualPath, out string destination, out _))
+        if (!target.Storage.TryMap(target.Root, newVirtualPath, out var destination))
         {
             return Result<FileSystemItemDto>.Invalid(new ValidationError(nameof(request.NewName), "That name can't be used here."));
         }
 
         // A case-only rename on Windows and macOS looks like a collision against itself.
-        bool isCaseOnlyChange = string.Equals(destination, target.PhysicalPath, StringComparison.OrdinalIgnoreCase);
+        bool isCaseOnlyChange = target.Storage.AreSame(target.Location, destination);
 
-        if (!isCaseOnlyChange && (Directory.Exists(destination) || File.Exists(destination)))
+        if (!isCaseOnlyChange && await target.Storage.GetAsync(destination, cancellationToken) is not null)
         {
             return Result<FileSystemItemDto>.Conflict($"'{name.Value}' already exists here.");
         }
 
         try
         {
-            if (isDirectory)
-            {
-                Directory.Move(target.PhysicalPath, destination);
-            }
-            else
-            {
-                File.Move(target.PhysicalPath, destination, overwrite: false);
-            }
+            await target.Storage.MoveAsync(target.Location, destination, overwrite: false, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not rename {Physical} to {NewName}", target.PhysicalPath, name.Value);
+            logger.LogError(ex, "Could not rename {Path} to {NewName}", target.VirtualPath, name.Value);
             return Result<FileSystemItemDto>.Error($"'{VirtualPath.GetName(target.VirtualPath)}' could not be renamed.");
         }
 
@@ -155,7 +150,8 @@ public sealed partial class FileManagerService
             new FileActivity(FileActivityKind.Rename, request.RootId, target.VirtualPath, newVirtualPath, request.RootId),
             cancellationToken);
 
-        FileSystemInfo renamed = isDirectory ? new DirectoryInfo(destination) : new FileInfo(destination);
+        var renamed = await target.Storage.GetAsync(destination, cancellationToken)
+            ?? new StorageEntry(name.Value, existing.IsDirectory, existing.SizeBytes, existing.CreatedAt, DateTime.UtcNow, false, false);
         var permissions = await resolver.GetPermissionsAsync(target.Root, newVirtualPath, cancellationToken);
 
         return Result<FileSystemItemDto>.Success(FileItems.ToItem(renamed, target.Root, newVirtualPath, permissions));
@@ -192,18 +188,17 @@ public sealed partial class FileManagerService
 
             try
             {
+                var existing = await target.Storage.GetAsync(target.Location, cancellationToken);
                 long? size = null;
 
-                if (Directory.Exists(target.PhysicalPath))
+                if (existing is { IsDirectory: true })
                 {
-                    // Recursive delete removes links rather than following them, so a link
-                    // inside the folder can't take files outside the root with it.
-                    Directory.Delete(target.PhysicalPath, recursive: true);
+                    await target.Storage.DeleteDirectoryAsync(target.Location, cancellationToken);
                 }
-                else if (File.Exists(target.PhysicalPath))
+                else if (existing is not null)
                 {
-                    size = new FileInfo(target.PhysicalPath).Length;
-                    File.Delete(target.PhysicalPath);
+                    size = existing.SizeBytes;
+                    await target.Storage.DeleteFileAsync(target.Location, cancellationToken);
                 }
                 else
                 {
@@ -249,7 +244,7 @@ public sealed partial class FileManagerService
             return destination.To<BulkOperationResultDto>();
         }
 
-        if (!Directory.Exists(destination.Value.PhysicalPath))
+        if (await destination.Value.Storage.GetAsync(destination.Value.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<BulkOperationResultDto>.NotFound($"The destination '{destination.Value.VirtualPath}' was not found.");
         }
@@ -284,32 +279,36 @@ public sealed partial class FileManagerService
             return new FileOperationResultDto(origin.VirtualPath, false, "The top-level folder can't be moved or copied.");
         }
 
-        bool isDirectory = Directory.Exists(origin.PhysicalPath);
-        if (!isDirectory && !File.Exists(origin.PhysicalPath))
+        var existing = await origin.Storage.GetAsync(origin.Location, cancellationToken);
+        if (existing is null)
         {
             return new FileOperationResultDto(origin.VirtualPath, false, "No longer exists.");
         }
 
-        string name = Path.GetFileName(origin.PhysicalPath);
+        string name = existing.Name;
 
         // A blocked file that predates the extension rules may still sit in a root; it must not
         // be copyable somewhere new, such as a root that is served publicly.
-        if (!isDirectory && !fileNamePolicy.Apply(name, isDirectory: false).IsSuccess)
+        if (!existing.IsDirectory && !fileNamePolicy.Apply(name, isDirectory: false).IsSuccess)
         {
             return new FileOperationResultDto(origin.VirtualPath, false, "That type of file is not allowed here.");
         }
 
-        string finalPath = Path.Combine(destination.PhysicalPath, name);
+        string destinationVirtual = VirtualPath.Combine(destination.VirtualPath, name);
+        if (!destination.Storage.TryMap(destination.Root, destinationVirtual, out var target))
+        {
+            return new FileOperationResultDto(origin.VirtualPath, false, "That name can't be used in the destination.");
+        }
 
         // Copying or moving a folder into its own subtree would recurse until the disk filled.
         // Easy to trigger by dragging, so it is rejected before any bytes move.
-        if (isDirectory && PhysicalPaths.IsWithin(finalPath, origin.PhysicalPath)
-            && !PhysicalPaths.AreEqual(finalPath, origin.PhysicalPath))
+        bool sameRoot = origin.Root.Id.Equals(destination.Root.Id, StringComparison.OrdinalIgnoreCase);
+        if (existing.IsDirectory && sameRoot && origin.Storage.Contains(origin.Location, target) && !origin.Storage.AreSame(origin.Location, target))
         {
             return new FileOperationResultDto(origin.VirtualPath, false, "A folder can't be moved or copied inside itself.");
         }
 
-        bool isSameLocation = PhysicalPaths.AreEqual(origin.PhysicalPath, finalPath);
+        bool isSameLocation = sameRoot && origin.Storage.AreSame(origin.Location, target);
         if (isSameLocation && !request.IsCopy)
         {
             return new FileOperationResultDto(origin.VirtualPath, true, null);
@@ -318,41 +317,25 @@ public sealed partial class FileManagerService
         // Copying onto itself duplicates under a free name, the way a desktop file manager does.
         if (isSameLocation)
         {
-            name = PhysicalPaths.FindFreeName(destination.PhysicalPath, name, isDirectory);
-            finalPath = Path.Combine(destination.PhysicalPath, name);
+            name = await FindFreeNameAsync(destination, name, existing.IsDirectory, cancellationToken);
+            destinationVirtual = VirtualPath.Combine(destination.VirtualPath, name);
+            if (!destination.Storage.TryMap(destination.Root, destinationVirtual, out target))
+            {
+                return new FileOperationResultDto(origin.VirtualPath, false, "That name can't be used in the destination.");
+            }
         }
-        else if ((Directory.Exists(finalPath) || File.Exists(finalPath)) && !request.Overwrite)
+        else if (await destination.Storage.GetAsync(target, cancellationToken) is not null && !request.Overwrite)
         {
             return new FileOperationResultDto(origin.VirtualPath, false, $"'{name}' already exists in the destination.");
         }
 
-        string destinationVirtual = VirtualPath.Combine(destination.VirtualPath, name);
-        if (!PathResolver.TryMapToDisk(destination.Root, destinationVirtual, out _, out _))
-        {
-            return new FileOperationResultDto(origin.VirtualPath, false, "That name can't be used in the destination.");
-        }
-
         try
         {
-            if (request.IsCopy)
-            {
-                if (isDirectory)
-                {
-                    FileItems.CopyDirectory(origin.PhysicalPath, finalPath, request.Overwrite, origin.Root.FollowSymlinks);
-                }
-                else
-                {
-                    File.Copy(origin.PhysicalPath, finalPath, request.Overwrite);
-                }
-            }
-            else
-            {
-                MoveAcrossVolumes(origin, finalPath, isDirectory, request.Overwrite);
-            }
+            await TransferBytesAsync(origin, destination.Storage, target, existing.IsDirectory, request.IsCopy, request.Overwrite, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not {Operation} {From} to {To}", request.IsCopy ? "copy" : "move", origin.PhysicalPath, finalPath);
+            logger.LogError(ex, "Could not {Operation} {From} to {To}", request.IsCopy ? "copy" : "move", origin.VirtualPath, destinationVirtual);
             return new FileOperationResultDto(origin.VirtualPath, false, request.IsCopy ? "Could not be copied." : "Could not be moved.");
         }
 
@@ -369,47 +352,125 @@ public sealed partial class FileManagerService
     }
 
     /// <summary>
-    /// <see cref="File.Move(string, string, bool)"/> and <see cref="Directory.Move"/> fail across
-    /// volumes, which is normal when two roots are on different drives. Falls back to
-    /// copy-then-delete so the move still succeeds.
+    /// Copies or moves between two locations. The same provider does it directly, including a
+    /// filesystem move that falls back to copy-and-delete across drives. Different providers
+    /// stream the bytes, which is how a disk folder is copied into a blob container.
     /// </summary>
-    private static void MoveAcrossVolumes(ResolvedPath origin, string to, bool isDirectory, bool overwrite)
+    private async Task TransferBytesAsync(
+        ResolvedPath origin,
+        IStorageProvider destinationStorage,
+        StorageLocation destination,
+        bool isDirectory,
+        bool isCopy,
+        bool overwrite,
+        CancellationToken cancellationToken)
     {
-        string from = origin.PhysicalPath;
-
-        try
+        if (origin.Storage.Key.Equals(destinationStorage.Key, StringComparison.OrdinalIgnoreCase))
         {
-            if (isDirectory)
+            if (isCopy)
             {
-                if (overwrite && Directory.Exists(to))
-                {
-                    Directory.Delete(to, recursive: true);
-                }
-
-                Directory.Move(from, to);
+                await origin.Storage.CopyAsync(origin.Location, destination, overwrite, cancellationToken);
             }
             else
             {
-                File.Move(from, to, overwrite);
+                await origin.Storage.MoveAsync(origin.Location, destination, overwrite, cancellationToken);
             }
 
             return;
         }
-        catch (IOException) when (!Directory.Exists(to) && !File.Exists(to))
+
+        await CopyAcrossProvidersAsync(origin, destinationStorage, destination, isDirectory, overwrite, cancellationToken);
+        if (!isCopy)
         {
-            // Fall through to copy-and-delete.
+            if (isDirectory)
+            {
+                await origin.Storage.DeleteDirectoryAsync(origin.Location, cancellationToken);
+            }
+            else
+            {
+                await origin.Storage.DeleteFileAsync(origin.Location, cancellationToken);
+            }
+        }
+    }
+
+    private async Task CopyAcrossProvidersAsync(
+        ResolvedPath origin,
+        IStorageProvider destinationStorage,
+        StorageLocation destination,
+        bool isDirectory,
+        bool overwrite,
+        CancellationToken cancellationToken)
+    {
+        if (!isDirectory)
+        {
+            await using var content = await origin.Storage.OpenReadAsync(origin.Location, cancellationToken);
+            await destinationStorage.WriteAsync(destination, content, overwrite, cancellationToken);
+            return;
         }
 
-        if (isDirectory)
+        await destinationStorage.CreateDirectoryAsync(destination, cancellationToken);
+        await foreach (var child in origin.Storage.ListAsync(origin.Location, cancellationToken))
         {
-            FileItems.CopyDirectory(from, to, overwrite, origin.Root.FollowSymlinks);
-            Directory.Delete(from, recursive: true);
+            if (child.Name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            if (!origin.Root.FollowSymlinks && child.IsSymbolicLink)
+            {
+                continue;
+            }
+
+            string childVirtual = VirtualPath.Combine(origin.VirtualPath, child.Name);
+            string destVirtual = VirtualPath.Combine(destination.VirtualPath, child.Name);
+            if (!origin.Storage.TryMap(origin.Root, childVirtual, out var childLocation)
+                || !destinationStorage.TryMap(destination.Root, destVirtual, out var destChild))
+            {
+                continue;
+            }
+
+            var childResolved = new ResolvedPath(
+                origin.Root,
+                childVirtual,
+                childLocation.NativePath,
+                childLocation.RootNativePath,
+                origin.Permissions,
+                origin.Storage);
+
+            await CopyAcrossProvidersAsync(childResolved, destinationStorage, destChild, child.IsDirectory, overwrite, cancellationToken);
         }
-        else
+    }
+
+    private async Task<string> FindFreeNameAsync(
+        ResolvedPath directory,
+        string name,
+        bool isDirectory,
+        CancellationToken cancellationToken)
+    {
+        if (!directory.Storage.TryMap(directory.Root, VirtualPath.Combine(directory.VirtualPath, name), out var first)
+            || await directory.Storage.GetAsync(first, cancellationToken) is null)
         {
-            File.Copy(from, to, overwrite);
-            File.Delete(from);
+            return name;
         }
+
+        string stem = isDirectory ? name : Path.GetFileNameWithoutExtension(name);
+        string extension = isDirectory ? string.Empty : Path.GetExtension(name);
+
+        for (int i = 2; i < 10_000; i++)
+        {
+            string candidate = $"{stem} ({i}){extension}";
+            if (!directory.Storage.TryMap(directory.Root, VirtualPath.Combine(directory.VirtualPath, candidate), out var location))
+            {
+                continue;
+            }
+
+            if (await directory.Storage.GetAsync(location, cancellationToken) is null)
+            {
+                return candidate;
+            }
+        }
+
+        return $"{stem} ({Guid.NewGuid():N}){extension}";
     }
 
     /// <summary>
@@ -421,23 +482,24 @@ public sealed partial class FileManagerService
         string name,
         CancellationToken cancellationToken)
     {
-        if (!Directory.Exists(parent.PhysicalPath))
+        if (await parent.Storage.GetAsync(parent.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<ResolvedPath>.NotFound($"'{parent.VirtualPath}' was not found.");
         }
 
         string childVirtual = VirtualPath.Combine(parent.VirtualPath, name);
-        if (!PathResolver.TryMapToDisk(parent.Root, childVirtual, out string physical, out string rootPhysical))
+        if (!parent.Storage.TryMap(parent.Root, childVirtual, out var location))
         {
             return Result<ResolvedPath>.Invalid(new ValidationError("Name", "That name can't be used here."));
         }
 
-        if (Directory.Exists(physical) || File.Exists(physical))
+        if (await parent.Storage.GetAsync(location, cancellationToken) is not null)
         {
             return Result<ResolvedPath>.Conflict($"'{name}' already exists here.");
         }
 
         var permissions = await resolver.GetPermissionsAsync(parent.Root, childVirtual, cancellationToken);
-        return Result<ResolvedPath>.Success(new ResolvedPath(parent.Root, childVirtual, physical, rootPhysical, permissions));
+        return Result<ResolvedPath>.Success(new ResolvedPath(
+            parent.Root, childVirtual, location.NativePath, location.RootNativePath, permissions, parent.Storage));
     }
 }

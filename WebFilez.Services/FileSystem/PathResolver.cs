@@ -1,3 +1,5 @@
+using WebFilez.Services.Storage;
+
 namespace WebFilez.Services.FileSystem;
 
 /// <summary>A virtual path that has been mapped onto the disk and permission-checked.</summary>
@@ -6,13 +8,20 @@ public sealed record ResolvedPath(
     string VirtualPath,
     string PhysicalPath,
     string RootPhysicalPath,
-    FilePermission Permissions);
+    FilePermission Permissions,
+    IStorageProvider Storage)
+{
+    public StorageLocation Location => new(Root, VirtualPath, PhysicalPath, RootPhysicalPath);
+}
 
 /// <summary>
 /// The single gateway from an untrusted virtual path to a physical one. Every service method
 /// goes through <see cref="RequireAsync"/> before touching the disk.
 /// </summary>
-public sealed class PathResolver(IFileRootProvider rootProvider, IFileAccessPolicy accessPolicy)
+public sealed class PathResolver(
+    IFileRootProvider rootProvider,
+    IFileAccessPolicy accessPolicy,
+    IStorageProviderSelector storage)
 {
     public Task<FileRoot?> FindRootAsync(string? rootId, CancellationToken cancellationToken = default) =>
         string.IsNullOrWhiteSpace(rootId)
@@ -31,12 +40,9 @@ public sealed class PathResolver(IFileRootProvider rootProvider, IFileAccessPoli
         CancellationToken cancellationToken = default)
     {
         var root = await FindRootAsync(rootId, cancellationToken);
-        if (root is null)
-        {
-            return Result<ResolvedPath>.NotFound("That folder is not available.");
-        }
-
-        return await RequireAsync(root, path, required, cancellationToken);
+        return root is null
+            ? Result<ResolvedPath>.NotFound("That folder is not available.")
+            : await RequireAsync(root, path, required, cancellationToken);
     }
 
     public async Task<Result<ResolvedPath>> RequireAsync(
@@ -48,25 +54,29 @@ public sealed class PathResolver(IFileRootProvider rootProvider, IFileAccessPoli
         string virtualPath = VirtualPath.Normalize(path);
         string notFound = $"'{virtualPath}' was not found.";
 
-        if (!TryMapToDisk(root, virtualPath, out string physicalPath, out string rootPhysicalPath))
+        IStorageProvider provider;
+        try
+        {
+            provider = storage.Get(root);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<ResolvedPath>.Error(ex.Message);
+        }
+
+        if (!provider.TryMap(root, virtualPath, out var location))
         {
             return Result<ResolvedPath>.NotFound(notFound);
         }
 
         var permissions = await GetPermissionsAsync(root, virtualPath, cancellationToken);
 
-        if (!permissions.HasAny(FilePermission.Browse | FilePermission.Read))
-        {
-            return Result<ResolvedPath>.NotFound(notFound);
-        }
-
-        if (!permissions.Has(required))
-        {
-            return Result<ResolvedPath>.Forbidden($"You do not have permission to {Describe(required)} here.");
-        }
-
-        return Result<ResolvedPath>.Success(
-            new ResolvedPath(root, virtualPath, physicalPath, rootPhysicalPath, permissions));
+        return !permissions.HasAny(FilePermission.Browse | FilePermission.Read)
+            ? Result<ResolvedPath>.NotFound(notFound)
+            : !permissions.Has(required)
+            ? Result<ResolvedPath>.Forbidden($"You do not have permission to {Describe(required)} here.")
+            : Result<ResolvedPath>.Success(
+            new ResolvedPath(root, virtualPath, location.NativePath, location.RootNativePath, permissions, provider));
     }
 
     /// <summary>The caller's permissions at a path, already clamped to what the root allows.</summary>
@@ -92,16 +102,10 @@ public sealed class PathResolver(IFileRootProvider rootProvider, IFileAccessPoli
         physicalPath = rootPhysicalPath;
 
         string[] segments = VirtualPath.GetSegments(virtualPath);
-        var excludes = ExcludeMatcher.For(root);
-        char[] invalid = Path.GetInvalidFileNameChars();
 
         foreach (string segment in segments)
         {
-            if (segment.IndexOfAny(invalid) >= 0
-                || (OperatingSystem.IsWindows() && segment.Contains(':'))
-                || (!root.ShowHiddenFiles && segment.StartsWith('.'))
-                || segment.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase)
-                || excludes.IsExcluded(segment))
+            if (StorageNames.IsRejected(root, segment))
             {
                 return false;
             }

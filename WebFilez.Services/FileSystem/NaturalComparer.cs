@@ -91,11 +91,6 @@ public sealed class NaturalComparer : IComparer<string>
         int lengthX = i - startX;
         int lengthY = j - startY;
 
-        if (lengthX != lengthY)
-        {
-            return lengthX.CompareTo(lengthY);
-        }
-
-        return string.CompareOrdinal(x, startX, y, startY, lengthX);
+        return lengthX != lengthY ? lengthX.CompareTo(lengthY) : string.CompareOrdinal(x, startX, y, startY, lengthX);
     }
 }

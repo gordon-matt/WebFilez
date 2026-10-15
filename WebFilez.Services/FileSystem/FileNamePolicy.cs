@@ -15,24 +15,15 @@ public sealed class FileNamePolicy(IOptionsMonitor<WebFilezOptions> options)
         var settings = options.CurrentValue;
         string name = Clean(requestedName, settings.FileNames);
 
-        if (name.Length == 0)
-        {
-            return Result<string>.Invalid(new ValidationError(
+        return name.Length == 0
+            ? Result<string>.Invalid(new ValidationError(
                 fieldName,
-                isDirectory ? "Enter a folder name." : "Enter a file name."));
-        }
-
-        if (name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase))
-        {
-            return Result<string>.Invalid(new ValidationError(fieldName, "That name is reserved."));
-        }
-
-        if (isDirectory)
-        {
-            return Result<string>.Success(name);
-        }
-
-        return IsExtensionAllowed(name, settings)
+                isDirectory ? "Enter a folder name." : "Enter a file name."))
+            : name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase)
+            ? Result<string>.Invalid(new ValidationError(fieldName, "That name is reserved."))
+            : isDirectory
+            ? Result<string>.Success(name)
+            : IsExtensionAllowed(name, settings)
             ? Result<string>.Success(name)
             : Result<string>.Invalid(new ValidationError(
                 fieldName,

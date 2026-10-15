@@ -98,22 +98,9 @@ public static class VirtualPath
     /// underneath it. Compares whole segments, so <c>/ab</c> is not treated as a child of
     /// <c>/a</c>. Case-insensitive to match Windows and macOS filesystem behaviour.
     /// </summary>
-    public static bool IsSameOrUnder(string candidate, string ancestor)
-    {
-        if (ancestor == Constants.RootPath)
-        {
-            return true;
-        }
-
-        if (candidate.Equals(ancestor, StringComparison.OrdinalIgnoreCase))
-        {
-            return true;
-        }
-
-        return candidate.Length > ancestor.Length
+    public static bool IsSameOrUnder(string candidate, string ancestor) => ancestor == Constants.RootPath || candidate.Equals(ancestor, StringComparison.OrdinalIgnoreCase) || (candidate.Length > ancestor.Length
             && candidate[ancestor.Length] == Constants.PathSeparator
-            && candidate.StartsWith(ancestor, StringComparison.OrdinalIgnoreCase);
-    }
+            && candidate.StartsWith(ancestor, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Reduces an arbitrary string to something usable as a single path segment: separators and
@@ -127,7 +114,7 @@ public static class VirtualPath
             return string.Empty;
         }
 
-        var buffer = new char[value.Length];
+        char[] buffer = new char[value.Length];
         for (int i = 0; i < value.Length; i++)
         {
             char c = value[i];

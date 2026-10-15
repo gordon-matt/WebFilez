@@ -4,10 +4,7 @@ namespace WebFilez.Tests.Services;
 
 public class PublicUrlTests : ServiceTest
 {
-    protected override void Configure(WebFilezOptions options)
-    {
-        options.Roots[0].PublicUrl = "/media";
-    }
+    protected override void Configure(WebFilezOptions options) => options.Roots[0].PublicUrl = "/media";
 
     [Fact]
     public async Task List_PublishesFolderAndFileAddresses()

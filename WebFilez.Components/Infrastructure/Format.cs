@@ -25,5 +25,5 @@ internal static class Format
     public static string Full(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);
 
     public static string Plural(int count, string singular, string? plural = null) =>
-        $"{count:N0} {(count == 1 ? singular : plural ?? singular + "s")}";
+        $"{count:N0} {(count == 1 ? singular : plural ?? (singular + "s"))}";
 }

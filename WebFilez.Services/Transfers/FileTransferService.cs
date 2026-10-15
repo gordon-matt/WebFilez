@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
+using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.Transfers;
 
@@ -24,42 +25,41 @@ public sealed class FileTransferService(
         }
 
         var target = resolved.Value;
+        var info = await target.Storage.GetAsync(target.Location, cancellationToken);
 
-        if (Directory.Exists(target.PhysicalPath))
+        if (info is { IsDirectory: true })
         {
             return Result<FileDownloadDto>.Invalid(new ValidationError(
                 nameof(path), "That is a folder. Download it as a zip instead."));
         }
 
-        if (!File.Exists(target.PhysicalPath))
+        if (info is null)
         {
             return Result<FileDownloadDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
 
-        var info = new FileInfo(target.PhysicalPath);
-        FileStream stream;
-
+        Stream stream;
         try
         {
-            stream = FileItems.OpenSequentialRead(target.PhysicalPath);
+            stream = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not open {Physical} for download", target.PhysicalPath);
+            logger.LogError(ex, "Could not open {Path} for download", target.VirtualPath);
             return Result<FileDownloadDto>.Error("That file could not be opened.");
         }
 
         await RecordAsync(
-            new FileActivity(FileActivityKind.Download, rootId, target.VirtualPath, SizeBytes: info.Length),
+            new FileActivity(FileActivityKind.Download, rootId, target.VirtualPath, SizeBytes: info.SizeBytes),
             cancellationToken);
 
         return Result<FileDownloadDto>.Success(new FileDownloadDto(
             stream,
             info.Name,
             FileKinds.GetMimeType(info.Name),
-            info.Length,
-            info.LastWriteTimeUtc,
-            FileItems.BuildETag(info)));
+            info.SizeBytes,
+            info.ModifiedAt,
+            FileItems.BuildETag(info.SizeBytes, info.ModifiedAt)));
     }
 
     public Result<DownloadTicket> RedeemTicket(string token) =>
@@ -95,7 +95,8 @@ public sealed class FileTransferService(
         {
             foreach (var target in targets)
             {
-                if (Directory.Exists(target.PhysicalPath))
+                var info = await target.Storage.GetAsync(target.Location, cancellationToken);
+                if (info is { IsDirectory: true })
                 {
                     string prefix = VirtualPath.GetName(target.VirtualPath) is { Length: > 0 } name ? name : target.Root.DisplayName;
                     int trim = target.VirtualPath == Constants.RootPath ? 1 : target.VirtualPath.Length + 1;
@@ -103,13 +104,18 @@ public sealed class FileTransferService(
                     await foreach (var (file, fileVirtual) in FileItems.EnumerateFilesAsync(
                         resolver, target, FilePermission.Read | FilePermission.Download, cancellationToken))
                     {
-                        totalBytes += await AddFileAsync(archive, file.FullName, $"{prefix}/{fileVirtual[trim..]}", cancellationToken);
+                        if (!target.Storage.TryMap(target.Root, fileVirtual, out var fileLocation))
+                        {
+                            continue;
+                        }
+
+                        totalBytes += await AddFileAsync(archive, target.Storage, fileLocation, file, $"{prefix}/{fileVirtual[trim..]}", cancellationToken);
                         await output.FlushAsync(cancellationToken);
                     }
                 }
-                else if (File.Exists(target.PhysicalPath))
+                else if (info is not null)
                 {
-                    totalBytes += await AddFileAsync(archive, target.PhysicalPath, Path.GetFileName(target.PhysicalPath), cancellationToken);
+                    totalBytes += await AddFileAsync(archive, target.Storage, target.Location, info, info.Name, cancellationToken);
                     await output.FlushAsync(cancellationToken);
                 }
             }
@@ -143,17 +149,18 @@ public sealed class FileTransferService(
         var folder = directory.Value;
         string finalVirtual = VirtualPath.Combine(folder.VirtualPath, name.Value);
 
-        if (!PathResolver.TryMapToDisk(folder.Root, finalVirtual, out string finalPath, out _))
+        if (!folder.Storage.TryMap(folder.Root, finalVirtual, out var finalLocation))
         {
             return Result<UploadResultDto>.Invalid(new ValidationError(nameof(request.FileName), "That name can't be used here."));
         }
 
-        if (Directory.Exists(finalPath))
+        var occupying = await folder.Storage.GetAsync(finalLocation, cancellationToken);
+        if (occupying is { IsDirectory: true })
         {
             return Result<UploadResultDto>.Conflict($"A folder named '{name.Value}' already exists here.");
         }
 
-        if (File.Exists(finalPath))
+        if (occupying is not null)
         {
             if (!request.Overwrite)
             {
@@ -167,9 +174,9 @@ public sealed class FileTransferService(
             }
         }
 
-        // Each upload gets its own temp name, so two people uploading the same file name at once
-        // can't corrupt each other's transfer, and a half-received file is never listed.
-        string temporary = Path.Combine(folder.PhysicalPath, $"{name.Value}.{Guid.NewGuid():N}{Constants.TempFileSuffix}");
+        // Spool outside the root, so a half-received upload is never listed and the same path
+        // works for a disk folder and a blob container.
+        string temporary = Path.Combine(Path.GetTempPath(), $"webfilez-{Guid.NewGuid():N}{Constants.TempFileSuffix}");
         long limit = options.CurrentValue.MaxUploadBytes;
         bool resized;
 
@@ -185,11 +192,11 @@ public sealed class FileTransferService(
             }
 
             resized = await imageResizer.TryShrinkAsync(temporary, name.Value, cancellationToken);
-            File.Move(temporary, finalPath, overwrite: request.Overwrite);
+            await folder.Storage.CommitLocalFileAsync(finalLocation, temporary, request.Overwrite, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Upload of {Name} to {Physical} failed", name.Value, folder.PhysicalPath);
+            logger.LogError(ex, "Upload of {Name} to {Path} failed", name.Value, folder.VirtualPath);
             TryDelete(temporary);
 
             return Result<UploadResultDto>.Error($"'{name.Value}' could not be uploaded.");
@@ -200,8 +207,9 @@ public sealed class FileTransferService(
             throw;
         }
 
-        var info = new FileInfo(finalPath);
-        await RecordAsync(new FileActivity(FileActivityKind.Upload, folder.Root.Id, finalVirtual, SizeBytes: info.Length), cancellationToken);
+        var info = await folder.Storage.GetAsync(finalLocation, cancellationToken)
+            ?? new StorageEntry(name.Value, false, 0, DateTime.UtcNow, DateTime.UtcNow, false, false);
+        await RecordAsync(new FileActivity(FileActivityKind.Upload, folder.Root.Id, finalVirtual, SizeBytes: info.SizeBytes), cancellationToken);
 
         var permissions = await resolver.GetPermissionsAsync(folder.Root, finalVirtual, cancellationToken);
         return Result<UploadResultDto>.Success(new UploadResultDto(FileItems.ToItem(info, folder.Root, finalVirtual, permissions), resized));
@@ -219,7 +227,7 @@ public sealed class FileTransferService(
             return current;
         }
 
-        if (!Directory.Exists(current.Value.PhysicalPath))
+        if (await current.Value.Storage.GetAsync(current.Value.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<ResolvedPath>.NotFound($"'{current.Value.VirtualPath}' was not found.");
         }
@@ -233,17 +241,17 @@ public sealed class FileTransferService(
             }
 
             string childVirtual = VirtualPath.Combine(current.Value.VirtualPath, folderName.Value);
-            if (!PathResolver.TryMapToDisk(current.Value.Root, childVirtual, out string childPhysical, out _))
+            if (!current.Value.Storage.TryMap(current.Value.Root, childVirtual, out var childLocation))
             {
                 return Result<ResolvedPath>.Invalid(new ValidationError(nameof(request.RelativeDirectory), $"'{folderName.Value}' can't be used as a folder name."));
             }
 
-            if (File.Exists(childPhysical))
+            if (await current.Value.Storage.GetAsync(childLocation, cancellationToken) is { IsDirectory: false })
             {
                 return Result<ResolvedPath>.Conflict($"A file named '{folderName.Value}' is in the way.");
             }
 
-            Directory.CreateDirectory(childPhysical);
+            await current.Value.Storage.CreateDirectoryAsync(childLocation, cancellationToken);
 
             current = await resolver.RequireAsync(current.Value.Root, childVirtual, FilePermission.Create, cancellationToken);
             if (!current.IsSuccess)
@@ -284,24 +292,30 @@ public sealed class FileTransferService(
         return total;
     }
 
-    private async Task<long> AddFileAsync(ZipArchive archive, string physicalPath, string entryName, CancellationToken cancellationToken)
+    private async Task<long> AddFileAsync(
+        ZipArchive archive,
+        IStorageProvider storage,
+        StorageLocation location,
+        StorageEntry file,
+        string entryName,
+        CancellationToken cancellationToken)
     {
         try
         {
-            await using var source = FileItems.OpenSequentialRead(physicalPath);
+            await using var source = await storage.OpenReadAsync(location, cancellationToken);
 
             var entry = archive.CreateEntry(entryName, CompressionLevel.Fastest);
-            entry.LastWriteTime = File.GetLastWriteTime(physicalPath);
+            entry.LastWriteTime = new DateTimeOffset(DateTime.SpecifyKind(file.ModifiedAt, DateTimeKind.Utc));
 
             await using var target = await entry.OpenAsync(cancellationToken);
             await source.CopyToAsync(target, cancellationToken);
 
-            return source.Length;
+            return file.SizeBytes;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             // One locked file shouldn't abort a whole folder download.
-            logger.LogWarning(ex, "Skipped {Physical} while building a zip", physicalPath);
+            logger.LogWarning(ex, "Skipped {Path} while building a zip", location.VirtualPath);
             return 0;
         }
     }

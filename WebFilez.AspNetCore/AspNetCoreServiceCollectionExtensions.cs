@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using WebFilez.Services.Storage;
 
 namespace WebFilez;
 
@@ -24,7 +25,11 @@ public static class AspNetCoreServiceCollectionExtensions
             {
                 foreach (var root in options.Roots)
                 {
-                    if (!string.IsNullOrWhiteSpace(root.Path) && !Path.IsPathRooted(root.Path))
+                    // Only the file system provider means Path as a directory. A blob prefix such
+                    // as "photos" must not be rewritten into a folder under the content root.
+                    if (StorageProviders.IsFileSystem(root.Provider)
+                        && !string.IsNullOrWhiteSpace(root.Path)
+                        && !Path.IsPathRooted(root.Path))
                     {
                         root.Path = Path.GetFullPath(Path.Combine(environment.ContentRootPath, root.Path));
                     }

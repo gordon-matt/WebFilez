@@ -19,6 +19,10 @@
             </dl>
         </div>
     }
+    else if (Detail is null && SelectionCount == 0)
+    {
+        <div class="wf-info-body wf-muted">No file selected.</div>
+    }
     else if (Detail is null)
     {
         <div class="wf-info-body wf-muted">Loading…</div>

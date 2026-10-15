@@ -21,7 +21,9 @@ Features in this version:
 | Project | Purpose |
 | --- | --- |
 | `WebFilez.Core` | DTOs, enums, `IFileManagerService`, `VirtualPath`, `ApiRoutes`. No dependencies beyond Ardalis.Result. |
-| `WebFilez.Services` | The file system implementation, options, access extension points, archives, thumbnails and transfers. |
+| `WebFilez.Services` | The file manager, the file system provider, options, access extension points, archives, thumbnails and transfers. |
+| `WebFilez.Storage.Azure` | The Azure Blob Storage provider. Register it with `AddWebFilezAzureBlob()`. |
+| `WebFilez.Storage.AzureFiles` | The Azure Files provider. Register it with `AddWebFilezAzureFiles()`. |
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
@@ -32,7 +34,7 @@ Features in this version:
 
 The component talks to `IFileManagerService`. On Blazor Server (and therefore MVC) that is the real service, in-process. In WebAssembly it is an HTTP client that calls the API. Either way, bytes always travel over HTTP: uploads, downloads, thumbnails and zips go to the endpoints from `MapWebFilezApi()`, so every host needs the API mapped somewhere.
 
-There is no database in this version. Roots come from configuration, and everything else is read from the file system. The extension points below are where a host such as ArcaFS plugs in its own storage of roots, permissions and audit history.
+There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, `WebFilez.Storage.Azure` adds Azure Blob Storage, and `WebFilez.Storage.AzureFiles` adds Azure Files. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
 
 ## Getting started
 
@@ -52,7 +54,7 @@ There is no database in this version. Roots come from configuration, and everyth
 }
 ```
 
-Relative root paths resolve against the content root. Other root settings:
+Relative paths on a file system root resolve against the content root. A path on any other provider is a prefix inside that store and is left as written. Other root settings:
 
 - `Permissions`: a `FilePermission` set such as `ReadOnly`, `Contributor` or `Full` (the default). `IsReadOnly` clamps whatever is set to non-changing permissions.
 - `PublicUrl`: where the root is served as static files. When set, the picker returns that URL and the info panel shows it. WebFilez doesn't serve it; map it yourself with `UseStaticFiles`.
@@ -183,6 +185,55 @@ The component fills its container's width and the `Height` you give it, and adap
 - Uploads require the `X-WebFilez` header, which a cross-site form can't send, and are size-limited as they stream in.
 - Zip downloads use short-lived, single-use tickets, and the items are permission-checked again when the zip is written.
 
+## Storage providers
+
+`Provider` selects where a root is stored. Leave it out, or set `filesystem`, and the root is a directory on disk. `azure-blob` stores it in an Azure Blob container. `azure-file` stores it in an Azure file share, which has real directories. Register the providers beside `AddWebFilez`:
+
+```csharp
+builder.Services.AddWebFilez(builder.Configuration);
+builder.Services.AddWebFilezAzureBlob();
+builder.Services.AddWebFilezAzureFiles();
+```
+
+```json
+{
+  "Id": "uploads",
+  "Name": "Uploads",
+  "Provider": "azure-blob",
+  "Path": "campaigns",
+  "Settings": {
+    "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
+    "Container": "files"
+  }
+}
+```
+
+`Path` is the folder inside the container or share. `Settings.Prefix` overrides it when you want the prefix separate from `Path`. The container or share is not created for you, and an Azure Files root also needs that directory to exist already.
+
+Blob folders are prefixes, and an empty folder is a zero-length blob whose name ends in `/`. Blob names are case-sensitive. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
+
+```json
+{
+  "Id": "shared",
+  "Name": "Shared",
+  "Provider": "azure-file",
+  "Path": "campaigns",
+  "Settings": {
+    "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
+    "Share": "files"
+  }
+}
+```
+
+A host can add AWS, Google Cloud, or anything else by implementing `IStorageProvider` and registering it. The `Key` is the value used in `Provider`:
+
+```csharp
+builder.Services.AddSingleton<IStorageProvider, MyStorageProvider>();
+builder.Services.AddWebFilez(builder.Configuration);
+```
+
+Copy, move and zip across two providers stream the bytes. Two roots on the same provider use that provider's own copy.
+
 ## Extension points
 
 These are registered with `TryAdd`, so register your own implementation before calling `AddWebFilez`:
@@ -197,6 +248,7 @@ builder.Services.AddWebFilez(builder.Configuration);
 - `IFileRootProvider` supplies the roots for the current request. The default reads `WebFilezOptions.Roots`. Use it for per-user or per-tenant roots, or roots stored in a database.
 - `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access.
 - `IFileActivitySink` is told about every successful change and download, with the kind, root, path and target. Use it for an audit log, a search index or cache invalidation. Exceptions thrown from it are logged and swallowed.
+- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`. Add others with `AddSingleton<IStorageProvider, ...>()` or a package such as `AddWebFilezAzureBlob()` or `AddWebFilezAzureFiles()`. Registering before or after `AddWebFilez` both work.
 
 ## Running the demos
 

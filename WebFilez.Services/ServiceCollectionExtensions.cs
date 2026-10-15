@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using WebFilez.Services.Images;
+using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 
 namespace WebFilez.Services;
@@ -43,6 +43,9 @@ public static class ServiceCollectionExtensions
             services.TryAddScoped<IFileRootProvider, OptionsFileRootProvider>();
             services.TryAddScoped<IFileAccessPolicy, RootFileAccessPolicy>();
             services.TryAddScoped<IFileActivitySink, NullFileActivitySink>();
+
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IStorageProvider, FileSystemStorageProvider>());
+            services.TryAddSingleton<IStorageProviderSelector, StorageProviderSelector>();
 
             services.TryAddScoped<PathResolver>();
             services.TryAddScoped<IFileManagerService, FileManagerService>();

@@ -32,15 +32,7 @@ public sealed class DownloadTicketService(TimeProvider timeProvider)
     }
 
     /// <summary>Redeems a ticket, or returns null when it is unknown, expired or already used.</summary>
-    public DownloadTicket? Redeem(string token)
-    {
-        if (!tickets.TryRemove(token, out var ticket))
-        {
-            return null;
-        }
-
-        return ticket.ExpiresAt > timeProvider.GetUtcNow() ? ticket : null;
-    }
+    public DownloadTicket? Redeem(string token) => !tickets.TryRemove(token, out var ticket) ? null : ticket.ExpiresAt > timeProvider.GetUtcNow() ? ticket : null;
 
     private void PruneExpired()
     {

@@ -116,11 +116,11 @@ public static class DemoFiles
                 var row = rows.GetRowSpan(y);
                 for (int x = 0; x < row.Length; x++)
                 {
-                    float t = (x / (float)width + y / (float)height) / 2;
+                    float t = ((x / (float)width) + (y / (float)height)) / 2;
                     row[x] = new Rgba32(
-                        (byte)(start.R + (end.R - start.R) * t),
-                        (byte)(start.G + (end.G - start.G) * t),
-                        (byte)(start.B + (end.B - start.B) * t));
+                        (byte)(start.R + ((end.R - start.R) * t)),
+                        (byte)(start.G + ((end.G - start.G) * t)),
+                        (byte)(start.B + ((end.B - start.B) * t)));
                 }
             }
         });

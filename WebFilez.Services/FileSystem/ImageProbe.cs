@@ -9,20 +9,21 @@ namespace WebFilez.Services.FileSystem;
 internal static class ImageProbe
 {
     public static async Task<(int? Width, int? Height)> TryGetDimensionsAsync(
-        string physicalPath,
+        Stream content,
+        string name,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         try
         {
-            var info = await Image.IdentifyAsync(physicalPath, cancellationToken);
+            var info = await Image.IdentifyAsync(content, cancellationToken);
             return (info.Width, info.Height);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            // A file with an image extension that isn't a valid image is a normal thing to find
-            // on a filesystem; the details panel just omits the dimensions.
-            logger.LogDebug(ex, "Could not read image dimensions from {Path}", physicalPath);
+            // A file with an image extension that isn't a valid image is a normal thing to find;
+            // the details panel just omits the dimensions.
+            logger.LogDebug(ex, "Could not read image dimensions from {Name}", name);
             return (null, null);
         }
     }

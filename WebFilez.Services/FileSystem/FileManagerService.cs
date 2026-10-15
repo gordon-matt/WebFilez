@@ -52,10 +52,11 @@ public sealed partial class FileManagerService(
         }
 
         var target = resolved.Value;
+        var current = await target.Storage.GetAsync(target.Location, cancellationToken);
 
-        if (!Directory.Exists(target.PhysicalPath))
+        if (current is not { IsDirectory: true })
         {
-            return File.Exists(target.PhysicalPath)
+            return current is not null
                 ? Result<DirectoryListingDto>.Invalid(new ValidationError(nameof(request.Path), "That path is a file, not a folder."))
                 : Result<DirectoryListingDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
@@ -65,10 +66,8 @@ public sealed partial class FileManagerService(
 
         try
         {
-            foreach (var entry in new DirectoryInfo(target.PhysicalPath).EnumerateFileSystemInfos())
+            await foreach (var entry in target.Storage.ListAsync(target.Location, cancellationToken))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 if (!FileItems.IsVisible(entry, target.Root, request.ShowHidden, excludes))
                 {
                     continue;
@@ -138,7 +137,7 @@ public sealed partial class FileManagerService(
         }
 
         var target = resolved.Value;
-        if (!Directory.Exists(target.PhysicalPath))
+        if (await target.Storage.GetAsync(target.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<IReadOnlyList<FolderNodeDto>>.NotFound($"'{target.VirtualPath}' was not found.");
         }
@@ -148,9 +147,9 @@ public sealed partial class FileManagerService(
 
         try
         {
-            foreach (var directory in new DirectoryInfo(target.PhysicalPath).EnumerateDirectories())
+            await foreach (var directory in target.Storage.ListAsync(target.Location, cancellationToken))
             {
-                if (!FileItems.IsVisible(directory, target.Root, showHidden: false, excludes))
+                if (!directory.IsDirectory || !FileItems.IsVisible(directory, target.Root, showHidden: false, excludes))
                 {
                     continue;
                 }
@@ -162,7 +161,10 @@ public sealed partial class FileManagerService(
                     continue;
                 }
 
-                folders.Add(new FolderNodeDto(directory.Name, childPath, HasVisibleSubfolder(directory, target.Root, excludes)));
+                folders.Add(new FolderNodeDto(
+                    directory.Name,
+                    childPath,
+                    await HasVisibleSubfolderAsync(target, childPath, excludes, cancellationToken)));
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -187,34 +189,35 @@ public sealed partial class FileManagerService(
         }
 
         var target = resolved.Value;
-        bool isDirectory = Directory.Exists(target.PhysicalPath);
-
-        if (!isDirectory && !File.Exists(target.PhysicalPath))
+        var info = await target.Storage.GetAsync(target.Location, cancellationToken);
+        if (info is null)
         {
             return Result<FileDetailDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
 
-        FileSystemInfo info = isDirectory ? new DirectoryInfo(target.PhysicalPath) : new FileInfo(target.PhysicalPath);
-        var kind = FileKinds.Classify(info.Name, isDirectory);
+        var kind = FileKinds.Classify(info.Name, info.IsDirectory);
+        (int? width, int? height) = (null, null);
 
-        (int? width, int? height) = kind == FileKind.Image && target.Permissions.Has(FilePermission.Read)
-            ? await ImageProbe.TryGetDimensionsAsync(target.PhysicalPath, logger, cancellationToken)
-            : (null, null);
+        if (kind == FileKind.Image && target.Permissions.Has(FilePermission.Read))
+        {
+            await using var content = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
+            (width, height) = await ImageProbe.TryGetDimensionsAsync(content, info.Name, logger, cancellationToken);
+        }
 
         return Result<FileDetailDto>.Success(new FileDetailDto(
             target.Root.Id,
             target.VirtualPath,
             target.VirtualPath == Constants.RootPath ? target.Root.DisplayName : info.Name,
-            isDirectory,
-            info is FileInfo file ? file.Length : 0,
-            info.LastWriteTimeUtc,
-            info.CreationTimeUtc,
+            info.IsDirectory,
+            info.SizeBytes,
+            info.ModifiedAt,
+            info.CreatedAt,
             kind,
-            isDirectory ? "inode/directory" : FileKinds.GetMimeType(info.Name),
+            info.IsDirectory ? "inode/directory" : FileKinds.GetMimeType(info.Name),
             target.Permissions,
             width,
             height,
-            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, isDirectory)));
+            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, info.IsDirectory)));
     }
 
     public async Task<Result<DirectorySizeDto>> GetDirectorySizeAsync(
@@ -229,21 +232,22 @@ public sealed partial class FileManagerService(
         }
 
         var target = resolved.Value;
-        if (!Directory.Exists(target.PhysicalPath))
+        if (await target.Storage.GetAsync(target.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<DirectorySizeDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
 
         long bytes = 0;
         int files = 0;
-        var directories = new HashSet<string>(PhysicalPaths.Comparer);
+        var directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        await foreach (var (file, _) in FileItems.EnumerateFilesAsync(resolver, target, FilePermission.None, cancellationToken))
+        await foreach (var (file, virtualPath) in FileItems.EnumerateFilesAsync(resolver, target, FilePermission.None, cancellationToken))
         {
-            bytes += file.Length;
+            bytes += file.SizeBytes;
             files++;
 
-            if (file.DirectoryName is { } parent && !PhysicalPaths.AreEqual(parent, target.PhysicalPath))
+            if (VirtualPath.GetParent(virtualPath) is { } parent
+                && !parent.Equals(target.VirtualPath, StringComparison.OrdinalIgnoreCase))
             {
                 directories.Add(parent);
             }
@@ -252,11 +256,28 @@ public sealed partial class FileManagerService(
         return Result<DirectorySizeDto>.Success(new DirectorySizeDto(target.VirtualPath, bytes, files, directories.Count));
     }
 
-    private static bool HasVisibleSubfolder(DirectoryInfo directory, FileRoot root, ExcludeMatcher excludes)
+    private static async Task<bool> HasVisibleSubfolderAsync(
+        ResolvedPath parent,
+        string childVirtual,
+        ExcludeMatcher excludes,
+        CancellationToken cancellationToken)
     {
+        if (!parent.Storage.TryMap(parent.Root, childVirtual, out var child))
+        {
+            return false;
+        }
+
         try
         {
-            return directory.EnumerateDirectories().Any(d => FileItems.IsVisible(d, root, showHidden: false, excludes));
+            await foreach (var entry in parent.Storage.ListAsync(child, cancellationToken))
+            {
+                if (entry.IsDirectory && FileItems.IsVisible(entry, parent.Root, showHidden: false, excludes))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

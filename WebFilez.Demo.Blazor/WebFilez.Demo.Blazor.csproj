@@ -10,6 +10,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.AspNetCore\WebFilez.AspNetCore.csproj" />
 		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
+		<ProjectReference Include="..\WebFilez.Storage.AzureBlob\WebFilez.Storage.AzureBlob.csproj" />
+		<ProjectReference Include="..\WebFilez.Storage.AzureFiles\WebFilez.Storage.AzureFiles.csproj" />
 	</ItemGroup>
 
 </Project>

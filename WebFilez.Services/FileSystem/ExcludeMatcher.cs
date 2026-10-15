@@ -16,7 +16,10 @@ public sealed class ExcludeMatcher
 
     private readonly Regex[] patterns;
 
-    private ExcludeMatcher(Regex[] patterns) => this.patterns = patterns;
+    private ExcludeMatcher(Regex[] patterns)
+    {
+        this.patterns = patterns;
+    }
 
     public static ExcludeMatcher For(FileRoot root) => For(root.ExcludePatterns);
 

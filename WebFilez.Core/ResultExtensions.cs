@@ -78,20 +78,17 @@ public static class ResultExtensions
         }
 
         var validation = result.ValidationErrors?.FirstOrDefault();
-        if (validation is not null && !string.IsNullOrWhiteSpace(validation.ErrorMessage))
-        {
-            return validation.ErrorMessage;
-        }
-
-        return result.Status switch
-        {
-            ResultStatus.NotFound => "That item no longer exists.",
-            ResultStatus.Forbidden => "You do not have permission to do that.",
-            ResultStatus.Unauthorized => "Please sign in and try again.",
-            ResultStatus.Conflict => "That conflicts with something that already exists.",
-            ResultStatus.Invalid => "Some of the values supplied were not valid.",
-            ResultStatus.Unavailable => "The file manager is temporarily unavailable.",
-            _ => "Something went wrong. Please try again.",
-        };
+        return validation is not null && !string.IsNullOrWhiteSpace(validation.ErrorMessage)
+            ? validation.ErrorMessage
+            : result.Status switch
+            {
+                ResultStatus.NotFound => "That item no longer exists.",
+                ResultStatus.Forbidden => "You do not have permission to do that.",
+                ResultStatus.Unauthorized => "Please sign in and try again.",
+                ResultStatus.Conflict => "That conflicts with something that already exists.",
+                ResultStatus.Invalid => "Some of the values supplied were not valid.",
+                ResultStatus.Unavailable => "The file manager is temporarily unavailable.",
+                _ => "Something went wrong. Please try again.",
+            };
     }
 }

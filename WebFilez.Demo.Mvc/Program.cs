@@ -1,6 +1,8 @@
 using Microsoft.Extensions.FileProviders;
 using WebFilez;
 using WebFilez.Demo;
+using WebFilez.Storage.AzureBlob;
+using WebFilez.Storage.AzureFiles;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,8 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddWebFilez(builder.Configuration);
+builder.Services.AddWebFilezAzureBlob();
+builder.Services.AddWebFilezAzureFiles();
 
 var app = builder.Build();
 

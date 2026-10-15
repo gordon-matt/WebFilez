@@ -5,6 +5,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 
 namespace WebFilez.Services.Images;
@@ -53,13 +54,13 @@ public sealed class ThumbnailService(
         }
 
         var target = resolved.Value;
-        if (!File.Exists(target.PhysicalPath) || !FileKinds.SupportsThumbnail(target.PhysicalPath))
+        var info = await target.Storage.GetAsync(target.Location, cancellationToken);
+        if (info is not { IsDirectory: false } || !FileKinds.SupportsThumbnail(info.Name))
         {
             return Result<ThumbnailDto>.NotFound();
         }
 
-        var info = new FileInfo(target.PhysicalPath);
-        string etag = $"{info.Length:x}-{info.LastWriteTimeUtc.Ticks:x}-{resolvedSize}";
+        string etag = $"{info.SizeBytes:x}-{info.ModifiedAt.Ticks:x}-{resolvedSize}";
         string cachePath = BuildCachePath(settings, target, resolvedSize, info);
 
         if (File.Exists(cachePath))
@@ -77,7 +78,7 @@ public sealed class ThumbnailService(
         await GenerationLock.WaitAsync(cancellationToken);
         try
         {
-            byte[] bytes = await GenerateAsync(target.PhysicalPath, resolvedSize, settings.Quality, cancellationToken);
+            byte[] bytes = await GenerateAsync(target, resolvedSize, settings.Quality, cancellationToken);
             await WriteCacheAsync(cachePath, bytes, cancellationToken);
 
             return Result<ThumbnailDto>.Success(new ThumbnailDto(bytes, WebpMimeType, etag));
@@ -86,7 +87,7 @@ public sealed class ThumbnailService(
         {
             // An image extension on something that isn't a decodable image is common; the UI
             // falls back to an icon.
-            logger.LogDebug(ex, "Could not generate a thumbnail for {Physical}", target.PhysicalPath);
+            logger.LogDebug(ex, "Could not generate a thumbnail for {Path}", target.VirtualPath);
             return Result<ThumbnailDto>.NotFound();
         }
         finally
@@ -95,18 +96,24 @@ public sealed class ThumbnailService(
         }
     }
 
-    private static async Task<byte[]> GenerateAsync(string physicalPath, int size, int quality, CancellationToken cancellationToken)
+    private static async Task<byte[]> GenerateAsync(ResolvedPath target, int size, int quality, CancellationToken cancellationToken)
     {
-        var header = await Image.IdentifyAsync(physicalPath, cancellationToken);
+        await using var content = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
+        var header = await Image.IdentifyAsync(content, cancellationToken);
         if ((long)header.Width * header.Height > ImageResizer.MaxPixels)
         {
             throw new InvalidOperationException($"{header.Width}x{header.Height} exceeds the decode limit.");
         }
 
+        if (content.CanSeek)
+        {
+            content.Position = 0;
+        }
+
         // Asking the decoder for roughly the target size lets JPEG scale during decode instead
         // of materialising the full-resolution bitmap.
         var decoderOptions = new DecoderOptions { TargetSize = new Size(size, size) };
-        using var image = await Image.LoadAsync(decoderOptions, physicalPath, cancellationToken);
+        using var image = await Image.LoadAsync(decoderOptions, content, cancellationToken);
 
         image.Mutate(context => context.Resize(new ResizeOptions
         {
@@ -148,13 +155,13 @@ public sealed class ThumbnailService(
     /// Keyed on the file's identity plus its size and timestamp, so editing a file invalidates
     /// its thumbnail with no bookkeeping anywhere else.
     /// </summary>
-    private static string BuildCachePath(ThumbnailOptions settings, ResolvedPath target, int size, FileInfo info)
+    private static string BuildCachePath(ThumbnailOptions settings, ResolvedPath target, int size, StorageEntry info)
     {
         string directory = string.IsNullOrWhiteSpace(settings.CacheDirectory)
             ? Path.Combine(Path.GetTempPath(), "webfilez-thumbnails")
             : settings.CacheDirectory;
 
-        string key = $"{target.PhysicalPath}|{size}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
+        string key = $"{target.Root.Id}|{target.VirtualPath}|{size}|{info.SizeBytes}|{info.ModifiedAt.Ticks}";
         string hex = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(key)));
 
         return Path.Combine(directory, hex[..2], hex[2..4], $"{hex}.webp");

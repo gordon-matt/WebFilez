@@ -16,37 +16,41 @@ public sealed partial class FileManagerService
         }
 
         var target = resolved.Value;
-        if (!File.Exists(target.PhysicalPath))
+        var info = await target.Storage.GetAsync(target.Location, cancellationToken);
+        if (info is not { IsDirectory: false })
         {
             return Result<TextFileContentDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
 
-        var info = new FileInfo(target.PhysicalPath);
         long limit = options.CurrentValue.MaxEditableFileBytes;
 
-        if (info.Length > limit)
+        if (info.SizeBytes > limit)
         {
             return Result<TextFileContentDto>.Invalid(new ValidationError(
                 nameof(path),
-                $"This file is {FileKinds.FormatSize(info.Length)}. The editor opens files up to {FileKinds.FormatSize(limit)}."));
-        }
-
-        // An extension is a hint, not a guarantee. Sniffing for NUL bytes stops the editor
-        // opening a binary as mojibake and then writing that back over the original.
-        if (await FileItems.LooksBinaryAsync(target.PhysicalPath, cancellationToken))
-        {
-            return Result<TextFileContentDto>.Invalid(new ValidationError(
-                nameof(path), "This file appears to be binary, so it can't be edited as text."));
+                $"This file is {FileKinds.FormatSize(info.SizeBytes)}. The editor opens files up to {FileKinds.FormatSize(limit)}."));
         }
 
         string content;
         try
         {
-            content = await File.ReadAllTextAsync(target.PhysicalPath, cancellationToken);
+            await using var stream = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
+
+            // An extension is a hint, not a guarantee. Sniffing for NUL bytes stops the editor
+            // opening a binary as mojibake and then writing that back over the original.
+            if (await FileItems.LooksBinaryAsync(stream, cancellationToken))
+            {
+                return Result<TextFileContentDto>.Invalid(new ValidationError(
+                    nameof(path), "This file appears to be binary, so it can't be edited as text."));
+            }
+
+            stream.Position = 0;
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            content = await reader.ReadToEndAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not read text from {Physical}", target.PhysicalPath);
+            logger.LogError(ex, "Could not read text from {Path}", target.VirtualPath);
             return Result<TextFileContentDto>.Error("That file could not be read.");
         }
 
@@ -54,8 +58,8 @@ public sealed partial class FileManagerService
             target.VirtualPath,
             info.Name,
             content,
-            info.Length,
-            info.LastWriteTimeUtc,
+            info.SizeBytes,
+            info.ModifiedAt,
             target.Permissions.Has(FilePermission.Modify)));
     }
 
@@ -70,7 +74,8 @@ public sealed partial class FileManagerService
         }
 
         var target = resolved.Value;
-        if (!File.Exists(target.PhysicalPath))
+        var before = await target.Storage.GetAsync(target.Location, cancellationToken);
+        if (before is not { IsDirectory: false })
         {
             return Result<FileSystemItemDto>.NotFound($"'{target.VirtualPath}' was not found.");
         }
@@ -84,9 +89,8 @@ public sealed partial class FileManagerService
                 nameof(request.Content), "That is too much text to save from the editor."));
         }
 
-        var before = new FileInfo(target.PhysicalPath);
         if (request.ExpectedModifiedAt is { } expected
-            && Math.Abs((before.LastWriteTimeUtc - expected.ToUniversalTime()).TotalMilliseconds) > 1)
+            && Math.Abs((before.ModifiedAt - expected.ToUniversalTime()).TotalMilliseconds) > 1)
         {
             return Result<FileSystemItemDto>.Conflict(
                 "This file was changed by someone else after you opened it. Reload it before saving.");
@@ -94,15 +98,12 @@ public sealed partial class FileManagerService
 
         try
         {
-            // Written beside the original and swapped in, so a failure part-way through leaves
-            // the original intact rather than a half-saved file.
-            string temporary = target.PhysicalPath + Constants.TempFileSuffix;
-            await File.WriteAllTextAsync(temporary, request.Content, encoding, cancellationToken);
-            File.Move(temporary, target.PhysicalPath, overwrite: true);
+            await using var body = new MemoryStream(encoding.GetBytes(request.Content));
+            await target.Storage.WriteAsync(target.Location, body, overwrite: true, cancellationToken);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            logger.LogError(ex, "Could not save text to {Physical}", target.PhysicalPath);
+            logger.LogError(ex, "Could not save text to {Path}", target.VirtualPath);
             return Result<FileSystemItemDto>.Error("That file could not be saved.");
         }
 
@@ -110,8 +111,10 @@ public sealed partial class FileManagerService
             new FileActivity(FileActivityKind.Modify, request.RootId, target.VirtualPath, SizeBytes: size),
             cancellationToken);
 
+        var saved = await target.Storage.GetAsync(target.Location, cancellationToken)
+            ?? before with { SizeBytes = size, ModifiedAt = DateTime.UtcNow };
         return Result<FileSystemItemDto>.Success(FileItems.ToItem(
-            new FileInfo(target.PhysicalPath),
+            saved,
             target.Root,
             target.VirtualPath,
             target.Permissions));

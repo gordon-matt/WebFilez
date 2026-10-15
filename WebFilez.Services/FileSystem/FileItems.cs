@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.FileSystem;
 
@@ -6,27 +7,25 @@ namespace WebFilez.Services.FileSystem;
 internal static class FileItems
 {
     public static FileSystemItemDto ToItem(
-        FileSystemInfo entry,
+        StorageEntry entry,
         FileRoot root,
         string virtualPath,
         FilePermission permissions)
     {
-        bool isDirectory = entry is DirectoryInfo;
-        long size = entry is FileInfo file ? file.Length : 0;
-        var kind = FileKinds.Classify(entry.Name, isDirectory);
+        var kind = FileKinds.Classify(entry.Name, entry.IsDirectory);
 
         return new FileSystemItemDto(
             entry.Name,
             virtualPath,
-            isDirectory,
-            size,
-            entry.LastWriteTimeUtc,
+            entry.IsDirectory,
+            entry.SizeBytes,
+            entry.ModifiedAt,
             kind,
-            isDirectory ? null : entry.Extension,
-            IsHidden(entry),
+            entry.IsDirectory ? null : Path.GetExtension(entry.Name),
+            entry.IsHidden,
             permissions,
-            HasThumbnail: !isDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
-            PublicUrl: BuildPublicUrl(root, virtualPath, isDirectory));
+            HasThumbnail: !entry.IsDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
+            PublicUrl: BuildPublicUrl(root, virtualPath, entry.IsDirectory));
     }
 
     /// <summary>
@@ -47,40 +46,19 @@ internal static class FileItems
         return directory ? url + Constants.PathSeparator : url;
     }
 
-    public static bool IsHidden(FileSystemInfo entry) =>
-        entry.Name.StartsWith('.') || entry.Attributes.HasFlag(FileAttributes.Hidden);
-
     /// <summary>
     /// Whether an entry may appear at all. Mirrors the checks in
     /// <see cref="PathResolver.TryMapToDisk"/>, so nothing listed is unreachable and nothing
     /// reachable is unlisted.
     /// </summary>
-    public static bool IsVisible(FileSystemInfo entry, FileRoot root, bool showHidden, ExcludeMatcher excludes)
-    {
-        if (entry.Name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (!root.FollowSymlinks && entry.LinkTarget is not null)
-        {
-            return false;
-        }
-
-        if (IsHidden(entry) && !(root.ShowHiddenFiles && showHidden))
-        {
-            return false;
-        }
-
-        return !excludes.IsExcluded(entry.Name);
-    }
+    public static bool IsVisible(StorageEntry entry, FileRoot root, bool showHidden, ExcludeMatcher excludes) => !entry.Name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase) && (root.FollowSymlinks || !entry.IsSymbolicLink) && (!entry.IsHidden || (root.ShowHiddenFiles && showHidden)) && !excludes.IsExcluded(entry.Name);
 
     /// <summary>
     /// Every visible file under a folder that the caller holds <paramref name="required"/> on.
     /// Excluded and unbrowsable folders are pruned rather than descended, so a zip of a folder
     /// can't be used to get at files hidden or denied inside it.
     /// </summary>
-    public static async IAsyncEnumerable<(FileInfo File, string VirtualPath)> EnumerateFilesAsync(
+    public static async IAsyncEnumerable<(StorageEntry Entry, string VirtualPath)> EnumerateFilesAsync(
         PathResolver resolver,
         ResolvedPath directory,
         FilePermission required,
@@ -88,18 +66,24 @@ internal static class FileItems
     {
         var root = directory.Root;
         var excludes = ExcludeMatcher.For(root);
-        var pending = new Stack<(DirectoryInfo Directory, string VirtualPath)>();
-        pending.Push((new DirectoryInfo(directory.PhysicalPath), directory.VirtualPath));
+        var pending = new Stack<ResolvedPath>();
+        pending.Push(directory);
 
         while (pending.Count > 0)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var (current, currentVirtual) = pending.Pop();
+            var current = pending.Pop();
 
-            FileSystemInfo[] entries;
+            IReadOnlyList<StorageEntry> entries;
             try
             {
-                entries = current.GetFileSystemInfos();
+                var listed = new List<StorageEntry>();
+                await foreach (var entry in current.Storage.ListAsync(current.Location, cancellationToken))
+                {
+                    listed.Add(entry);
+                }
+
+                entries = listed;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
@@ -113,52 +97,26 @@ internal static class FileItems
                     continue;
                 }
 
-                string childVirtual = VirtualPath.Combine(currentVirtual, entry.Name);
+                string childVirtual = VirtualPath.Combine(current.VirtualPath, entry.Name);
                 var permissions = await resolver.GetPermissionsAsync(root, childVirtual, cancellationToken);
 
-                if (entry is DirectoryInfo childDirectory)
+                if (!current.Storage.TryMap(root, childVirtual, out var child))
+                {
+                    continue;
+                }
+
+                if (entry.IsDirectory)
                 {
                     if (permissions.HasAny(FilePermission.Browse | FilePermission.Read))
                     {
-                        pending.Push((childDirectory, childVirtual));
+                        pending.Push(new ResolvedPath(
+                            root, childVirtual, child.NativePath, child.RootNativePath, permissions, current.Storage));
                     }
                 }
-                else if (entry is FileInfo file && permissions.Has(required))
+                else if (permissions.Has(required))
                 {
-                    yield return (file, childVirtual);
+                    yield return (entry, childVirtual);
                 }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Copies a folder tree. Links are skipped unless the root follows them, otherwise copying a
-    /// folder that contains a link would pull in whatever the link points at.
-    /// </summary>
-    public static void CopyDirectory(string from, string to, bool overwrite, bool followSymlinks)
-    {
-        Directory.CreateDirectory(to);
-
-        foreach (var entry in new DirectoryInfo(from).EnumerateFileSystemInfos())
-        {
-            if (!followSymlinks && entry.LinkTarget is not null)
-            {
-                continue;
-            }
-
-            if (entry.Name.EndsWith(Constants.TempFileSuffix, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            string target = Path.Combine(to, entry.Name);
-            if (entry is DirectoryInfo)
-            {
-                CopyDirectory(entry.FullName, target, overwrite, followSymlinks);
-            }
-            else
-            {
-                File.Copy(entry.FullName, target, overwrite);
             }
         }
     }
@@ -177,11 +135,10 @@ internal static class FileItems
     /// Treats a file as binary if the first 8 KB contain a NUL byte. The same heuristic git
     /// uses, and reliable enough to keep the editor away from executables and media.
     /// </summary>
-    public static async Task<bool> LooksBinaryAsync(string physicalPath, CancellationToken cancellationToken)
+    public static async Task<bool> LooksBinaryAsync(Stream stream, CancellationToken cancellationToken)
     {
         const int SampleSize = 8 * 1024;
 
-        await using var stream = OpenSequentialRead(physicalPath);
         byte[] buffer = new byte[SampleSize];
         int read = await stream.ReadAsync(buffer.AsMemory(0, SampleSize), cancellationToken);
 
@@ -192,6 +149,6 @@ internal static class FileItems
     /// Opaque validator over size and modification time. Changes whenever the file does, which
     /// is all a conditional GET needs.
     /// </summary>
-    public static string BuildETag(FileInfo info) =>
-        $"{info.Length:x}-{info.LastWriteTimeUtc.Ticks:x}";
+    public static string BuildETag(long sizeBytes, DateTime modifiedAtUtc) =>
+        $"{sizeBytes:x}-{modifiedAtUtc.Ticks:x}";
 }

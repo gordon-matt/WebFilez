@@ -29,12 +29,7 @@ internal static class PhysicalPaths
         string normalizedCandidate = Path.TrimEndingDirectorySeparator(Path.GetFullPath(candidate));
         string normalizedAncestor = Path.TrimEndingDirectorySeparator(Path.GetFullPath(ancestor));
 
-        if (string.Equals(normalizedCandidate, normalizedAncestor, Comparison))
-        {
-            return true;
-        }
-
-        return normalizedCandidate.StartsWith(normalizedAncestor + Path.DirectorySeparatorChar, Comparison);
+        return string.Equals(normalizedCandidate, normalizedAncestor, Comparison) || normalizedCandidate.StartsWith(normalizedAncestor + Path.DirectorySeparatorChar, Comparison);
     }
 
     /// <summary>

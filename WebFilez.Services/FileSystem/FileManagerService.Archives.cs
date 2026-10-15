@@ -2,6 +2,7 @@ using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using SharpCompress.Writers;
+using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.FileSystem;
 
@@ -53,8 +54,7 @@ public sealed partial class FileManagerService
             targets.Add(resolved.Value);
         }
 
-        string archivePhysical = created.Value.PhysicalPath;
-        string temporary = archivePhysical + Constants.TempFileSuffix;
+        string temporary = Path.Combine(Path.GetTempPath(), $"webfilez-{Guid.NewGuid():N}{Constants.TempFileSuffix}");
 
         try
         {
@@ -63,7 +63,8 @@ public sealed partial class FileManagerService
             {
                 foreach (var target in targets)
                 {
-                    if (Directory.Exists(target.PhysicalPath))
+                    var info = await target.Storage.GetAsync(target.Location, cancellationToken);
+                    if (info is { IsDirectory: true })
                     {
                         string prefix = VirtualPath.GetName(target.VirtualPath);
                         if (prefix.Length == 0)
@@ -73,27 +74,34 @@ public sealed partial class FileManagerService
 
                         await foreach (var (file, fileVirtual) in FileItems.EnumerateFilesAsync(resolver, target, FilePermission.Read, cancellationToken))
                         {
-                            string relative = fileVirtual[(target.VirtualPath == Constants.RootPath ? 1 : target.VirtualPath.Length + 1)..];
-
-                            // Never archive the archive into itself.
-                            if (!PhysicalPaths.AreEqual(file.FullName, temporary))
+                            if (fileVirtual.Equals(created.Value.VirtualPath, StringComparison.OrdinalIgnoreCase))
                             {
-                                writer.Write($"{prefix}/{relative}", file.FullName);
+                                continue;
                             }
+
+                            if (!target.Storage.TryMap(target.Root, fileVirtual, out var fileLocation))
+                            {
+                                continue;
+                            }
+
+                            string relative = fileVirtual[(target.VirtualPath == Constants.RootPath ? 1 : target.VirtualPath.Length + 1)..];
+                            await using var source = await target.Storage.OpenReadAsync(fileLocation, cancellationToken);
+                            writer.Write($"{prefix}/{relative}", source, file.ModifiedAt);
                         }
                     }
-                    else if (File.Exists(target.PhysicalPath))
+                    else if (info is not null)
                     {
-                        writer.Write(Path.GetFileName(target.PhysicalPath), target.PhysicalPath);
+                        await using var source = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
+                        writer.Write(info.Name, source, info.ModifiedAt);
                     }
                 }
             }
 
-            File.Move(temporary, archivePhysical, overwrite: false);
+            await destination.Value.Storage.CommitLocalFileAsync(created.Value.Location, temporary, overwrite: false, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Could not create archive {Physical}", archivePhysical);
+            logger.LogError(ex, "Could not create archive {Path}", created.Value.VirtualPath);
             TryDelete(temporary);
 
             return Result<FileSystemItemDto>.Error("The archive could not be created.");
@@ -104,12 +112,13 @@ public sealed partial class FileManagerService
             throw;
         }
 
-        var info = new FileInfo(archivePhysical);
+        var written = await destination.Value.Storage.GetAsync(created.Value.Location, cancellationToken)
+            ?? new StorageEntry(name.Value, false, 0, DateTime.UtcNow, DateTime.UtcNow, false, false);
         await RecordAsync(
-            new FileActivity(FileActivityKind.Compress, request.RootId, created.Value.VirtualPath, SizeBytes: info.Length),
+            new FileActivity(FileActivityKind.Compress, request.RootId, created.Value.VirtualPath, SizeBytes: written.SizeBytes),
             cancellationToken);
 
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(info, destination.Value.Root, created.Value.VirtualPath, created.Value.Permissions));
+        return Result<FileSystemItemDto>.Success(FileItems.ToItem(written, destination.Value.Root, created.Value.VirtualPath, created.Value.Permissions));
     }
 
     public async Task<Result<BulkOperationResultDto>> ExtractAsync(
@@ -122,7 +131,7 @@ public sealed partial class FileManagerService
             return archive.To<BulkOperationResultDto>();
         }
 
-        if (!File.Exists(archive.Value.PhysicalPath))
+        if (await archive.Value.Storage.GetAsync(archive.Value.Location, cancellationToken) is not { IsDirectory: false })
         {
             return Result<BulkOperationResultDto>.NotFound($"'{archive.Value.VirtualPath}' was not found.");
         }
@@ -144,7 +153,7 @@ public sealed partial class FileManagerService
             return destination.To<BulkOperationResultDto>();
         }
 
-        if (!Directory.Exists(destination.Value.PhysicalPath))
+        if (await destination.Value.Storage.GetAsync(destination.Value.Location, cancellationToken) is not { IsDirectory: true })
         {
             return Result<BulkOperationResultDto>.NotFound($"'{destination.Value.VirtualPath}' was not found.");
         }
@@ -155,10 +164,12 @@ public sealed partial class FileManagerService
         {
             if (!request.Overwrite)
             {
-                using var listing = ArchiveFactory.OpenArchive(archive.Value.PhysicalPath, ReaderOptions.ForFilePath);
-                var conflicts = FindConflictingExtractNames(
-                    destination.Value.PhysicalPath,
-                    listing.Entries.Where(e => e.Key is not null).Select(e => (e.Key!, e.IsDirectory)));
+                await using var listingStream = await archive.Value.Storage.OpenReadAsync(archive.Value.Location, cancellationToken);
+                using var listing = ArchiveFactory.OpenArchive(listingStream, ReaderOptions.ForExternalStream);
+                var conflicts = await FindConflictingExtractNamesAsync(
+                    destination.Value,
+                    listing.Entries.Where(e => e.Key is not null).Select(e => (e.Key!, e.IsDirectory)),
+                    cancellationToken);
 
                 if (conflicts.Count > 0)
                 {
@@ -205,10 +216,8 @@ public sealed partial class FileManagerService
         long writtenBytes = 0;
         int entryCount = 0;
 
-        await using var input = FileItems.OpenSequentialRead(archive.PhysicalPath);
+        await using var input = await archive.Storage.OpenReadAsync(archive.Location, cancellationToken);
         using var reader = ReaderFactory.OpenReader(input, ReaderOptions.ForExternalStream);
-
-        string destinationRoot = Path.GetFullPath(destination.PhysicalPath);
 
         while (reader.MoveToNextEntry())
         {
@@ -228,17 +237,14 @@ public sealed partial class FileManagerService
 
             // Entry names are attacker-controlled. "../../etc/cron.d/x" would otherwise write
             // outside the destination (zip-slip), so resolve and verify containment first.
-            string? entryDestination = ResolveEntryDestination(destinationRoot, entry.Key);
-            if (entryDestination is null)
+            if (GetSafeEntrySegments(entry.Key) is not { Length: > 0 } segments)
             {
                 results.Add(new FileOperationResultDto(entry.Key, false, "Skipped: it points outside the destination folder."));
                 continue;
             }
 
-            string relative = Path.GetRelativePath(destinationRoot, entryDestination).Replace(Path.DirectorySeparatorChar, '/');
-            string entryVirtual = VirtualPath.Combine(destination.VirtualPath, relative.Split('/'));
-
-            if (!PathResolver.TryMapToDisk(destination.Root, entryVirtual, out _, out _))
+            string entryVirtual = VirtualPath.Combine(destination.VirtualPath, segments);
+            if (!destination.Storage.TryMap(destination.Root, entryVirtual, out var entryLocation))
             {
                 results.Add(new FileOperationResultDto(entry.Key, false, "Skipped: hidden or excluded name."));
                 continue;
@@ -246,11 +252,11 @@ public sealed partial class FileManagerService
 
             if (entry.IsDirectory)
             {
-                Directory.CreateDirectory(entryDestination);
+                await destination.Storage.CreateDirectoryAsync(entryLocation, cancellationToken);
                 continue;
             }
 
-            if (!FileNamePolicy.IsExtensionAllowed(Path.GetFileName(entryDestination), settings))
+            if (!FileNamePolicy.IsExtensionAllowed(segments[^1], settings))
             {
                 results.Add(new FileOperationResultDto(entry.Key, false, "Skipped: that type of file is not allowed."));
                 continue;
@@ -262,7 +268,7 @@ public sealed partial class FileManagerService
                     $"This archive expands to more than {FileKinds.FormatSize(settings.MaxExtractedBytes)}, so extraction stopped.");
             }
 
-            if (!overwrite && (File.Exists(entryDestination) || Directory.Exists(entryDestination)))
+            if (!overwrite && await destination.Storage.GetAsync(entryLocation, cancellationToken) is not null)
             {
                 results.Add(new FileOperationResultDto(entry.Key, false, "Already exists."));
                 continue;
@@ -270,21 +276,20 @@ public sealed partial class FileManagerService
 
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(entryDestination)!);
-
-                reader.WriteEntryToFile(entryDestination, new ExtractionOptions
+                if (segments.Length > 1)
                 {
-                    Overwrite = overwrite,
+                    string parentVirtual = VirtualPath.Combine(destination.VirtualPath, segments[..^1]);
+                    if (destination.Storage.TryMap(destination.Root, parentVirtual, out var parent))
+                    {
+                        await destination.Storage.CreateDirectoryAsync(parent, cancellationToken);
+                    }
+                }
 
-                    // Never honour an archive's stored attributes; a crafted archive could mark
-                    // an extracted file executable or hidden.
-                    PreserveFileTime = false,
-                    PreserveAttributes = false,
-                    ExtractFullPath = false,
-                });
+                await using var entryStream = reader.OpenEntryStream();
+                await destination.Storage.WriteAsync(entryLocation, entryStream, overwrite, cancellationToken);
 
-                // The declared size can lie; measure what actually landed on disk.
-                writtenBytes += new FileInfo(entryDestination).Length;
+                var written = await destination.Storage.GetAsync(entryLocation, cancellationToken);
+                writtenBytes += written?.SizeBytes ?? 0;
                 if (writtenBytes > settings.MaxExtractedBytes)
                 {
                     throw new ExtractLimitException(
@@ -307,29 +312,32 @@ public sealed partial class FileManagerService
     /// Names of archive entries that would overwrite something already on disk, so the whole
     /// extract can be refused before anything is written.
     /// </summary>
-    internal static IReadOnlyList<string> FindConflictingExtractNames(
-        string destinationRoot,
-        IEnumerable<(string Key, bool IsDirectory)> entries)
+    private static async Task<IReadOnlyList<string>> FindConflictingExtractNamesAsync(
+        ResolvedPath destination,
+        IEnumerable<(string Key, bool IsDirectory)> entries,
+        CancellationToken cancellationToken)
     {
-        string normalizedRoot = Path.GetFullPath(destinationRoot);
         var names = new List<string>();
-        var seen = new HashSet<string>(PhysicalPaths.Comparer);
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var (key, isDirectory) in entries)
         {
-            string? destination = ResolveEntryDestination(normalizedRoot, key);
-            if (destination is null)
+            if (GetSafeEntrySegments(key) is not { Length: > 0 } segments)
             {
                 continue;
             }
 
-            bool conflict = isDirectory
-                ? File.Exists(destination)
-                : File.Exists(destination) || Directory.Exists(destination);
-
-            if (conflict && seen.Add(destination))
+            string virtualPath = VirtualPath.Combine(destination.VirtualPath, segments);
+            if (!destination.Storage.TryMap(destination.Root, virtualPath, out var location))
             {
-                names.Add(Path.GetFileName(Path.TrimEndingDirectorySeparator(destination)));
+                continue;
+            }
+
+            var existing = await destination.Storage.GetAsync(location, cancellationToken);
+            bool conflict = existing is not null && (!isDirectory || !existing.IsDirectory);
+            if (conflict && seen.Add(virtualPath))
+            {
+                names.Add(segments[^1]);
             }
         }
 
@@ -342,6 +350,23 @@ public sealed partial class FileManagerService
     /// since an entry trying to climb out is a sign of a malicious archive.
     /// </summary>
     internal static string? ResolveEntryDestination(string destinationRoot, string entryKey)
+    {
+        if (GetSafeEntrySegments(entryKey) is not { Length: > 0 } segments)
+        {
+            return null;
+        }
+
+        string candidate = Path.GetFullPath(Path.Combine([destinationRoot, .. segments]));
+        return PhysicalPaths.IsWithin(candidate, destinationRoot) && !PhysicalPaths.AreEqual(candidate, destinationRoot)
+            ? candidate
+            : null;
+    }
+
+    /// <summary>
+    /// The safe relative segments of an archive entry, or null when the name tries to leave the
+    /// destination. Rejects drive letters and any <c>..</c> segment outright.
+    /// </summary>
+    internal static string[]? GetSafeEntrySegments(string entryKey)
     {
         string cleaned = entryKey.Replace('\\', '/').Trim().TrimStart('/');
 
@@ -372,15 +397,7 @@ public sealed partial class FileManagerService
             segments.Add(safe);
         }
 
-        if (segments.Count == 0)
-        {
-            return null;
-        }
-
-        string candidate = Path.GetFullPath(Path.Combine([destinationRoot, .. segments]));
-        return PhysicalPaths.IsWithin(candidate, destinationRoot) && !PhysicalPaths.AreEqual(candidate, destinationRoot)
-            ? candidate
-            : null;
+        return segments.Count == 0 ? null : segments.ToArray();
     }
 
     private static (ArchiveType Type, CompressionType Compression, string Extension) ResolveFormat(ArchiveFormat format) =>

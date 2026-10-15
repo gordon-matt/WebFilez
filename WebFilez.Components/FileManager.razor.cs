@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Web;
-using WebFilez.Components.Http;
 using WebFilez.Components.Infrastructure;
 using WebFilez.Components.Parts;
 using WebFilez.Components.Shared;
@@ -232,10 +231,7 @@ public sealed partial class FileManager
 
     // ------------------------------------------------------------------ navigation
 
-    private async Task NavigateAsync(string targetRoot, string path)
-    {
-        await OpenAsync(targetRoot, path, notify: true);
-    }
+    private async Task NavigateAsync(string targetRoot, string path) => await OpenAsync(targetRoot, path, notify: true);
 
     private async Task OpenAsync(string targetRoot, string path, bool notify)
     {
@@ -579,7 +575,7 @@ public sealed partial class FileManager
         }
 
         appliedKind = Kind;
-        if (string.IsNullOrWhiteSpace(Kind) || !TryParseKind(Kind, out KindFilter parsed))
+        if (string.IsNullOrWhiteSpace(Kind) || !TryParseKind(Kind, out var parsed))
         {
             kindLocked = false;
             return false;
