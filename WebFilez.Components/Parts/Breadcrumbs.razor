@@ -1,4 +1,4 @@
-<nav class="wf-breadcrumbs" aria-label="Folder path">
+<nav class="wf-breadcrumbs" aria-label="@Text["tree.folders"]">
     @for (int i = 0; i < Items.Count; i++)
     {
         var crumb = Items[i];
@@ -42,4 +42,6 @@
 
     /// <summary>Dropping dragged items on a crumb moves them into that folder.</summary>
     [Parameter] public EventCallback<(string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 }

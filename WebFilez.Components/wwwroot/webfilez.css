@@ -387,7 +387,7 @@
 
 .wf-search .wf-icon {
     position: absolute;
-    left: 9px;
+    inset-inline-start: 9px;
     color: var(--wf-muted);
     pointer-events: none;
 }
@@ -403,7 +403,12 @@
 
 .wf-search input {
     width: 200px;
-    padding-left: 30px;
+    padding-inline-start: 30px;
+}
+
+.wf-scope {
+    width: auto;
+    max-width: 9.5rem;
 }
 
 .wf-input {
@@ -444,7 +449,7 @@
 }
 
 .wf-breadcrumb .wf-icon {
-    margin-right: 5px;
+    margin-inline-end: 5px;
 }
 
 button.wf-breadcrumb:hover {
@@ -492,12 +497,12 @@ button.wf-breadcrumb:hover {
 .wf-menu-dropdown {
     position: absolute;
     top: calc(100% + 4px);
-    left: 0;
+    inset-inline-start: 0;
 }
 
 .wf-menu-end {
-    right: 0;
-    left: auto;
+    inset-inline-end: 0;
+    inset-inline-start: auto;
 }
 
 .wf-menu-item {
@@ -506,7 +511,7 @@ button.wf-breadcrumb:hover {
     gap: 8px;
     width: 100%;
     padding: 6px 10px;
-    text-align: left;
+    text-align: start;
     white-space: nowrap;
     cursor: pointer;
     background: none;
@@ -527,7 +532,7 @@ button.wf-breadcrumb:hover {
 }
 
 .wf-menu-shortcut {
-    margin-left: 16px;
+    margin-inline-start: 16px;
     font-family: inherit;
     font-size: 12px;
     color: var(--wf-muted);
@@ -555,7 +560,7 @@ button.wf-breadcrumb:hover {
     width: 240px;
     overflow: auto;
     background: var(--wf-surface);
-    border-right: 1px solid var(--wf-border);
+    border-inline-end: 1px solid var(--wf-border);
 }
 
 .wf-tree {
@@ -609,7 +614,7 @@ button.wf-breadcrumb:hover {
     min-width: 0;
     padding: 4px 6px 4px 2px;
     overflow: hidden;
-    text-align: left;
+    text-align: start;
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
@@ -628,7 +633,7 @@ button.wf-breadcrumb:hover {
 }
 
 .wf-drop-active::after {
-    content: "Drop to upload";
+    content: attr(data-drop-label);
     position: absolute;
     inset: 8px;
     z-index: 5;
@@ -805,7 +810,7 @@ button.wf-breadcrumb:hover {
 .wf-tile-check {
     position: absolute;
     top: 8px;
-    left: 8px;
+    inset-inline-start: 8px;
     z-index: 1;
     opacity: 0;
 }
@@ -832,7 +837,7 @@ button.wf-breadcrumb:hover {
     font-size: 12px;
     font-weight: 600;
     color: var(--wf-muted);
-    text-align: left;
+    text-align: start;
     white-space: nowrap;
     background: var(--wf-bg);
     border-bottom: 1px solid var(--wf-border);
@@ -950,7 +955,7 @@ th.wf-col-size {
     width: 280px;
     overflow: auto;
     background: var(--wf-surface);
-    border-left: 1px solid var(--wf-border);
+    border-inline-start: 1px solid var(--wf-border);
 }
 
 .wf-info-header {
@@ -1224,11 +1229,11 @@ th.wf-col-size {
 }
 
 .wf-preview-prev {
-    left: 12px;
+    inset-inline-start: 12px;
 }
 
 .wf-preview-next {
-    right: 12px;
+    inset-inline-end: 12px;
 }
 
 .wf-preview-nav .wf-icon {
@@ -1240,7 +1245,7 @@ th.wf-col-size {
 
 .wf-upload-tray {
     position: fixed;
-    right: 16px;
+    inset-inline-end: 16px;
     bottom: 16px;
     z-index: 1050;
     width: min(340px, calc(100vw - 32px));
@@ -1410,7 +1415,7 @@ th.wf-col-size {
     .wf-info {
         position: absolute;
         top: 0;
-        right: 0;
+        inset-inline-end: 0;
         bottom: 0;
         z-index: 10;
         box-shadow: var(--wf-shadow);
@@ -1429,6 +1434,32 @@ th.wf-col-size {
     .wf-tree-pane {
         display: none;
     }
+}
+
+.wf-search-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--wf-border);
+}
+
+.wf-col-location {
+    width: 28%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wf-focused {
+    box-shadow: inset 0 0 0 2px var(--wf-accent);
+}
+
+[dir="rtl"] .wf-icon-chevron-right,
+[dir="rtl"] .wf-icon-chevron-left,
+[dir="rtl"] .wf-breadcrumb-separator {
+    transform: scaleX(-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

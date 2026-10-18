@@ -7,16 +7,16 @@
             <span class="wf-preview-title" title="@Current.Name">@Current.Name</span>
             @if (Items.Count > 1 && Index >= 0)
             {
-                <span class="wf-muted wf-small">@(Index + 1) of @Items.Count</span>
+                <span class="wf-muted wf-small">@Text.Format("preview.of", Index + 1, Items.Count)</span>
             }
             <span class="wf-spacer"></span>
             @if (Current.Permissions.Has(FilePermission.Download))
             {
-                <button type="button" class="wf-icon-button" title="Download" @onclick="() => OnDownload.InvokeAsync(Current)">
+                <button type="button" class="wf-icon-button" title="@Text["preview.download"]" @onclick="() => OnDownload.InvokeAsync(Current)">
                     <Icon Name="download" />
                 </button>
             }
-            <button type="button" class="wf-icon-button" title="Close (Esc)" @onclick="OnClose">
+            <button type="button" class="wf-icon-button" title="@Text["preview.close"]" @onclick="OnClose">
                 <Icon Name="x" />
             </button>
         </div>
@@ -24,7 +24,7 @@
         <div class="wf-preview-stage" @onclick="OnClose">
             @if (Index > 0)
             {
-                <button type="button" class="wf-preview-nav wf-preview-prev" aria-label="Previous" @onclick="() => StepAsync(-1)" @onclick:stopPropagation="true">
+                <button type="button" class="wf-preview-nav wf-preview-prev" aria-label="@Text["preview.previous"]" @onclick="() => StepAsync(-1)" @onclick:stopPropagation="true">
                     <Icon Name="chevron-left" />
                 </button>
             }
@@ -54,7 +54,7 @@
                         }
                         else if (text is null)
                         {
-                            <div class="wf-preview-message">Loading…</div>
+                            <div class="wf-preview-message">@Text["info.loading"]</div>
                         }
                         else
                         {
@@ -62,14 +62,14 @@
                         }
                         break;
                     default:
-                        <div class="wf-preview-message">There is no preview for this type of file.</div>
+                        <div class="wf-preview-message">@Text["preview.unsupported"]</div>
                         break;
                 }
             </div>
 
             @if (Index >= 0 && Index < Items.Count - 1)
             {
-                <button type="button" class="wf-preview-nav wf-preview-next" aria-label="Next" @onclick="() => StepAsync(1)" @onclick:stopPropagation="true">
+                <button type="button" class="wf-preview-nav wf-preview-next" aria-label="@Text["preview.next"]" @onclick="() => StepAsync(1)" @onclick:stopPropagation="true">
                     <Icon Name="chevron-right" />
                 </button>
             }
@@ -102,6 +102,8 @@
     [Parameter] public EventCallback<FileSystemItemDto> OnDownload { get; set; }
 
     [Parameter] public EventCallback OnClose { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     private int Index => Current is null ? -1 : Items.ToList().FindIndex(i => i.Path == Current.Path);
 

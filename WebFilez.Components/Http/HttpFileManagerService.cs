@@ -18,6 +18,15 @@ internal sealed class HttpFileManagerService(WebFilezApiClient api) : IFileManag
         return api.GetAsync(url, Json.DirectoryListingDto, cancellationToken);
     }
 
+    public Task<Result<SearchResultDto>> SearchAsync(SearchRequest request, CancellationToken cancellationToken = default)
+    {
+        string url = Query(ApiRoutes.Search, ("q", request.Query), ("root", request.RootId), ("path", request.Path))
+            + $"&kind={request.Kind}&hidden={Bool(request.ShowHidden)}&sort={request.SortBy}"
+            + $"&desc={Bool(request.Descending)}&max={request.MaxResults}";
+
+        return api.GetAsync(url, Json.SearchResultDto, cancellationToken);
+    }
+
     public Task<Result<IReadOnlyList<FolderNodeDto>>> GetFoldersAsync(string rootId, string? path, CancellationToken cancellationToken = default) =>
         api.GetAsync(Query(ApiRoutes.Folders, ("root", rootId), ("path", path)), Json.IReadOnlyListFolderNodeDto, cancellationToken);
 

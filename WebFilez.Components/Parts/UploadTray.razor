@@ -1,12 +1,12 @@
 @if (Uploads.Count > 0)
 {
-    <div class="wf-upload-tray" role="region" aria-label="Uploads">
+    <div class="wf-upload-tray" role="region" aria-label="@Text["upload.region"]">
         <div class="wf-upload-header">
             <strong>@Summary</strong>
             <span class="wf-spacer"></span>
             @if (Uploads.All(u => u.IsComplete))
             {
-                <button type="button" class="wf-icon-button" aria-label="Dismiss" @onclick="OnDismiss">
+                <button type="button" class="wf-icon-button" aria-label="@Text["upload.dismiss"]" @onclick="OnDismiss">
                     <Icon Name="x" />
                 </button>
             }
@@ -28,7 +28,7 @@
                         else
                         {
                             <span class="wf-muted wf-small">@upload.Percent%</span>
-                            <button type="button" class="wf-icon-button wf-icon-button-small" aria-label="@($"Cancel {upload.FileName}")"
+                            <button type="button" class="wf-icon-button wf-icon-button-small" aria-label="@Text.Format("upload.cancel", upload.FileName)"
                                     @onclick="() => OnCancel.InvokeAsync(upload.Id)">
                                 <Icon Name="x" />
                             </button>
@@ -55,6 +55,8 @@
 
     [Parameter] public EventCallback OnDismiss { get; set; }
 
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
+
     private string Summary
     {
         get
@@ -63,8 +65,8 @@
             int failed = Uploads.Count(u => u.Error is not null);
 
             return pending > 0
-                ? $"Uploading {Format.Plural(pending, "file")}…"
-                : failed > 0 ? $"{Format.Plural(failed, "upload")} failed" : "Uploads complete";
+                ? Text.Plural("upload.uploading", pending)
+                : failed > 0 ? Text.Plural("upload.failed", failed) : Text["upload.complete"];
         }
     }
 

@@ -183,6 +183,19 @@ export function focus(element, selectStem) {
     }
 }
 
+/** Focuses one listing row. Called after arrow keys move the selection. */
+export function focusItem(root, key) {
+    if (!(root instanceof Element)) {
+        return;
+    }
+
+    const row = root.querySelector(`[data-wf-key="${CSS.escape(key)}"]`);
+    if (row instanceof HTMLElement) {
+        row.focus({ preventScroll: true });
+        row.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+}
+
 /** Nudges a fixed-position menu back inside the viewport when it would overflow an edge. */
 export function fitToViewport(element) {
     if (!(element instanceof HTMLElement)) {
@@ -237,15 +250,36 @@ function onKeyDown(e, state) {
         return;
     }
 
-    if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [role="dialog"], [role="alertdialog"]'))) {
+    if (target instanceof HTMLElement && (target.isContentEditable || target.closest('button, a, input, textarea, select, [role="dialog"], [role="alertdialog"]'))) {
+        return;
+    }
+
+    // Shortcuts apply to the file list. A focused toolbar button keeps its own keys.
+    if (!(target instanceof Element) || !target.closest('.wf-listing')) {
         return;
     }
 
     const ctrl = e.ctrlKey || e.metaKey;
-    const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    const combo = ctrl ? `ctrl+${key}` : key;
+    const key = e.key === ' ' ? 'Space' : (e.key.length === 1 ? e.key.toLowerCase() : e.key);
+    const parts = [];
+    if (e.shiftKey) {
+        parts.push('shift');
+    }
 
-    const handled = ['ctrl+a', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'Delete', 'F2', 'Escape', 'Enter', 'Backspace'];
+    if (ctrl) {
+        parts.push('ctrl');
+    }
+
+    parts.push(key);
+    const combo = parts.join('+');
+
+    const handled = [
+        'ctrl+a', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'Delete', 'F2', 'Escape', 'Enter', 'Backspace',
+        'Space', 'shift+Space',
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End',
+        'shift+ArrowUp', 'shift+ArrowDown', 'shift+ArrowLeft', 'shift+ArrowRight', 'shift+Home', 'shift+End',
+        'ctrl+ArrowUp', 'ctrl+ArrowDown', 'ctrl+ArrowLeft', 'ctrl+ArrowRight', 'ctrl+Home', 'ctrl+End',
+    ];
     if (!handled.includes(combo)) {
         return;
     }

@@ -1,14 +1,13 @@
-@* Renders a folder in the selected layout. Purely presentational: it raises events and never
-   calls a service, so FileManager keeps all of the state in one place. *@
+@* Renders a folder or a search result. It raises events and never calls a service. *@
 
-@if (Items.Count == 0)
+@if (Entries.Count == 0)
 {
     <div class="wf-empty">
         <Icon Name="folder-open" Class="wf-empty-icon" />
-        <p>@(HasFilter ? "Nothing matches the filter." : "This folder is empty.")</p>
-        @if (!HasFilter && CanUpload)
+        <p>@EmptyText</p>
+        @if (ShowDropHint)
         {
-            <p class="wf-muted wf-small">Drop files here to upload them.</p>
+            <p class="wf-muted wf-small">@DropHint</p>
         }
     </div>
 }
@@ -20,41 +19,53 @@ else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
                 @if (ShowCheckboxes)
                 {
                     <th class="wf-col-check" @onclick:stopPropagation="true">
-                        <input type="checkbox" class="wf-check" aria-label="Select all"
+                        <input type="checkbox" class="wf-check" aria-label="@SelectAllLabel"
                                checked="@AreAllSelected" @onchange="ToggleSelectAll" />
                     </th>
                 }
                 <th class="wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Name)" @onclick:stopPropagation="true">
-                    Name @SortIndicator(ListingSortField.Name)
+                    @NameHeader @SortIndicator(ListingSortField.Name)
                 </th>
+                @if (ShowLocation)
+                {
+                    <th class="wf-col-location">@LocationHeader</th>
+                }
                 <th class="wf-col-size wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Size)" @onclick:stopPropagation="true">
-                    Size @SortIndicator(ListingSortField.Size)
+                    @SizeHeader @SortIndicator(ListingSortField.Size)
                 </th>
                 <th class="wf-col-modified wf-sortable" @onclick="() => OnSort.InvokeAsync(ListingSortField.Modified)" @onclick:stopPropagation="true">
-                    Modified @SortIndicator(ListingSortField.Modified)
+                    @ModifiedHeader @SortIndicator(ListingSortField.Modified)
                 </th>
             </tr>
         </thead>
-        <tbody>
-            @foreach (var item in Items)
+        <tbody role="listbox" aria-multiselectable="@(ShowCheckboxes ? "true" : "false")" aria-activedescendant="@ActiveId">
+            @for (int index = 0; index < Entries.Count; index++)
             {
-                <tr @key="item.Path"
-                    class="@ItemClass(item)"
+                var entry = Entries[index];
+                var item = entry.Item;
+                <tr @key="entry.Key"
+                    id="@RowId(index)"
+                    class="@ItemClass(entry)"
+                    role="option"
+                    aria-selected="@(SelectedKeys.Contains(entry.Key) ? "true" : "false")"
+                    tabindex="@(entry.Key == ActiveKey ? 0 : -1)"
+                    data-wf-key="@entry.Key"
                     data-wf-draggable="@(CanDrag(item) ? "true" : null)"
                     draggable="@(CanDrag(item) ? "true" : "false")"
-                    @ondragstart="() => OnDragStart.InvokeAsync(item)" @ondragend="OnDragEnd"
+                    @ondragstart="() => OnDragStart.InvokeAsync(entry)" @ondragend="OnDragEnd"
                     @ondragover:preventDefault="@item.IsDirectory"
-                    @ondrop="e => DropOnto(item, e)"
-                    @onclick="e => OnItemClick.InvokeAsync((item, e))" @onclick:stopPropagation="true"
-                    @ondblclick="() => OnItemActivate.InvokeAsync(item)"
-                    @oncontextmenu="e => OnItemContextMenu.InvokeAsync((item, e))"
+                    @ondrop="e => DropOnto(entry, e)"
+                    @onclick="e => OnItemClick.InvokeAsync((entry, e))" @onclick:stopPropagation="true"
+                    @ondblclick="() => OnItemActivate.InvokeAsync(entry)"
+                    @oncontextmenu="e => OnItemContextMenu.InvokeAsync((entry, e))"
                     @oncontextmenu:preventDefault="true" @oncontextmenu:stopPropagation="true">
                     @if (ShowCheckboxes)
                     {
                         <td class="wf-col-check" @onclick:stopPropagation="true">
-                            <input type="checkbox" class="wf-check" aria-label="@($"Select {item.Name}")"
-                                   checked="@SelectedPaths.Contains(item.Path)" disabled="@(!IsSelectable(item))"
-                                   @onchange="() => OnToggleSelect.InvokeAsync(item)" />
+                            <input type="checkbox" class="wf-check" aria-label="@SelectItemLabel(item)"
+                                   checked="@SelectedKeys.Contains(entry.Key)" disabled="@(!IsSelectable(item))"
+                                   @onclick="e => OnToggleSelect.InvokeAsync((entry, e))"
+                                   @onclick:preventDefault="true" @onclick:stopPropagation="true" />
                         </td>
                     }
                     <td>
@@ -62,7 +73,7 @@ else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
                             @if (ViewMode == ListingViewMode.List && item.HasThumbnail)
                             {
                                 <span class="wf-face wf-face-small wf-checkered">
-                                    <img loading="lazy" alt="" src="@Urls.Thumbnail(RootId, item, 128)" />
+                                    <img loading="lazy" alt="" src="@Urls.Thumbnail(entry.RootId, item, 128)" />
                                 </span>
                             }
                             else
@@ -72,8 +83,12 @@ else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
                             <span class="wf-name" title="@item.Name">@item.Name</span>
                         </div>
                     </td>
+                    @if (ShowLocation)
+                    {
+                        <td class="wf-col-location wf-muted" title="@entry.Location">@entry.Location</td>
+                    }
                     <td class="wf-col-size wf-num">@(item.IsDirectory ? "" : Format.Size(item.SizeBytes))</td>
-                    <td class="wf-col-modified" title="@Format.Full(item.ModifiedAt)">@Format.Relative(item.ModifiedAt)</td>
+                    <td class="wf-col-modified" title="@Format.Full(item.ModifiedAt)">@Format.Relative(item.ModifiedAt, Text)</td>
                 </tr>
             }
         </tbody>
@@ -81,34 +96,39 @@ else if (ViewMode is ListingViewMode.List or ListingViewMode.Compact)
 }
 else
 {
-    <div class="wf-grid" role="listbox" aria-multiselectable="true">
-        @foreach (var item in Items)
+    <div class="wf-grid" role="listbox" aria-multiselectable="@(ShowCheckboxes ? "true" : "false")" aria-activedescendant="@ActiveId">
+        @for (int index = 0; index < Entries.Count; index++)
         {
-            <div @key="item.Path"
-                 class="wf-tile @ItemClass(item)"
-                 role="option" aria-selected="@(SelectedPaths.Contains(item.Path) ? "true" : "false")"
+            var entry = Entries[index];
+            var item = entry.Item;
+            <div @key="entry.Key"
+                 id="@RowId(index)"
+                 class="wf-tile @ItemClass(entry)"
+                 role="option" aria-selected="@(SelectedKeys.Contains(entry.Key) ? "true" : "false")"
+                 tabindex="@(entry.Key == ActiveKey ? 0 : -1)"
                  title="@item.Name"
+                 data-wf-key="@entry.Key"
                  data-wf-draggable="@(CanDrag(item) ? "true" : null)"
                  draggable="@(CanDrag(item) ? "true" : "false")"
-                 @ondragstart="() => OnDragStart.InvokeAsync(item)" @ondragend="OnDragEnd"
+                 @ondragstart="() => OnDragStart.InvokeAsync(entry)" @ondragend="OnDragEnd"
                  @ondragover:preventDefault="@item.IsDirectory"
-                 @ondrop="e => DropOnto(item, e)"
-                 @onclick="e => OnItemClick.InvokeAsync((item, e))" @onclick:stopPropagation="true"
-                 @ondblclick="() => OnItemActivate.InvokeAsync(item)"
-                 @oncontextmenu="e => OnItemContextMenu.InvokeAsync((item, e))"
+                 @ondrop="e => DropOnto(entry, e)"
+                 @onclick="e => OnItemClick.InvokeAsync((entry, e))" @onclick:stopPropagation="true"
+                 @ondblclick="() => OnItemActivate.InvokeAsync(entry)"
+                 @oncontextmenu="e => OnItemContextMenu.InvokeAsync((entry, e))"
                  @oncontextmenu:preventDefault="true" @oncontextmenu:stopPropagation="true">
                 @if (ShowCheckboxes)
                 {
-                    <input type="checkbox" class="wf-check wf-tile-check" aria-label="@($"Select {item.Name}")"
-                           checked="@SelectedPaths.Contains(item.Path)" disabled="@(!IsSelectable(item))"
-                           @onclick:stopPropagation="true"
-                           @onchange="() => OnToggleSelect.InvokeAsync(item)" />
+                    <input type="checkbox" class="wf-check wf-tile-check" aria-label="@SelectItemLabel(item)"
+                           checked="@SelectedKeys.Contains(entry.Key)" disabled="@(!IsSelectable(item))"
+                           @onclick="e => OnToggleSelect.InvokeAsync((entry, e))"
+                           @onclick:preventDefault="true" @onclick:stopPropagation="true" />
                 }
 
                 @if (item.HasThumbnail)
                 {
                     <div class="wf-face wf-checkered">
-                        <img loading="lazy" alt="" draggable="false" src="@Urls.Thumbnail(RootId, item, 256)" />
+                        <img loading="lazy" alt="" draggable="false" src="@Urls.Thumbnail(entry.RootId, item, 256)" />
                     </div>
                 }
                 else
@@ -117,16 +137,16 @@ else
                 }
 
                 <span class="wf-tile-label">@item.Name</span>
-                <span class="wf-tile-meta">@(item.IsDirectory ? "Folder" : Format.Size(item.SizeBytes))</span>
+                <span class="wf-tile-meta">@(entry.Location ?? (item.IsDirectory ? FolderLabel : Format.Size(item.SizeBytes)))</span>
             </div>
         }
     </div>
 }
 
 @code {
-    [Parameter, EditorRequired] public IReadOnlyList<FileSystemItemDto> Items { get; set; } = [];
+    [CascadingParameter] public WebFilezText Text { get; set; } = WebFilezText.English;
 
-    [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
+    [Parameter] public IReadOnlyList<ListingEntry> Entries { get; set; } = [];
 
     [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
 
@@ -136,52 +156,80 @@ else
 
     [Parameter] public bool Descending { get; set; }
 
-    [Parameter] public IReadOnlySet<string> SelectedPaths { get; set; } = new HashSet<string>();
+    [Parameter] public IReadOnlySet<string> SelectedKeys { get; set; } = new HashSet<string>();
 
-    /// <summary>Items waiting to be moved by a paste, drawn faded as desktop file managers do.</summary>
+    [Parameter] public string? ActiveKey { get; set; }
+
     [Parameter] public IReadOnlySet<string> CutPaths { get; set; } = new HashSet<string>();
 
-    [Parameter] public bool HasFilter { get; set; }
+    [Parameter] public string EmptyText { get; set; } = string.Empty;
 
-    [Parameter] public bool CanUpload { get; set; }
+    [Parameter] public bool ShowDropHint { get; set; }
+
+    [Parameter] public string DropHint { get; set; } = string.Empty;
 
     [Parameter] public bool ShowCheckboxes { get; set; } = true;
 
-    /// <summary>In picker mode, items that can't be picked are drawn muted and can't be checked.</summary>
+    [Parameter] public bool ShowLocation { get; set; }
+
+    [Parameter] public string SelectAllLabel { get; set; } = "Select all";
+
+    [Parameter] public string NameHeader { get; set; } = "Name";
+
+    [Parameter] public string SizeHeader { get; set; } = "Size";
+
+    [Parameter] public string ModifiedHeader { get; set; } = "Modified";
+
+    [Parameter] public string LocationHeader { get; set; } = "Location";
+
+    [Parameter] public string FolderLabel { get; set; } = "Folder";
+
     [Parameter] public Func<FileSystemItemDto, bool> IsSelectable { get; set; } = _ => true;
 
     [Parameter] public Func<FileSystemItemDto, bool> CanDrag { get; set; } = _ => false;
 
-    [Parameter] public EventCallback<(FileSystemItemDto Item, MouseEventArgs Args)> OnItemClick { get; set; }
+    [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnItemClick { get; set; }
 
-    [Parameter] public EventCallback<FileSystemItemDto> OnItemActivate { get; set; }
+    [Parameter] public EventCallback<ListingEntry> OnItemActivate { get; set; }
 
-    [Parameter] public EventCallback<FileSystemItemDto> OnToggleSelect { get; set; }
+    [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnToggleSelect { get; set; }
 
-    [Parameter] public EventCallback<(FileSystemItemDto Item, MouseEventArgs Args)> OnItemContextMenu { get; set; }
+    [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnItemContextMenu { get; set; }
 
     [Parameter] public EventCallback<bool> OnSelectAll { get; set; }
 
     [Parameter] public EventCallback<ListingSortField> OnSort { get; set; }
 
-    [Parameter] public EventCallback<FileSystemItemDto> OnDragStart { get; set; }
+    [Parameter] public EventCallback<ListingEntry> OnDragStart { get; set; }
 
     [Parameter] public EventCallback OnDragEnd { get; set; }
 
-    [Parameter] public EventCallback<(string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+    [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
 
-    private bool AreAllSelected => Items.Count > 0 && Items.Where(IsSelectable).All(i => SelectedPaths.Contains(i.Path));
+    private bool AreAllSelected => Entries.Count > 0 && Entries.Where(entry => IsSelectable(entry.Item)).All(entry => SelectedKeys.Contains(entry.Key));
 
-    private string ItemClass(FileSystemItemDto item)
+    private string? ActiveId => ActiveKey is null ? null : RowId(Entries.ToList().FindIndex(entry => entry.Key == ActiveKey));
+
+    private static string RowId(int index) => index < 0 ? string.Empty : $"wf-row-{index}";
+
+    private string SelectItemLabel(FileSystemItemDto item) => Text.Format("listing.selectItem", item.Name);
+
+    private string ItemClass(ListingEntry entry)
     {
-        var classes = new List<string>(4);
+        var classes = new List<string>(5);
+        var item = entry.Item;
 
-        if (SelectedPaths.Contains(item.Path))
+        if (SelectedKeys.Contains(entry.Key))
         {
             classes.Add("wf-selected");
         }
 
-        if (CutPaths.Contains(item.Path))
+        if (entry.Key == ActiveKey)
+        {
+            classes.Add("wf-focused");
+        }
+
+        if (CutPaths.Contains(entry.Key))
         {
             classes.Add("wf-cut");
         }
@@ -199,8 +247,8 @@ else
         return string.Join(' ', classes);
     }
 
-    private Task DropOnto(FileSystemItemDto item, DragEventArgs e) =>
-        item.IsDirectory ? OnDropOnto.InvokeAsync((item.Path, e)) : Task.CompletedTask;
+    private Task DropOnto(ListingEntry entry, DragEventArgs e) =>
+        entry.Item.IsDirectory ? OnDropOnto.InvokeAsync((entry.RootId, entry.Item.Path, e)) : Task.CompletedTask;
 
     private Task ToggleSelectAll() => OnSelectAll.InvokeAsync(!AreAllSelected);
 

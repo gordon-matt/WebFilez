@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.DependencyInjection;
 using WebFilez.Components.Infrastructure;
+using WebFilez.Components.Localization;
 using WebFilez.Components.Parts;
 using WebFilez.Components.Shared;
 
@@ -14,20 +16,27 @@ namespace WebFilez.Components;
 /// </summary>
 public sealed partial class FileManager
 {
-    private static readonly (ListingViewMode Mode, string Icon, string Label)[] ViewModes =
+    private enum SearchScope
+    {
+        Folder,
+        Root,
+        All,
+    }
+
+    private (ListingViewMode Mode, string Icon, string Label)[] ViewModes =>
     [
-        (ListingViewMode.Tiles, "grid", "Tiles"),
-        (ListingViewMode.List, "list", "List"),
-        (ListingViewMode.Compact, "compact", "Compact"),
+        (ListingViewMode.Tiles, "grid", Text["view.tiles"]),
+        (ListingViewMode.List, "list", Text["view.list"]),
+        (ListingViewMode.Compact, "compact", Text["view.compact"]),
     ];
 
-    private static readonly (KindFilter Filter, string Icon, string Label)[] KindFilters =
+    private (KindFilter Filter, string Icon, string Label)[] KindFilters =>
     [
-        (KindFilter.All, "folder", "All"),
-        (KindFilter.Images, "image", "Images"),
-        (KindFilter.Documents, "file-text", "Documents"),
-        (KindFilter.Media, "music", "Media"),
-        (KindFilter.Archives, "archive", "Archives"),
+        (KindFilter.All, "folder", Text["kind.all"]),
+        (KindFilter.Images, "image", Text["kind.images"]),
+        (KindFilter.Documents, "file-text", Text["kind.documents"]),
+        (KindFilter.Media, "music", Text["kind.media"]),
+        (KindFilter.Archives, "archive", Text["kind.archives"]),
     ];
 
     private readonly HashSet<string> selection = new(StringComparer.Ordinal);
@@ -56,6 +65,13 @@ public sealed partial class FileManager
     private string filter = string.Empty;
     private KindFilter kindFilter;
     private int pageSize = 500;
+    private SearchScope searchScope;
+    private SearchResultDto? searchResults;
+    private int searchVersion;
+    private string? searchError;
+    private string? activeKey;
+    private string? dragRootId;
+    private bool dragCanMove;
 
     private string? rangeAnchor;
     private bool isTreeOpen = true;
@@ -69,6 +85,7 @@ public sealed partial class FileManager
 
     private Clipboard? clipboard;
     private FileSystemItemDto? previewItem;
+    private string? previewRoot;
     private IReadOnlyList<string>? dragPaths;
 
     private FolderTree? tree;
@@ -83,6 +100,8 @@ public sealed partial class FileManager
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 
     [Inject] private WebFilezApiAddress ApiAddress { get; set; } = default!;
+
+    [Inject] private IServiceProvider Services { get; set; } = default!;
 
     /// <summary>The root to open. Defaults to the first root the caller can browse.</summary>
     [Parameter] public string? Root { get; set; }
@@ -124,6 +143,9 @@ public sealed partial class FileManager
 
     [Parameter] public string? Class { get; set; }
 
+    /// <summary>IETF language tag, such as <c>fr-CA</c>. Empty follows the saved choice, then the UI culture.</summary>
+    [Parameter] public string? Language { get; set; }
+
     /// <summary>Raised by the Select button in picker mode.</summary>
     [Parameter] public EventCallback<IReadOnlyList<SelectedFile>> OnSelected { get; set; }
 
@@ -137,19 +159,69 @@ public sealed partial class FileManager
 
     private bool IsPicker => SelectionMode is Constants.SelectionModes.Single or Constants.SelectionModes.Multiple;
 
-    private IReadOnlyList<FileSystemItemDto> SelectedItems =>
-        listing?.Items.Where(i => selection.Contains(i.Path)).ToList() ?? [];
+    private IWebFilezLocalizer Locales => Services.GetService<IWebFilezLocalizer>() ?? WebFilezLocaleCatalog.Shared;
 
-    private FileSystemItemDto? DetailItem =>
-        selection.Count == 1 ? listing?.Items.FirstOrDefault(i => selection.Contains(i.Path)) : null;
+    private WebFilezText text = WebFilezText.English;
 
-    private IReadOnlySet<string> CutPaths =>
-        clipboard is { IsCut: true } c && c.RootId == rootId ? c.Paths : EmptySet;
+    private WebFilezText Text => text;
+
+    private string? appliedLanguageParameter;
+
+    private bool ShowingSearch => searchScope != SearchScope.Folder && !string.IsNullOrWhiteSpace(filter);
+
+    private IReadOnlyList<ListingEntry> SelectedRows() => Rows().Where(row => selection.Contains(row.Key)).ToList();
+
+    private IReadOnlyList<FileSystemItemDto> SelectedItems
+    {
+        get
+        {
+            var rows = SelectedRows();
+            return rows.Select(row => row.RootId).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1
+                ? []
+                : rows.Select(row => row.Item).ToList();
+        }
+    }
+
+    private string? ActionRootId
+    {
+        get
+        {
+            var roots = SelectedRows().Select(row => row.RootId).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            return roots.Count switch
+            {
+                0 => rootId,
+                1 => roots[0],
+                _ => null,
+            };
+        }
+    }
+
+    private string DetailRootId => SelectedRows() is [var only] ? only.RootId : rootId ?? string.Empty;
+
+    private long SelectedBytes => SelectedRows().Where(row => !row.Item.IsDirectory).Sum(row => row.Item.SizeBytes);
+
+    private FileSystemItemDto? DetailItem => SelectedRows() is [var only] ? only.Item : null;
+
+    private IReadOnlySet<string> CutPaths
+    {
+        get
+        {
+            if (clipboard is not { IsCut: true } clip)
+            {
+                return EmptySet;
+            }
+
+            return Rows()
+                .Where(row => row.RootId == clip.RootId && clip.Paths.Contains(row.Item.Path))
+                .Select(row => row.Key)
+                .ToHashSet(StringComparer.Ordinal);
+        }
+    }
 
     private static readonly HashSet<string> EmptySet = [];
 
     private IReadOnlyList<FileSystemItemDto> PreviewableItems =>
-        listing?.Items.Where(i => FileKinds.IsMedia(i.Kind)).ToList() ?? [];
+        Rows().Where(row => row.RootId == (previewRoot ?? rootId) && FileKinds.IsMedia(row.Item.Kind)).Select(row => row.Item).ToList();
 
     private bool CanShowHidden => roots.Any(r => r.Id == rootId && r.CanShowHiddenFiles);
 
@@ -159,18 +231,24 @@ public sealed partial class FileManager
         && SelectedItems.All(IsSelectable);
 
     private string PickerHint => string.IsNullOrWhiteSpace(Accept)
-        ? "Choose a file"
-        : $"Choose {(SelectionMode == Constants.SelectionModes.Multiple ? "files" : "a file")} ({Accept})";
+        ? Text[SelectionMode == Constants.SelectionModes.Multiple ? "status.chooseFiles" : "status.chooseFile"]
+        : Text.Format(
+            "status.chooseTyped",
+            Text[SelectionMode == Constants.SelectionModes.Multiple ? "status.files" : "status.aFile"],
+            Accept);
 
     protected override void OnInitialized()
     {
         interop = new WebFilezInterop(JS);
         urls = new WebFilezUrls(Navigation, ApiAddress);
         viewMode = ParseView(View);
+        text = Locales.Resolve(string.IsNullOrWhiteSpace(Language) ? CultureInfo.CurrentUICulture.Name : Language);
+        appliedLanguageParameter = string.IsNullOrWhiteSpace(Language) ? null : Language;
     }
 
     protected override async Task OnParametersSetAsync()
     {
+        ApplyHostLanguage();
         bool kindChanged = UpdateKind();
 
         // Only a change the host made moves the component. Re-rendering with the same Root and
@@ -179,7 +257,7 @@ public sealed partial class FileManager
         {
             if (kindChanged && rootId is not null && listing is not null)
             {
-                await LoadAsync();
+                await RefreshViewAsync();
             }
 
             return;
@@ -204,7 +282,7 @@ public sealed partial class FileManager
 
         if (rootId is null)
         {
-            loadError = "There are no folders available.";
+            loadError = Text["error.noFolders"];
             return;
         }
 
@@ -227,11 +305,45 @@ public sealed partial class FileManager
             viewMode = storedMode;
             StateHasChanged();
         }
+
+        if (string.IsNullOrWhiteSpace(Language) && await interop.GetStoredAsync("lang") is { Length: > 0 } storedLanguage)
+        {
+            text = Locales.Resolve(storedLanguage);
+            StateHasChanged();
+        }
+    }
+
+    private void ApplyHostLanguage()
+    {
+        if (string.IsNullOrWhiteSpace(Language) || appliedLanguageParameter == Language)
+        {
+            return;
+        }
+
+        appliedLanguageParameter = Language;
+        text = Locales.Resolve(Language);
+    }
+
+    private async Task SetLanguageAsync(string tag)
+    {
+        text = Locales.Resolve(tag);
+        if (string.IsNullOrWhiteSpace(Language))
+        {
+            await interop.SetStoredAsync("lang", text.Language);
+        }
     }
 
     // ------------------------------------------------------------------ navigation
 
-    private async Task NavigateAsync(string targetRoot, string path) => await OpenAsync(targetRoot, path, notify: true);
+    private async Task NavigateAsync(string targetRoot, string path)
+    {
+        if (ShowingSearch)
+        {
+            await LeaveSearchAsync();
+        }
+
+        await OpenAsync(targetRoot, path, notify: true);
+    }
 
     private async Task OpenAsync(string targetRoot, string path, bool notify)
     {
@@ -284,8 +396,11 @@ public sealed partial class FileManager
             listing = result.Value;
             loadError = null;
 
-            // Drop selections of items that are gone, such as after a delete or move.
-            selection.IntersectWith(listing.Items.Select(i => i.Path));
+            // A folder listing must not drop a selection made in search results.
+            if (!ShowingSearch)
+            {
+                selection.IntersectWith(listing.Items.Select(i => i.Path));
+            }
             return;
         }
 
@@ -315,12 +430,105 @@ public sealed partial class FileManager
         await LoadAsync();
     }
 
-    private async Task OnFilterChangedAsync() => await LoadAsync();
+    private async Task OnFilterChangedAsync()
+    {
+        if (searchScope == SearchScope.Folder)
+        {
+            await LoadAsync();
+            return;
+        }
+
+        await RunSearchAsync();
+    }
+
+    private async Task OnScopeChangedAsync(ChangeEventArgs change)
+    {
+        if (Enum.TryParse(change.Value?.ToString(), out SearchScope scope))
+        {
+            await SetSearchScopeAsync(scope);
+        }
+    }
+
+    private async Task SetSearchScopeAsync(SearchScope scope)
+    {
+        searchScope = scope;
+        searchResults = null;
+        searchError = null;
+        searchVersion++;
+        selection.Clear();
+        rangeAnchor = null;
+        activeKey = null;
+
+        if (scope == SearchScope.Folder || string.IsNullOrWhiteSpace(filter))
+        {
+            await LoadAsync();
+            return;
+        }
+
+        await RunSearchAsync();
+    }
+
+    private async Task RunSearchAsync()
+    {
+        int version = ++searchVersion;
+        string query = filter.Trim();
+        if (query.Length == 0)
+        {
+            searchResults = null;
+            searchError = null;
+            return;
+        }
+
+        var result = await Service.SearchAsync(new SearchRequest(
+            query,
+            searchScope == SearchScope.All ? null : rootId,
+            Kind: kindFilter,
+            ShowHidden: showHidden,
+            SortBy: sortBy,
+            Descending: descending));
+
+        if (version != searchVersion)
+        {
+            return;
+        }
+
+        if (result.IsSuccess)
+        {
+            searchResults = result.Value;
+            searchError = null;
+            selection.IntersectWith(Rows().Select(row => row.Key));
+            return;
+        }
+
+        searchResults = null;
+        searchError = result.GetDisplayMessage();
+    }
+
+    private async Task ClearSearchAsync()
+    {
+        await LeaveSearchAsync();
+        selection.Clear();
+        rangeAnchor = null;
+        activeKey = null;
+        await LoadAsync();
+    }
+
+    private async Task LeaveSearchAsync()
+    {
+        filter = string.Empty;
+        searchScope = SearchScope.Folder;
+        searchResults = null;
+        searchError = null;
+        searchVersion++;
+        await Task.CompletedTask;
+    }
+
+    private Task RefreshViewAsync() => ShowingSearch ? RunSearchAsync() : LoadAsync();
 
     private async Task SetKindFilterAsync(KindFilter value)
     {
         kindFilter = value;
-        await LoadAsync();
+        await RefreshViewAsync();
     }
 
     private async Task SortByAsync(ListingSortField field)
@@ -328,13 +536,13 @@ public sealed partial class FileManager
         // Choosing the active field again flips direction, which is what a column header implies.
         descending = sortBy == field && !descending;
         sortBy = field;
-        await LoadAsync();
+        await RefreshViewAsync();
     }
 
     private async Task ToggleHiddenAsync()
     {
         showHidden = !showHidden;
-        await LoadAsync();
+        await RefreshViewAsync();
     }
 
     private async Task SetViewModeAsync(ListingViewMode mode)
@@ -362,29 +570,30 @@ public sealed partial class FileManager
     private bool IsSelectable(FileSystemItemDto item) =>
         !IsPicker || (!item.IsDirectory && FileKinds.IsAccepted(item.Name, Accept));
 
-    private async Task OnItemClickAsync((FileSystemItemDto Item, MouseEventArgs Args) e)
+    private async Task OnItemClickAsync((ListingEntry Entry, MouseEventArgs Args) e)
     {
-        var (item, args) = e;
+        var (entry, args) = e;
         contextMenu = null;
+        activeKey = entry.Key;
 
         if (args.ShiftKey && rangeAnchor is not null && SelectionMode != Constants.SelectionModes.Single)
         {
-            SelectRange(rangeAnchor, item.Path);
+            SelectRange(rangeAnchor, entry.Key);
         }
         else if ((args.CtrlKey || args.MetaKey) && SelectionMode != Constants.SelectionModes.Single)
         {
-            if (!selection.Remove(item.Path))
+            if (!selection.Remove(entry.Key))
             {
-                selection.Add(item.Path);
+                selection.Add(entry.Key);
             }
 
-            rangeAnchor = item.Path;
+            rangeAnchor = entry.Key;
         }
         else
         {
             selection.Clear();
-            selection.Add(item.Path);
-            rangeAnchor = item.Path;
+            selection.Add(entry.Key);
+            rangeAnchor = entry.Key;
         }
 
         await LoadDetailAsync();
@@ -392,42 +601,74 @@ public sealed partial class FileManager
 
     private void SelectRange(string from, string to)
     {
-        if (listing is null)
-        {
-            return;
-        }
-
-        var paths = listing.Items.Select(i => i.Path).ToList();
-        int start = paths.IndexOf(from);
-        int end = paths.IndexOf(to);
-
+        var rows = Rows();
+        int start = rows.FindIndex(row => row.Key == from);
+        int end = rows.FindIndex(row => row.Key == to);
         if (start < 0 || end < 0)
         {
             return;
         }
 
         selection.Clear();
-        selection.UnionWith(paths.GetRange(Math.Min(start, end), Math.Abs(end - start) + 1));
+        int first = Math.Min(start, end);
+        int last = Math.Max(start, end);
+        for (int index = first; index <= last; index++)
+        {
+            var row = rows[index];
+            if (IsPicker && !IsSelectable(row.Item))
+            {
+                continue;
+            }
+
+            selection.Add(row.Key);
+        }
     }
 
-    private async Task ToggleSelectAsync(FileSystemItemDto item)
+    private async Task ToggleSelectAsync((ListingEntry Entry, MouseEventArgs Args) e)
     {
-        if (!selection.Remove(item.Path))
+        activeKey = e.Entry.Key;
+        if (e.Args.ShiftKey && rangeAnchor is not null && SelectionMode != Constants.SelectionModes.Single)
         {
-            selection.Add(item.Path);
+            SelectRange(rangeAnchor, e.Entry.Key);
+        }
+        else if (!selection.Remove(e.Entry.Key) && (!IsPicker || IsSelectable(e.Entry.Item)))
+        {
+            selection.Add(e.Entry.Key);
+            rangeAnchor = e.Entry.Key;
+        }
+        else
+        {
+            rangeAnchor = e.Entry.Key;
         }
 
-        rangeAnchor = item.Path;
         await LoadDetailAsync();
     }
 
     private async Task SelectAllAsync(bool select)
     {
-        selection.Clear();
-
-        if (select && listing is not null && SelectionMode != Constants.SelectionModes.Single)
+        if (select && !ShowingSearch && listing is { } current && current.TotalCount > current.Items.Count
+            && SelectionMode != Constants.SelectionModes.Single)
         {
-            selection.UnionWith(listing.Items.Where(i => !IsPicker || IsSelectable(i)).Select(i => i.Path));
+            pageSize = Math.Min(current.TotalCount, 10_000);
+            await LoadAsync();
+        }
+
+        selection.Clear();
+        if (select && SelectionMode != Constants.SelectionModes.Single)
+        {
+            foreach (var row in Rows())
+            {
+                if (!IsPicker || IsSelectable(row.Item))
+                {
+                    selection.Add(row.Key);
+                }
+            }
+
+            if (Rows() is { Count: > 0 } rows)
+            {
+                rangeAnchor ??= rows[0].Key;
+                activeKey ??= rows[0].Key;
+            }
         }
 
         await LoadDetailAsync();
@@ -438,21 +679,36 @@ public sealed partial class FileManager
         // Only clicks that reach the background get here; item clicks stop propagation.
         selection.Clear();
         rangeAnchor = null;
+        activeKey = null;
         detail = null;
         contextMenu = null;
     }
 
     private async Task LoadDetailAsync()
     {
-        if (!isInfoOpen || rootId is null || listing is null || selection.Count > 1)
+        var rows = SelectedRows();
+        if (!isInfoOpen || rows.Count > 1)
         {
             detail = null;
             return;
         }
 
-        string path = selection.Count == 1 ? selection.First() : listing.Path;
-        var result = await Service.GetDetailAsync(rootId, path);
-        detail = result.IsSuccess ? result.Value : null;
+        if (rows.Count == 1)
+        {
+            var result = await Service.GetDetailAsync(rows[0].RootId, rows[0].Item.Path);
+            detail = result.IsSuccess ? result.Value : null;
+            return;
+        }
+
+        if (rootId is null || listing is null)
+        {
+            detail = null;
+            return;
+        }
+
+        string path = listing.Path;
+        var folder = await Service.GetDetailAsync(rootId, path);
+        detail = folder.IsSuccess ? folder.Value : null;
     }
 
     // -------------------------------------------------------------------- permissions
@@ -473,11 +729,12 @@ public sealed partial class FileManager
 
     // ----------------------------------------------------------------------- opening
 
-    private async Task ActivateAsync(FileSystemItemDto item)
+    private async Task ActivateAsync(ListingEntry entry)
     {
+        var item = entry.Item;
         if (item.IsDirectory)
         {
-            await NavigateAsync(rootId!, item.Path);
+            await NavigateAsync(entry.RootId, item.Path);
             return;
         }
 
@@ -486,37 +743,40 @@ public sealed partial class FileManager
             if (IsSelectable(item))
             {
                 selection.Clear();
-                selection.Add(item.Path);
+                selection.Add(entry.Key);
+                activeKey = entry.Key;
                 await ConfirmSelectionAsync();
             }
 
             return;
         }
 
-        await OpenFileAsync(item);
+        await OpenFileAsync(entry.RootId, item);
     }
 
-    private async Task OpenFileAsync(FileSystemItemDto item)
+    private async Task OpenFileAsync(string itemRoot, FileSystemItemDto item)
     {
         if (FileKinds.IsEditable(item.Kind) && CanOn(item, FilePermission.Read))
         {
-            await EditAsync(item);
+            await EditAsync(item, itemRoot);
         }
         else if (FileKinds.CanPreview(item.Kind) && CanOn(item, FilePermission.Read))
         {
             previewItem = item;
+            previewRoot = itemRoot;
         }
         else if (CanOn(item, FilePermission.Download))
         {
-            await DownloadAsync([item]);
+            await DownloadAsync(itemRoot, [item]);
         }
     }
 
-    private async Task EditAsync(FileSystemItemDto item)
+    private async Task EditAsync(FileSystemItemDto item, string? itemRoot = null)
     {
-        if (editor is not null && rootId is not null)
+        string target = itemRoot ?? ActionRootId ?? rootId ?? string.Empty;
+        if (editor is not null && target.Length > 0)
         {
-            await editor.OpenAsync(rootId, item.Path);
+            await editor.OpenAsync(target, item.Path);
         }
     }
 
@@ -527,7 +787,7 @@ public sealed partial class FileManager
     }
 
     private Task<bool> ConfirmDiscardAsync() =>
-        confirm?.ShowAsync("Discard changes?", "Your changes to this file haven't been saved.", "Discard", isDestructive: true)
+        confirm?.ShowAsync(Text["confirm.discard.title"], Text["confirm.discard.message"], Text["dialog.discard"], isDestructive: true)
         ?? Task.FromResult(true);
 
     // ------------------------------------------------------------------- picker
@@ -539,15 +799,15 @@ public sealed partial class FileManager
             return;
         }
 
-        var files = SelectedItems
-            .Select(i => new SelectedFile(
-                rootId,
-                i.Path,
-                i.Name,
-                i.SizeBytes,
-                FileKinds.GetMimeType(i.Name),
-                urls.Download(rootId, i.Path),
-                urls.Public(i.PublicUrl)))
+        var files = SelectedRows()
+            .Select(row => new SelectedFile(
+                row.RootId,
+                row.Item.Path,
+                row.Item.Name,
+                row.Item.SizeBytes,
+                FileKinds.GetMimeType(row.Item.Name),
+                urls.Download(row.RootId, row.Item.Path),
+                urls.Public(row.Item.PublicUrl)))
             .ToList();
 
         await OnSelected.InvokeAsync(files);
@@ -600,6 +860,121 @@ public sealed partial class FileManager
 
     private static ListingViewMode ParseView(string? value) =>
         Enum.TryParse(value, ignoreCase: true, out ListingViewMode mode) ? mode : ListingViewMode.Tiles;
+
+    private List<ListingEntry> Rows()
+    {
+        if (ShowingSearch && searchResults is not null)
+        {
+            return searchResults.Hits.Select(hit => new ListingEntry(KeyFor(hit.RootId, hit.Path), hit.RootId, ToItem(hit), hit.Location)).ToList();
+        }
+
+        if (listing is null || rootId is null)
+        {
+            return [];
+        }
+
+        return listing.Items.Select(item => new ListingEntry(item.Path, rootId, item)).ToList();
+    }
+
+    private string SelectionKey(string itemRoot, string path) => ShowingSearch ? KeyFor(itemRoot, path) : path;
+
+    private static string KeyFor(string itemRoot, string path) => itemRoot + "|" + path;
+
+    private static FileSystemItemDto ToItem(SearchHitDto hit) => new(
+        hit.Name,
+        hit.Path,
+        hit.IsDirectory,
+        hit.SizeBytes,
+        hit.ModifiedAt,
+        hit.Kind,
+        hit.Extension,
+        hit.IsHidden,
+        hit.Permissions,
+        hit.HasThumbnail,
+        hit.PublicUrl);
+
+    private async Task MoveSelectionAsync(string combo)
+    {
+        var rows = Rows();
+        if (rows.Count == 0)
+        {
+            return;
+        }
+
+        bool extend = combo.StartsWith("shift+", StringComparison.Ordinal) && SelectionMode != Constants.SelectionModes.Single;
+        bool moveOnly = combo.StartsWith("ctrl+", StringComparison.Ordinal);
+        string key = combo[(combo.LastIndexOf('+') + 1)..];
+        int current = activeKey is null ? -1 : rows.FindIndex(row => row.Key == activeKey);
+        int next = key switch
+        {
+            "Home" => 0,
+            "End" => rows.Count - 1,
+            "ArrowUp" or "ArrowLeft" => current < 0 ? 0 : Math.Max(0, current - 1),
+            "ArrowDown" or "ArrowRight" => current < 0 ? 0 : Math.Min(rows.Count - 1, current + 1),
+            _ => current,
+        };
+
+        if (next < 0)
+        {
+            return;
+        }
+
+        var target = rows[next];
+        activeKey = target.Key;
+        if (moveOnly)
+        {
+            await FocusActiveAsync();
+            return;
+        }
+
+        if (extend && rangeAnchor is not null)
+        {
+            SelectRange(rangeAnchor, target.Key);
+        }
+        else
+        {
+            selection.Clear();
+            if (!IsPicker || IsSelectable(target.Item) || target.Item.IsDirectory)
+            {
+                selection.Add(target.Key);
+            }
+
+            rangeAnchor = target.Key;
+        }
+
+        await LoadDetailAsync();
+        await FocusActiveAsync();
+    }
+
+    private async Task ToggleActiveAsync(bool extend)
+    {
+        var rows = Rows();
+        var active = rows.FirstOrDefault(row => row.Key == activeKey);
+        if (active is null || SelectionMode == Constants.SelectionModes.Single)
+        {
+            return;
+        }
+
+        if (extend && rangeAnchor is not null)
+        {
+            SelectRange(rangeAnchor, active.Key);
+        }
+        else if (!selection.Remove(active.Key) && (!IsPicker || IsSelectable(active.Item)))
+        {
+            selection.Add(active.Key);
+            rangeAnchor = active.Key;
+        }
+
+        await LoadDetailAsync();
+    }
+
+    private async Task FocusActiveAsync()
+    {
+        if (isAttached && activeKey is not null)
+        {
+            await interop.FocusItemAsync(listingElement, activeKey);
+        }
+    }
 
     private sealed record Clipboard(string RootId, HashSet<string> Paths, bool IsCut);
 

@@ -16,6 +16,7 @@ DemoFiles.Seed(builder.Environment.ContentRootPath);
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
 builder.Services.AddWebFilez(builder.Configuration);
+builder.Services.AddWebFilezComponents();
 builder.Services.AddWebFilezAzureBlob();
 builder.Services.AddWebFilezAzureFiles();
 builder.Services.AddWebFilezAmazonS3();

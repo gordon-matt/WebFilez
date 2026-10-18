@@ -60,6 +60,12 @@ public sealed class WebFilezOptions
 
     /// <summary>Companion to <see cref="MaxExtractedBytes"/>: a bomb can also be millions of tiny files.</summary>
     public int MaxExtractedEntries { get; set; } = 100_000;
+
+    /// <summary>
+    /// Stops indexing a root once it holds this many files and folders. Search still works, and
+    /// reports that the index was capped.
+    /// </summary>
+    public int MaxSearchIndexEntries { get; set; } = 100_000;
 }
 
 /// <summary>How names supplied by users are cleaned up before they reach the disk.</summary>

@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using WebFilez.Components.Http;
+using WebFilez.Components.Localization;
 
 namespace WebFilez;
 
@@ -35,7 +36,27 @@ public static class ComponentsServiceCollectionExtensions
 
             services.TryAddScoped<IFileManagerService, HttpFileManagerService>();
             services.TryAddSingleton(new WebFilezApiAddress(normalized, includeCredentials));
+            services.AddWebFilezComponents();
 
+            return services;
+        }
+
+        /// <summary>
+        /// Registers the language catalogs. Built-in languages ship with the component. Point
+        /// <see cref="WebFilezLocalizationOptions.Directory"/> at a folder of <c>{tag}.json</c>
+        /// files to add or override a language. Safe to call before <c>AddWebFilezHttpClient</c>.
+        /// </summary>
+        public IServiceCollection AddWebFilezComponents(Action<WebFilezLocalizationOptions>? configure = null)
+        {
+            if (services.Any(descriptor => descriptor.ServiceType == typeof(IWebFilezLocalizer)))
+            {
+                return services;
+            }
+
+            var options = new WebFilezLocalizationOptions();
+            configure?.Invoke(options);
+            services.AddSingleton(options);
+            services.AddSingleton<IWebFilezLocalizer, WebFilezLocaleCatalog>();
             return services;
         }
     }

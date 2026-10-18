@@ -7,23 +7,24 @@ public sealed partial class FileManager
 {
     // ---------------------------------------------------------------- context menus
 
-    private async Task ShowItemMenuAsync((FileSystemItemDto Item, MouseEventArgs Args) e)
+    private async Task ShowItemMenuAsync((ListingEntry Entry, MouseEventArgs Args) e)
     {
         openMenu = null;
 
         // Right-clicking outside the selection replaces it: the menu must act on what the user
         // just pointed at.
-        if (!selection.Contains(e.Item.Path))
+        if (!selection.Contains(e.Entry.Key))
         {
             selection.Clear();
-            selection.Add(e.Item.Path);
-            rangeAnchor = e.Item.Path;
+            selection.Add(e.Entry.Key);
+            rangeAnchor = e.Entry.Key;
+            activeKey = e.Entry.Key;
             await LoadDetailAsync();
         }
 
         menuX = e.Args.ClientX;
         menuY = e.Args.ClientY;
-        contextMenu = BuildSelectionMenu(e.Item);
+        contextMenu = BuildSelectionMenu(e.Entry);
     }
 
     private void ShowBackgroundMenu(MouseEventArgs args)
@@ -36,14 +37,15 @@ public sealed partial class FileManager
         contextMenu = BuildBackgroundMenu();
     }
 
-    private List<MenuEntry> BuildSelectionMenu(FileSystemItemDto item)
+    private List<MenuEntry> BuildSelectionMenu(ListingEntry entry)
     {
+        var item = entry.Item;
         var entries = new List<MenuEntry>();
         bool single = selection.Count == 1;
 
         if (single && item.IsDirectory)
         {
-            entries.Add(new("Open", "folder-open", () => NavigateAsync(rootId!, item.Path)));
+            entries.Add(new(Text["menu.open"], "folder-open", () => NavigateAsync(entry.RootId, item.Path)));
         }
         else if (single)
         {
@@ -54,70 +56,70 @@ public sealed partial class FileManager
 
             if (FileKinds.CanPreview(item.Kind) && CanOn(item, FilePermission.Read))
             {
-                entries.Add(new("Preview", "eye", () => { previewItem = item; return Task.CompletedTask; }));
+                entries.Add(new(Text["menu.preview"], "eye", () => { previewItem = item; previewRoot = entry.RootId; return Task.CompletedTask; }));
             }
 
             if (FileKinds.IsEditable(item.Kind) && CanOn(item, FilePermission.Read))
             {
-                entries.Add(new(CanOn(item, FilePermission.Modify) ? "Edit" : "View source", "file-code", () => EditAsync(item)));
+                entries.Add(new(CanOn(item, FilePermission.Modify) ? Text["menu.edit"] : Text["menu.viewSource"], "file-code", () => EditAsync(item, entry.RootId)));
             }
         }
 
         if (CanOnSelection(FilePermission.Download))
         {
-            entries.Add(new(single && !item.IsDirectory ? "Download" : "Download as zip", "download", DownloadSelectionAsync));
+            entries.Add(new(single && !item.IsDirectory ? Text["menu.download"] : Text["menu.downloadZip"], "download", DownloadSelectionAsync));
         }
 
         if (single && item.PublicUrl is not null)
         {
-            entries.Add(new("Copy public URL", "link", () => CopyUrlAsync(item)));
+            entries.Add(new(Text["menu.copyUrl"], "link", () => CopyUrlAsync(item)));
         }
 
         entries.Add(MenuEntry.Separator);
 
         if (CanOnSelection(FilePermission.Read) && Can(FilePermission.Create))
         {
-            entries.Add(new("Copy", "copy", () => { SetClipboard(isCut: false); return Task.CompletedTask; }, Shortcut: "Ctrl+C"));
+            entries.Add(new(Text["menu.copy"], "copy", () => { SetClipboard(isCut: false); return Task.CompletedTask; }, Shortcut: "Ctrl+C"));
         }
 
         if (CanOnSelection(FilePermission.Move | FilePermission.Delete))
         {
-            entries.Add(new("Cut", "scissors", () => { SetClipboard(isCut: true); return Task.CompletedTask; }, Shortcut: "Ctrl+X"));
+            entries.Add(new(Text["menu.cut"], "scissors", () => { SetClipboard(isCut: true); return Task.CompletedTask; }, Shortcut: "Ctrl+X"));
         }
 
         if (clipboard is not null && item.IsDirectory && single && CanOn(item, FilePermission.Create))
         {
-            entries.Add(new("Paste into folder", "clipboard", () => PasteAsync(item.Path)));
+            entries.Add(new(Text["menu.pasteInto"], "clipboard", () => PasteAsync(item.Path, entry.RootId)));
         }
 
         if (CanOnSelection(FilePermission.Read) && Can(FilePermission.Create))
         {
-            entries.Add(new("Duplicate", "copy", DuplicateAsync));
+            entries.Add(new(Text["menu.duplicate"], "copy", DuplicateAsync));
         }
 
         if (single && CanOn(item, FilePermission.Rename))
         {
-            entries.Add(new("Rename", "pencil", RenameAsync, Shortcut: "F2"));
+            entries.Add(new(Text["menu.rename"], "pencil", RenameAsync, Shortcut: "F2"));
         }
 
         entries.Add(MenuEntry.Separator);
 
         if (CanOnSelection(FilePermission.Read) && Can(FilePermission.Create | FilePermission.Compress))
         {
-            entries.Add(new("Compress to zip", "package", CompressAsync));
+            entries.Add(new(Text["menu.compress"], "package", CompressAsync));
         }
 
         if (single && item.Kind == FileKind.Archive && CanOn(item, FilePermission.Read) && Can(FilePermission.Create | FilePermission.Extract))
         {
-            entries.Add(new("Extract here", "extract", () => ExtractAsync(item)));
+            entries.Add(new(Text["menu.extract"], "extract", () => ExtractAsync(entry)));
         }
 
-        entries.Add(new("Details", "info", ShowDetailsAsync));
+        entries.Add(new(Text["menu.details"], "info", ShowDetailsAsync));
 
         if (CanOnSelection(FilePermission.Delete))
         {
             entries.Add(MenuEntry.Separator);
-            entries.Add(new("Delete", "trash", DeleteAsync, IsDanger: true, Shortcut: "Del"));
+            entries.Add(new(Text["menu.delete"], "trash", DeleteAsync, IsDanger: true, Shortcut: "Del"));
         }
 
         return entries;
@@ -129,27 +131,27 @@ public sealed partial class FileManager
 
         if (Can(FilePermission.Create))
         {
-            entries.Add(new("New folder", "folder-plus", CreateFolderAsync));
-            entries.Add(new("New text file", "file-plus", CreateTextFileAsync));
-            entries.Add(new("Upload files…", "upload", () => PickFilesAsync(false)));
-            entries.Add(new("Upload folder…", "folder-up", () => PickFilesAsync(true)));
+            entries.Add(new(Text["menu.newFolder"], "folder-plus", CreateFolderAsync));
+            entries.Add(new(Text["menu.newTextFile"], "file-plus", CreateTextFileAsync));
+            entries.Add(new(Text["menu.uploadFiles"], "upload", () => PickFilesAsync(false)));
+            entries.Add(new(Text["menu.uploadFolder"], "folder-up", () => PickFilesAsync(true)));
         }
 
         if (clipboard is not null && Can(FilePermission.Create))
         {
             entries.Add(MenuEntry.Separator);
-            entries.Add(new($"Paste {Format.Plural(clipboard.Paths.Count, "item")}", "clipboard", () => PasteAsync(), Shortcut: "Ctrl+V"));
+            entries.Add(new(Text.Format("menu.paste", Text.Plural("count.items", clipboard.Paths.Count)), "clipboard", () => PasteAsync(), Shortcut: "Ctrl+V"));
         }
 
         entries.Add(MenuEntry.Separator);
 
         if (SelectionMode != Constants.SelectionModes.Single)
         {
-            entries.Add(new("Select all", "check-circle", () => SelectAllAsync(true), Shortcut: "Ctrl+A"));
+            entries.Add(new(Text["menu.selectAll"], "check-circle", () => SelectAllAsync(true), Shortcut: "Ctrl+A"));
         }
 
-        entries.Add(new("Refresh", "refresh", LoadAsync));
-        entries.Add(new("Folder details", "info", ShowDetailsAsync));
+        entries.Add(new(Text["menu.refresh"], "refresh", RefreshAfterChangeAsync));
+        entries.Add(new(Text["menu.folderDetails"], "info", ShowDetailsAsync));
 
         return entries;
     }
@@ -175,7 +177,7 @@ public sealed partial class FileManager
             return;
         }
 
-        string? name = await prompt.ShowAsync("New folder", "Folder name", "New folder", "Create");
+        string? name = await prompt.ShowAsync(Text["prompt.newFolder.title"], Text["prompt.newFolder.label"], Text["prompt.newFolder.value"], Text["dialog.create"]);
         if (name is null)
         {
             return;
@@ -188,10 +190,12 @@ public sealed partial class FileManager
             return;
         }
 
-        toasts.Success($"Created {result.Value.Name}.");
+        toasts.Success(Text.Format("toast.created", result.Value.Name));
         await RefreshAfterChangeAsync();
         selection.Clear();
-        selection.Add(result.Value.Path);
+        string createdKey = SelectionKey(rootId, result.Value.Path);
+        selection.Add(createdKey);
+        activeKey = createdKey;
     }
 
     private async Task CreateTextFileAsync()
@@ -201,7 +205,7 @@ public sealed partial class FileManager
             return;
         }
 
-        string? name = await prompt.ShowAsync("New text file", "File name", "untitled.txt", "Create", selectStemOnly: true);
+        string? name = await prompt.ShowAsync(Text["prompt.newFile.title"], Text["prompt.newFile.label"], "untitled.txt", Text["dialog.create"], selectStemOnly: true);
         if (name is null)
         {
             return;
@@ -222,11 +226,11 @@ public sealed partial class FileManager
 
     // ------------------------------------------------------------------- downloading
 
-    private Task DownloadSelectionAsync() => DownloadAsync(SelectedItems);
+    private Task DownloadSelectionAsync() => ActionRootId is { } itemRoot ? DownloadAsync(itemRoot, SelectedItems) : Task.CompletedTask;
 
-    private async Task DownloadAsync(IReadOnlyList<FileSystemItemDto> items)
+    private async Task DownloadAsync(string itemRoot, IReadOnlyList<FileSystemItemDto> items)
     {
-        if (items.Count == 0 || rootId is null)
+        if (items.Count == 0 || itemRoot.Length == 0)
         {
             return;
         }
@@ -235,13 +239,13 @@ public sealed partial class FileManager
         // several files from one click.
         if (items is [{ IsDirectory: false } file])
         {
-            await interop.DownloadAsync(urls.Download(rootId, file.Path));
+            await interop.DownloadAsync(urls.Download(itemRoot, file.Path));
             return;
         }
 
         // The selection goes through a ticket rather than the URL, so thousands of paths still
         // fit and the browser streams the zip straight to disk.
-        var ticket = await Service.CreateDownloadTicketAsync(new DownloadTicketRequest(rootId, [.. items.Select(i => i.Path)]));
+        var ticket = await Service.CreateDownloadTicketAsync(new DownloadTicketRequest(itemRoot, [.. items.Select(i => i.Path)]));
         if (!ticket.IsSuccess)
         {
             toasts.ShowFailure(ticket);
@@ -262,11 +266,11 @@ public sealed partial class FileManager
         string absolute = new Uri(new Uri(Navigation.BaseUri), urls.Public(item.PublicUrl)).ToString();
         if (await interop.CopyTextAsync(absolute))
         {
-            toasts.Success("Copied the URL.");
+            toasts.Success(Text["toast.copiedUrl"]);
         }
         else
         {
-            toasts.Error("The browser didn't allow copying to the clipboard.");
+            toasts.Error(Text["toast.copyDenied"]);
         }
     }
 
@@ -274,16 +278,17 @@ public sealed partial class FileManager
 
     private void SetClipboard(bool isCut)
     {
-        if (selection.Count == 0 || rootId is null)
+        var rows = SelectedRows();
+        if (rows.Count == 0 || ActionRootId is null)
         {
             return;
         }
 
-        clipboard = new Clipboard(rootId, [.. selection], isCut);
-        toasts.Info($"{Format.Plural(selection.Count, "item")} ready to paste.");
+        clipboard = new Clipboard(ActionRootId, [.. rows.Select(row => row.Item.Path)], isCut);
+        toasts.Info(Text.Plural("toast.ready", rows.Count));
     }
 
-    private async Task PasteAsync(string? destination = null)
+    private async Task PasteAsync(string? destination = null, string? destinationRoot = null)
     {
         if (clipboard is null || rootId is null)
         {
@@ -291,10 +296,11 @@ public sealed partial class FileManager
         }
 
         var current = clipboard;
+        string targetRoot = destinationRoot ?? rootId;
         var result = await Service.TransferAsync(new TransferRequest(
             current.RootId,
             [.. current.Paths],
-            rootId,
+            targetRoot,
             destination ?? CurrentPath,
             IsCopy: !current.IsCut));
 
@@ -304,7 +310,7 @@ public sealed partial class FileManager
             return;
         }
 
-        toasts.ShowBulkResult(result.Value, current.IsCut ? "Moved" : "Copied");
+        ShowBulk(result.Value, current.IsCut ? "moved" : "copied");
 
         // A cut is consumed by the paste; a copy stays so it can be pasted into several folders.
         if (current.IsCut)
@@ -317,34 +323,51 @@ public sealed partial class FileManager
 
     private async Task DuplicateAsync()
     {
-        if (selection.Count == 0 || rootId is null)
+        var rows = SelectedRows();
+        if (rows.Count == 0 || ActionRootId is null)
         {
             return;
         }
 
-        var result = await Service.TransferAsync(new TransferRequest(rootId, [.. selection], rootId, CurrentPath, IsCopy: true));
+        string destination = CurrentPath;
+        if (ShowingSearch)
+        {
+            var parents = rows.Select(row => VirtualPath.GetParent(row.Item.Path) ?? Constants.RootPath).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (parents.Count == 1)
+            {
+                destination = parents[0];
+            }
+        }
+
+        var result = await Service.TransferAsync(new TransferRequest(ActionRootId, [.. rows.Select(row => row.Item.Path)], ActionRootId, destination, IsCopy: true));
         if (!result.IsSuccess)
         {
             toasts.ShowFailure(result);
             return;
         }
 
-        toasts.ShowBulkResult(result.Value, "Duplicated");
+        ShowBulk(result.Value, "duplicated");
         await RefreshAfterChangeAsync();
     }
 
     // ---------------------------------------------------------------------- dragging
 
-    private void OnDragStart(FileSystemItemDto item)
+    private void OnDragStart(ListingEntry entry)
     {
-        if (!selection.Contains(item.Path))
+        if (!selection.Contains(entry.Key))
         {
             selection.Clear();
-            selection.Add(item.Path);
-            rangeAnchor = item.Path;
+            selection.Add(entry.Key);
+            rangeAnchor = entry.Key;
+            activeKey = entry.Key;
         }
 
-        dragPaths = [.. selection];
+        var rows = SelectedRows();
+        bool sameRoot = rows.Count > 0 && rows.All(row => string.Equals(row.RootId, entry.RootId, StringComparison.OrdinalIgnoreCase));
+        var dragged = sameRoot ? rows : [entry];
+        dragPaths = dragged.Select(row => row.Item.Path).ToList();
+        dragRootId = entry.RootId;
+        dragCanMove = dragged.All(row => CanOn(row.Item, FilePermission.Move | FilePermission.Delete));
     }
 
     /// <summary>
@@ -355,34 +378,36 @@ public sealed partial class FileManager
     private async Task DropOntoAsync(string targetRoot, string targetPath, DragEventArgs args)
     {
         var paths = dragPaths;
+        string? sourceRoot = dragRootId;
         dragPaths = null;
+        dragRootId = null;
 
-        if (paths is null || paths.Count == 0 || rootId is null)
+        if (paths is null || paths.Count == 0 || sourceRoot is null)
         {
             return;
         }
 
-        bool sameRoot = targetRoot == rootId;
+        bool sameRoot = targetRoot == sourceRoot;
         if (sameRoot && paths.Any(p => VirtualPath.IsSameOrUnder(targetPath, p) || VirtualPath.GetParent(p) == targetPath))
         {
             return;
         }
 
         bool isCopy = args.CtrlKey || args.MetaKey || !sameRoot;
-        if (!isCopy && !CanOnSelection(FilePermission.Move | FilePermission.Delete))
+        if (!isCopy && !dragCanMove)
         {
-            toasts.Error("You don't have permission to move these items.");
+            toasts.Error(Text["toast.noMove"]);
             return;
         }
 
-        var result = await Service.TransferAsync(new TransferRequest(rootId, paths, targetRoot, targetPath, isCopy));
+        var result = await Service.TransferAsync(new TransferRequest(sourceRoot, paths, targetRoot, targetPath, isCopy));
         if (!result.IsSuccess)
         {
             toasts.ShowFailure(result);
             return;
         }
 
-        toasts.ShowBulkResult(result.Value, isCopy ? "Copied" : "Moved");
+        ShowBulk(result.Value, isCopy ? "copied" : "moved");
         await RefreshAfterChangeAsync();
     }
 
@@ -391,45 +416,45 @@ public sealed partial class FileManager
     private async Task RenameAsync()
     {
         var item = SelectedItems is [var only] ? only : null;
-        if (item is null || prompt is null || rootId is null)
+        if (item is null || prompt is null || ActionRootId is not { } itemRoot)
         {
             return;
         }
 
-        string? name = await prompt.ShowAsync("Rename", "New name", item.Name, "Rename", selectStemOnly: !item.IsDirectory);
+        string? name = await prompt.ShowAsync(Text["prompt.rename.title"], Text["prompt.rename.label"], item.Name, Text["dialog.rename"], selectStemOnly: !item.IsDirectory);
         if (name is null || name == item.Name)
         {
             return;
         }
 
-        var result = await Service.RenameAsync(new RenameRequest(rootId, item.Path, name));
+        var result = await Service.RenameAsync(new RenameRequest(itemRoot, item.Path, name));
         if (!result.IsSuccess)
         {
             toasts.ShowFailure(result);
             return;
         }
 
-        toasts.Success($"Renamed to {result.Value.Name}.");
+        toasts.Success(Text.Format("toast.renamed", result.Value.Name));
         await RefreshAfterChangeAsync();
         selection.Clear();
-        selection.Add(result.Value.Path);
+        string renamedKey = SelectionKey(itemRoot, result.Value.Path);
+        selection.Add(renamedKey);
+        activeKey = renamedKey;
     }
 
     private async Task DeleteAsync()
     {
         var items = SelectedItems;
-        if (items.Count == 0 || confirm is null || rootId is null)
+        if (items.Count == 0 || confirm is null || ActionRootId is not { } itemRoot)
         {
             return;
         }
 
-        string what = items is [var only] ? $"\"{only.Name}\"" : Format.Plural(items.Count, "item");
+        string what = items is [var only] ? $"\"{only.Name}\"" : Text.Plural("count.items", items.Count);
         bool confirmed = await confirm.ShowAsync(
-            $"Delete {what}?",
-            items.Any(i => i.IsDirectory)
-                ? "Folders are deleted with everything inside them. This can't be undone."
-                : "This can't be undone.",
-            "Delete",
+            Text.Format("confirm.delete.title", what),
+            items.Any(i => i.IsDirectory) ? Text["confirm.delete.folder"] : Text["confirm.delete.file"],
+            Text["dialog.delete"],
             isDestructive: true);
 
         if (!confirmed)
@@ -437,31 +462,42 @@ public sealed partial class FileManager
             return;
         }
 
-        var result = await Service.DeleteAsync(new DeleteRequest(rootId, [.. items.Select(i => i.Path)]));
+        var result = await Service.DeleteAsync(new DeleteRequest(itemRoot, [.. items.Select(i => i.Path)]));
         if (!result.IsSuccess)
         {
             toasts.ShowFailure(result);
             return;
         }
 
-        toasts.ShowBulkResult(result.Value, "Deleted");
+        ShowBulk(result.Value, "deleted");
         selection.Clear();
         await RefreshAfterChangeAsync();
     }
 
     private async Task CompressAsync()
     {
+        var rows = SelectedRows();
         var items = SelectedItems;
-        if (items.Count == 0 || prompt is null || rootId is null)
+        if (items.Count == 0 || prompt is null || ActionRootId is not { } itemRoot)
         {
             return;
         }
 
+        string destination = CurrentPath;
+        if (ShowingSearch)
+        {
+            var parents = rows.Select(row => VirtualPath.GetParent(row.Item.Path) ?? Constants.RootPath).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (parents.Count == 1)
+            {
+                destination = parents[0];
+            }
+        }
+
         string suggested = items is [var only]
             ? $"{(only.IsDirectory ? only.Name : System.IO.Path.GetFileNameWithoutExtension(only.Name))}.zip"
-            : $"{(listing?.Path == Constants.RootPath ? listing.RootName : VirtualPath.GetName(CurrentPath))}.zip";
+            : $"{(listing?.Path == Constants.RootPath ? listing.RootName : VirtualPath.GetName(destination))}.zip";
 
-        string? name = await prompt.ShowAsync("Compress", "Archive name", suggested, "Create", selectStemOnly: true);
+        string? name = await prompt.ShowAsync(Text["prompt.compress.title"], Text["prompt.compress.label"], suggested, Text["dialog.create"], selectStemOnly: true);
         if (name is null)
         {
             return;
@@ -471,33 +507,30 @@ public sealed partial class FileManager
             ? ArchiveFormat.TarGz
             : name.EndsWith(".tar", StringComparison.OrdinalIgnoreCase) ? ArchiveFormat.Tar : ArchiveFormat.Zip;
 
-        var result = await Service.CompressAsync(new CompressRequest(rootId, [.. items.Select(i => i.Path)], CurrentPath, name, format));
+        var result = await Service.CompressAsync(new CompressRequest(itemRoot, [.. items.Select(i => i.Path)], destination, name, format));
         if (!result.IsSuccess)
         {
             toasts.ShowFailure(result);
             return;
         }
 
-        toasts.Success($"Created {result.Value.Name}.");
+        toasts.Success(Text.Format("toast.archiveCreated", result.Value.Name));
         await RefreshAfterChangeAsync();
         selection.Clear();
-        selection.Add(result.Value.Path);
+        string archiveKey = SelectionKey(itemRoot, result.Value.Path);
+        selection.Add(archiveKey);
+        activeKey = archiveKey;
     }
 
-    private async Task ExtractAsync(FileSystemItemDto item)
+    private async Task ExtractAsync(ListingEntry entry)
     {
-        if (rootId is null)
-        {
-            return;
-        }
-
-        var result = await Service.ExtractAsync(new ExtractRequest(rootId, item.Path));
+        var result = await Service.ExtractAsync(new ExtractRequest(entry.RootId, entry.Item.Path));
 
         if (result.Status == ResultStatus.Conflict && confirm is not null
-            && await confirm.ShowAsync("Replace files?", result.GetDisplayMessage(), "Replace", isDestructive: true,
-                detail: "Extracting will overwrite the existing files."))
+            && await confirm.ShowAsync(Text["confirm.replace.title"], result.GetDisplayMessage(), Text["dialog.replace"], isDestructive: true,
+                detail: Text["confirm.replace.extract"]))
         {
-            result = await Service.ExtractAsync(new ExtractRequest(rootId, item.Path, Overwrite: true));
+            result = await Service.ExtractAsync(new ExtractRequest(entry.RootId, entry.Item.Path, Overwrite: true));
         }
 
         if (!result.IsSuccess)
@@ -510,18 +543,37 @@ public sealed partial class FileManager
             return;
         }
 
-        toasts.ShowBulkResult(result.Value, "Extracted");
+        ShowBulk(result.Value, "extracted");
         await RefreshAfterChangeAsync();
     }
 
-    /// <summary>Reloads the listing and the tree branch for the current folder after a change.</summary>
+    /// <summary>Reloads the listing and, while a search is showing, the matches as well.</summary>
     private async Task RefreshAfterChangeAsync()
     {
         await LoadAsync();
+        if (ShowingSearch)
+        {
+            await RunSearchAsync();
+        }
 
         if (tree is not null && rootId is not null)
         {
             await tree.RefreshAsync(rootId, CurrentPath);
         }
+    }
+
+    private void ShowBulk(BulkOperationResultDto result, string verb)
+    {
+        if (result.FailedCount == 0)
+        {
+            toasts.Success(Text.Plural($"toast.{verb}", result.SucceededCount));
+            return;
+        }
+
+        var first = result.Results.First(operation => !operation.Succeeded);
+        string reason = $"{VirtualPath.GetName(VirtualPath.Normalize(first.Path))}: {first.Error}";
+        toasts.Error(result.SucceededCount == 0
+            ? Text.Format($"toast.{verb}.none", reason)
+            : Text.Format($"toast.{verb}.partial", result.SucceededCount, result.FailedCount, reason));
     }
 }

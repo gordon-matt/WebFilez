@@ -16,6 +16,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddServerSideBlazor();
 
 builder.Services.AddWebFilez(builder.Configuration);
+builder.Services.AddWebFilezComponents();
 builder.Services.AddWebFilezAzureBlob();
 builder.Services.AddWebFilezAzureFiles();
 builder.Services.AddWebFilezAmazonS3();

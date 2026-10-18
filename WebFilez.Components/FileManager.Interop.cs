@@ -34,6 +34,28 @@ public sealed partial class FileManager
             return;
         }
 
+        if (IsMovement(combo))
+        {
+            if (contextMenu is null && openMenu is null)
+            {
+                await MoveSelectionAsync(combo);
+            }
+
+            StateHasChanged();
+            return;
+        }
+
+        if (combo is "Space" or "shift+Space")
+        {
+            if (contextMenu is null && openMenu is null)
+            {
+                await ToggleActiveAsync(combo.StartsWith("shift+", StringComparison.Ordinal));
+            }
+
+            StateHasChanged();
+            return;
+        }
+
         switch (combo)
         {
             case "ctrl+a" when SelectionMode != Constants.SelectionModes.Single:
@@ -60,8 +82,13 @@ public sealed partial class FileManager
                 await PasteAsync();
                 break;
 
-            case "Enter" when SelectedItems is [var item]:
-                await ActivateAsync(item);
+            case "Enter":
+                var row = Rows().FirstOrDefault(candidate => candidate.Key == activeKey);
+                if (row is not null)
+                {
+                    await ActivateAsync(row);
+                }
+
                 break;
 
             case "Backspace":
@@ -82,7 +109,7 @@ public sealed partial class FileManager
 
         if (!Can(FilePermission.Create))
         {
-            toasts.Error("You don't have permission to upload here.");
+            toasts.Error(Text["toast.noUpload"]);
             StateHasChanged();
             return;
         }
@@ -99,19 +126,19 @@ public sealed partial class FileManager
             if (!Can(FilePermission.Modify))
             {
                 toasts.Info(collisions.Count == 1
-                    ? $"\"{collisions[0].Name}\" already exists and will be skipped."
-                    : $"{collisions.Count} files already exist and will be skipped.");
+                    ? Text.Format("confirm.uploadSkipOne", collisions[0].Name)
+                    : Text.Format("confirm.uploadSkipMany", collisions.Count));
             }
             else
             {
                 overwrite = await confirm.ShowAsync(
-                    "Replace files?",
+                    Text["confirm.replace.title"],
                     collisions.Count == 1
-                        ? $"\"{collisions[0].Name}\" already exists here."
-                        : $"{collisions.Count} of these files already exist here.",
-                    "Replace",
+                        ? Text.Format("confirm.uploadReplaceOne", collisions[0].Name)
+                        : Text.Format("confirm.uploadReplaceMany", collisions.Count),
+                    Text["dialog.replace"],
                     isDestructive: true,
-                    detail: "Cancel uploads the rest and skips the ones that already exist.");
+                    detail: Text["confirm.replace.uploadDetail"]);
             }
         }
 
@@ -143,7 +170,7 @@ public sealed partial class FileManager
 
         var upload = FindOrAddUpload(id, fileName);
         upload.IsComplete = true;
-        upload.Error = succeeded ? null : error ?? "The upload failed.";
+        upload.Error = succeeded ? null : error ?? Text["toast.uploadFailed"];
 
         StateHasChanged();
     }
@@ -160,14 +187,14 @@ public sealed partial class FileManager
         }
         else if (failed == 0)
         {
-            toasts.Success($"Uploaded {Format.Plural(succeeded, "file")}.");
+            toasts.Success(Text.Plural("toast.uploaded", succeeded));
 
             // Cleared only on full success: a failure list should stay until it has been read.
             uploads.Clear();
         }
         else
         {
-            toasts.Error($"{failed} of {succeeded + failed} uploads failed.");
+            toasts.Error(Text.Format("toast.uploadBatchFailed", failed, succeeded + failed));
         }
 
         await RefreshAfterChangeAsync();
@@ -180,6 +207,11 @@ public sealed partial class FileManager
         await interop.CancelUploadAsync(rootElement, id);
         uploads.RemoveAll(u => u.Id == id);
     }
+
+    private static bool IsMovement(string combo) =>
+        combo is "ArrowUp" or "ArrowDown" or "ArrowLeft" or "ArrowRight" or "Home" or "End"
+            or "shift+ArrowUp" or "shift+ArrowDown" or "shift+ArrowLeft" or "shift+ArrowRight" or "shift+Home" or "shift+End"
+            or "ctrl+ArrowUp" or "ctrl+ArrowDown" or "ctrl+ArrowLeft" or "ctrl+ArrowRight" or "ctrl+Home" or "ctrl+End";
 
     private UploadTray.UploadProgress FindOrAddUpload(long id, string fileName)
     {

@@ -26,9 +26,10 @@ public sealed record FileActivity(
     long? SizeBytes = null);
 
 /// <summary>
-/// Told about every successful change and download, for audit logs, search indexes or cache
-/// invalidation. The default does nothing. Failures thrown here are logged and swallowed: the
-/// file operation has already happened and can't be rolled back.
+/// Told about every successful change and download, for audit logs or cache invalidation. The
+/// default does nothing. Failures thrown here are logged and swallowed: the file operation has
+/// already happened and can't be rolled back. The built-in search index is updated from the same
+/// activities; replace <c>IFileIndex</c> to keep a different store in step.
 /// </summary>
 public interface IFileActivitySink
 {

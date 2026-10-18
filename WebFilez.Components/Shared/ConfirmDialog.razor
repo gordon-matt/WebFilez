@@ -13,7 +13,7 @@
             }
         </div>
         <div class="wf-dialog-actions">
-            <button type="button" class="wf-button" @ref="cancelButton" @onclick="() => Close(false)">Cancel</button>
+            <button type="button" class="wf-button" @ref="cancelButton" @onclick="() => Close(false)">@Text["dialog.cancel"]</button>
             <button type="button" class="wf-button @(isDestructive ? "wf-button-danger" : "wf-button-primary")" @ref="confirmButton" @onclick="() => Close(true)">
                 @confirmLabel
             </button>
@@ -36,6 +36,8 @@
     private TaskCompletionSource<bool>? completion;
 
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     /// <summary>Shows the dialog and completes when the user answers.</summary>
     public Task<bool> ShowAsync(string title, string message, string confirmLabel = "OK", bool isDestructive = false, string? detail = null)

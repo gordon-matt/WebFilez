@@ -17,6 +17,13 @@ public interface IFileManagerService
 
     Task<Result<DirectoryListingDto>> ListAsync(ListingRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Searches an index of names, extensions and kinds. The index is built on first use and then
+    /// kept current from the same activity stream as <c>IFileActivitySink</c>. Replace
+    /// <c>IFileIndex</c> to store that index somewhere else.
+    /// </summary>
+    Task<Result<SearchResultDto>> SearchAsync(SearchRequest request, CancellationToken cancellationToken = default);
+
     /// <summary>The immediate subfolders of a folder, for the navigation tree.</summary>
     Task<Result<IReadOnlyList<FolderNodeDto>>> GetFoldersAsync(
         string rootId,

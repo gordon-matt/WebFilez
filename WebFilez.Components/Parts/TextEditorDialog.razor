@@ -3,34 +3,34 @@
 @if (file is not null)
 {
     <div class="wf-backdrop"></div>
-    <div class="wf-dialog wf-dialog-editor" role="dialog" aria-modal="true" aria-label="@($"Edit {file.Name}")"
+    <div class="wf-dialog wf-dialog-editor" role="dialog" aria-modal="true" aria-label="@Text.Format("editor.edit", file.Name)"
          @onkeydown="OnKeyDown">
         <div class="wf-dialog-header">
             <Icon Name="file-code" />
             <strong class="wf-clip" title="@file.Path">@file.Name</strong>
             @if (IsDirty)
             {
-                <span class="wf-badge">Unsaved</span>
+                <span class="wf-badge">@Text["editor.unsaved"]</span>
             }
             @if (!file.CanSave)
             {
-                <span class="wf-badge"><Icon Name="lock" /> Read only</span>
+                <span class="wf-badge"><Icon Name="lock" /> @Text["editor.readOnly"]</span>
             }
             <span class="wf-spacer"></span>
-            <button type="button" class="wf-icon-button" aria-label="Close" @onclick="CloseAsync">
+            <button type="button" class="wf-icon-button" aria-label="@Text["editor.close"]" @onclick="CloseAsync">
                 <Icon Name="x" />
             </button>
         </div>
         <textarea class="wf-editor" spellcheck="false" @ref="textArea" readonly="@(!file.CanSave)"
                   @bind="content" @bind:event="oninput"></textarea>
         <div class="wf-dialog-actions">
-            <span class="wf-muted wf-small">@(file.CanSave ? "Ctrl+S to save" : "You can view but not change this file.")</span>
+            <span class="wf-muted wf-small">@(file.CanSave ? Text["editor.saveHint"] : Text["editor.viewOnly"])</span>
             <span class="wf-spacer"></span>
-            <button type="button" class="wf-button" @onclick="CloseAsync">Close</button>
+            <button type="button" class="wf-button" @onclick="CloseAsync">@Text["editor.close"]</button>
             @if (file.CanSave)
             {
                 <button type="button" class="wf-button wf-button-primary" disabled="@(!IsDirty || isSaving)" @onclick="SaveAsync">
-                    <Icon Name="save" /> @(isSaving ? "Saving…" : "Save")
+                    <Icon Name="save" /> @(isSaving ? Text["editor.saving"] : Text["editor.save"])
                 </button>
             }
         </div>
@@ -57,6 +57,8 @@
 
     /// <summary>Raised after a successful save, so the listing can refresh sizes and dates.</summary>
     [Parameter] public EventCallback<FileSystemItemDto> OnSaved { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     public bool IsOpen => file is not null;
 
@@ -121,7 +123,7 @@
 
         file = file with { Content = content, ModifiedAt = result.Value.ModifiedAt, SizeBytes = result.Value.SizeBytes };
         openedModifiedAt = result.Value.ModifiedAt;
-        Toasts.Success($"Saved {file.Name}.");
+        Toasts.Success(Text.Format("toast.saved", file.Name));
 
         await OnSaved.InvokeAsync(result.Value);
     }

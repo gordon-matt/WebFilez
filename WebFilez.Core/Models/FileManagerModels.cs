@@ -153,3 +153,43 @@ public sealed record DownloadTicketRequest(string RootId, IReadOnlyList<string> 
 public sealed record DownloadTicketDto(string Token, string FileName);
 
 public sealed record UploadResultDto(FileSystemItemDto Item, bool WasResized);
+
+/// <summary>
+/// Finds files and folders by name, extension or kind, across one root or every root the caller
+/// can browse. <paramref name="Path"/> limits the walk to that folder and everything under it,
+/// and requires <paramref name="RootId"/>.
+/// </summary>
+public sealed record SearchRequest(
+    string Query,
+    string? RootId = null,
+    string? Path = null,
+    KindFilter Kind = KindFilter.All,
+    bool ShowHidden = false,
+    ListingSortField SortBy = ListingSortField.Name,
+    bool Descending = false,
+    int MaxResults = 200);
+
+/// <summary>One search match. <paramref name="Location"/> is the root and parent folder, for display.</summary>
+public sealed record SearchHitDto(
+    string RootId,
+    string RootName,
+    string Path,
+    string Name,
+    string Location,
+    bool IsDirectory,
+    long SizeBytes,
+    DateTime ModifiedAt,
+    FileKind Kind,
+    string? Extension,
+    bool IsHidden,
+    FilePermission Permissions,
+    bool HasThumbnail,
+    string? PublicUrl);
+
+/// <param name="Truncated">True when more matches exist than <see cref="SearchRequest.MaxResults"/>, or a root's index was capped.</param>
+public sealed record SearchResultDto(
+    string Query,
+    string? RootId,
+    string? Path,
+    IReadOnlyList<SearchHitDto> Hits,
+    bool Truncated);

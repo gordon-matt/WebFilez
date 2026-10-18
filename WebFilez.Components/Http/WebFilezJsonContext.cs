@@ -7,6 +7,8 @@ namespace WebFilez.Components.Http;
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(IReadOnlyList<FileRootDto>))]
 [JsonSerializable(typeof(DirectoryListingDto))]
+[JsonSerializable(typeof(SearchResultDto))]
+[JsonSerializable(typeof(SearchHitDto))]
 [JsonSerializable(typeof(IReadOnlyList<FolderNodeDto>))]
 [JsonSerializable(typeof(FileDetailDto))]
 [JsonSerializable(typeof(DirectorySizeDto))]

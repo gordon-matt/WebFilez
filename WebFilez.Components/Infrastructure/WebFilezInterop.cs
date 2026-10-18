@@ -40,6 +40,10 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
     public async ValueTask FocusAsync(ElementReference element, bool selectStem = false) =>
         await (await Module).InvokeVoidAsync("focus", element, selectStem);
 
+    /// <summary>Moves focus to the listing row with this key and scrolls it into view.</summary>
+    public async ValueTask FocusItemAsync(ElementReference root, string key) =>
+        await (await Module).InvokeVoidAsync("focusItem", root, key);
+
     public async ValueTask FitToViewportAsync(ElementReference element) =>
         await (await Module).InvokeVoidAsync("fitToViewport", element);
 

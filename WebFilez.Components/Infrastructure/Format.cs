@@ -1,3 +1,5 @@
+using WebFilez.Components.Localization;
+
 namespace WebFilez.Components.Infrastructure;
 
 internal static class Format
@@ -8,18 +10,32 @@ internal static class Format
     /// Recent times as an age, older ones as a date. Dates are in UTC, because under Blazor
     /// Server the component runs on the server and doesn't know the viewer's time zone.
     /// </summary>
-    public static string Relative(DateTime utc)
+    public static string Relative(DateTime utc, WebFilezText? text = null)
     {
+        text ??= WebFilezText.English;
         var age = DateTime.UtcNow - utc;
 
-        return age switch
+        if (age.TotalMinutes < 1)
         {
-            { TotalMinutes: < 1 } => "just now",
-            { TotalHours: < 1 } => $"{(int)age.TotalMinutes} min ago",
-            { TotalDays: < 1 } => $"{(int)age.TotalHours} h ago",
-            { TotalDays: < 7 } => $"{(int)age.TotalDays} d ago",
-            _ => utc.ToString("d MMM yyyy", CultureInfo.InvariantCulture),
-        };
+            return text["time.justNow"];
+        }
+
+        if (age.TotalHours < 1)
+        {
+            return text.Plural("time.minutes", (int)age.TotalMinutes);
+        }
+
+        if (age.TotalDays < 1)
+        {
+            return text.Plural("time.hours", (int)age.TotalHours);
+        }
+
+        if (age.TotalDays < 7)
+        {
+            return text.Plural("time.days", (int)age.TotalDays);
+        }
+
+        return utc.ToString("d MMM yyyy", text.Culture);
     }
 
     public static string Full(DateTime utc) => utc.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture);

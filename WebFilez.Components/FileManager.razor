@@ -1,6 +1,7 @@
 @implements IAsyncDisposable
 
-<div class="wf-root @Class" data-theme="@Theme" tabindex="-1" @ref="rootElement" @attributes="AdditionalAttributes"
+<CascadingValue Value="Text" IsFixed="false">
+<div class="wf-root @Class" lang="@Text.Language" dir="@(Text.IsRightToLeft ? "rtl" : "ltr")" data-theme="@Theme" tabindex="-1" @ref="rootElement" @attributes="AdditionalAttributes"
      data-wf-root="@rootId" data-wf-path="@CurrentPath" data-wf-public-url="@CurrentPublicUrl">
     <div class="wf-shell @(IsPicker ? "wf-picker" : null)" style="height: @Height">
 
@@ -9,12 +10,12 @@
             <div class="wf-toolbar-row">
                 @if (ShowTree)
                 {
-                    <button type="button" class="wf-icon-button" title="@(isTreeOpen ? "Hide folders" : "Show folders")"
+                    <button type="button" class="wf-icon-button" title="@(isTreeOpen ? Text["toolbar.hideFolders"] : Text["toolbar.showFolders"])"
                             aria-pressed="@(isTreeOpen ? "true" : "false")" @onclick="() => isTreeOpen = !isTreeOpen">
                         <Icon Name="panel-left" />
                     </button>
                 }
-                <button type="button" class="wf-icon-button" title="Up one level (Backspace)"
+                <button type="button" class="wf-icon-button" title="@Text["toolbar.up"]"
                         disabled="@(CurrentPath == Constants.RootPath)" @onclick="GoUpAsync">
                     <Icon Name="arrow-up" />
                 </button>
@@ -28,9 +29,15 @@
 
                 <label class="wf-search">
                     <Icon Name="search" />
-                    <input type="search" placeholder="Filter" aria-label="Filter this folder"
+                    <input type="search" placeholder="@(searchScope == SearchScope.Folder ? Text["toolbar.filterPlaceholder"] : Text["toolbar.searchPlaceholder"])"
+                           aria-label="@(searchScope == SearchScope.Folder ? Text["toolbar.filterLabel"] : Text["toolbar.searchLabel"])"
                            @bind="filter" @bind:event="oninput" @bind:after="OnFilterChangedAsync" />
                 </label>
+                <select class="wf-input wf-scope" aria-label="@Text["toolbar.scopeLabel"]" value="@searchScope" @onchange="OnScopeChangedAsync">
+                    <option value="@SearchScope.Folder">@Text["scope.folder"]</option>
+                    <option value="@SearchScope.Root">@Text["scope.root"]</option>
+                    <option value="@SearchScope.All">@Text["scope.all"]</option>
+                </select>
             </div>
 
             <div class="wf-toolbar-row">
@@ -39,31 +46,31 @@
                     <div class="wf-dropdown">
                         <button type="button" class="wf-button wf-button-primary" aria-haspopup="menu"
                                 aria-expanded="@(openMenu == "new" ? "true" : "false")" @onclick='() => ToggleMenu("new")'>
-                            <Icon Name="plus" /> <span class="wf-hide-narrow">New</span>
+                            <Icon Name="plus" /> <span class="wf-hide-narrow">@Text["toolbar.new"]</span>
                         </button>
                         @if (openMenu == "new")
                         {
                             <div class="wf-menu-layer" @onclick="() => openMenu = null"></div>
                             <div class="wf-menu wf-menu-dropdown" role="menu">
                                 <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(CreateFolderAsync)">
-                                    <Icon Name="folder-plus" /> <span>Folder</span>
+                                    <Icon Name="folder-plus" /> <span>@Text["toolbar.folder"]</span>
                                 </button>
                                 <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(CreateTextFileAsync)">
-                                    <Icon Name="file-plus" /> <span>Text file</span>
+                                    <Icon Name="file-plus" /> <span>@Text["toolbar.textFile"]</span>
                                 </button>
                                 <div class="wf-menu-separator" role="separator"></div>
                                 <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(() => PickFilesAsync(false))">
-                                    <Icon Name="upload" /> <span>Upload files…</span>
+                                    <Icon Name="upload" /> <span>@Text["toolbar.uploadFiles"]</span>
                                 </button>
                                 <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(() => PickFilesAsync(true))">
-                                    <Icon Name="folder-up" /> <span>Upload folder…</span>
+                                    <Icon Name="folder-up" /> <span>@Text["toolbar.uploadFolder"]</span>
                                 </button>
                             </div>
                         }
                     </div>
 
-                    <button type="button" class="wf-button" title="Upload files" @onclick="() => PickFilesAsync(false)">
-                        <Icon Name="upload" /> <span class="wf-hide-narrow">Upload</span>
+                    <button type="button" class="wf-button" title="@Text["toolbar.uploadFiles"]" @onclick="() => PickFilesAsync(false)">
+                        <Icon Name="upload" /> <span class="wf-hide-narrow">@Text["toolbar.upload"]</span>
                     </button>
                 }
 
@@ -75,40 +82,40 @@
                     }
                     @if (CanOnSelection(FilePermission.Download))
                     {
-                        <button type="button" class="wf-icon-button" title="Download" @onclick="DownloadSelectionAsync"><Icon Name="download" /></button>
+                        <button type="button" class="wf-icon-button" title="@Text["toolbar.download"]" @onclick="DownloadSelectionAsync"><Icon Name="download" /></button>
                     }
                     @if (CanOnSelection(FilePermission.Read) && Can(FilePermission.Create))
                     {
-                        <button type="button" class="wf-icon-button" title="Copy (Ctrl+C)" @onclick="() => SetClipboard(isCut: false)"><Icon Name="copy" /></button>
+                        <button type="button" class="wf-icon-button" title="@Text["toolbar.copy"]" @onclick="() => SetClipboard(isCut: false)"><Icon Name="copy" /></button>
                     }
                     @if (CanOnSelection(FilePermission.Move | FilePermission.Delete))
                     {
-                        <button type="button" class="wf-icon-button" title="Cut (Ctrl+X)" @onclick="() => SetClipboard(isCut: true)"><Icon Name="scissors" /></button>
+                        <button type="button" class="wf-icon-button" title="@Text["toolbar.cut"]" @onclick="() => SetClipboard(isCut: true)"><Icon Name="scissors" /></button>
                     }
                     @if (selection.Count == 1 && CanOnSelection(FilePermission.Rename))
                     {
-                        <button type="button" class="wf-icon-button" title="Rename (F2)" @onclick="RenameAsync"><Icon Name="pencil" /></button>
+                        <button type="button" class="wf-icon-button" title="@Text["toolbar.rename"]" @onclick="RenameAsync"><Icon Name="pencil" /></button>
                     }
                     @if (CanOnSelection(FilePermission.Delete))
                     {
-                        <button type="button" class="wf-icon-button wf-icon-button-danger" title="Delete (Del)" @onclick="DeleteAsync"><Icon Name="trash" /></button>
+                        <button type="button" class="wf-icon-button wf-icon-button-danger" title="@Text["toolbar.delete"]" @onclick="DeleteAsync"><Icon Name="trash" /></button>
                     }
                 }
 
                 @if (clipboard is not null && Can(FilePermission.Create))
                 {
                     <span class="wf-toolbar-divider"></span>
-                    <button type="button" class="wf-button" title="Paste (Ctrl+V)" @onclick="() => PasteAsync()">
-                        <Icon Name="clipboard" /> <span class="wf-hide-narrow">Paste @clipboard.Paths.Count</span>
+                    <button type="button" class="wf-button" title="@Text["toolbar.paste"]" @onclick="() => PasteAsync()">
+                        <Icon Name="clipboard" /> <span class="wf-hide-narrow">@Text.Format("menu.paste", clipboard.Paths.Count)</span>
                     </button>
-                    <button type="button" class="wf-icon-button" title="Clear clipboard" @onclick="() => clipboard = null"><Icon Name="x" /></button>
+                    <button type="button" class="wf-icon-button" title="@Text["toolbar.clearClipboard"]" @onclick="() => clipboard = null"><Icon Name="x" /></button>
                 }
 
                 <span class="wf-spacer"></span>
 
                 @if (!kindLocked)
                 {
-                    <div class="wf-segmented wf-kind-filter" role="group" aria-label="Show">
+                    <div class="wf-segmented wf-kind-filter" role="group" aria-label="@Text["toolbar.show"]">
                         @foreach (var option in KindFilters)
                         {
                             <button type="button" class="@(kindFilter == option.Filter ? "wf-active" : null)" title="@option.Label"
@@ -119,7 +126,7 @@
                     </div>
                 }
 
-                <div class="wf-segmented" role="group" aria-label="View">
+                <div class="wf-segmented" role="group" aria-label="@Text["toolbar.view"]">
                     @foreach (var option in ViewModes)
                     {
                         <button type="button" class="@(viewMode == option.Mode ? "wf-active" : null)" title="@option.Label"
@@ -130,7 +137,7 @@
                 </div>
 
                 <div class="wf-dropdown">
-                    <button type="button" class="wf-icon-button" title="Sort and options" aria-haspopup="menu"
+                    <button type="button" class="wf-icon-button" title="@Text["toolbar.sortOptions"]" aria-haspopup="menu"
                             aria-expanded="@(openMenu == "options" ? "true" : "false")" @onclick='() => ToggleMenu("options")'>
                         <Icon Name="sliders" />
                     </button>
@@ -138,13 +145,13 @@
                     {
                         <div class="wf-menu-layer" @onclick="() => openMenu = null"></div>
                         <div class="wf-menu wf-menu-dropdown wf-menu-end" role="menu">
-                            <div class="wf-menu-heading">Sort by</div>
+                            <div class="wf-menu-heading">@Text["toolbar.sortBy"]</div>
                             @foreach (var field in Enum.GetValues<ListingSortField>())
                             {
                                 <button type="button" role="menuitemradio" aria-checked="@(sortBy == field ? "true" : "false")"
                                         class="wf-menu-item" @onclick="() => RunMenuAsync(() => SortByAsync(field))">
                                     <Icon Name="@(sortBy != field ? "x" : descending ? "chevron-down" : "arrow-up")" Class="@(sortBy != field ? "wf-invisible" : null)" />
-                                    <span>@field</span>
+                                    <span>@Text["sort." + field.ToString().ToLowerInvariant()]</span>
                                 </button>
                             }
                             <div class="wf-menu-separator" role="separator"></div>
@@ -152,16 +159,27 @@
                             {
                                 <button type="button" role="menuitemcheckbox" aria-checked="@(showHidden ? "true" : "false")"
                                         class="wf-menu-item" @onclick="() => RunMenuAsync(ToggleHiddenAsync)">
-                                    <Icon Name="check" Class="@(showHidden ? null : "wf-invisible")" /> <span>Show hidden files</span>
+                                    <Icon Name="check" Class="@(showHidden ? null : "wf-invisible")" /> <span>@Text["toolbar.showHidden"]</span>
                                 </button>
                             }
                             <button type="button" role="menuitemcheckbox" aria-checked="@(isInfoOpen ? "true" : "false")"
                                     class="wf-menu-item" @onclick="() => RunMenuAsync(ToggleInfoAsync)">
-                                <Icon Name="check" Class="@(isInfoOpen ? null : "wf-invisible")" /> <span>Details panel</span>
+                                <Icon Name="check" Class="@(isInfoOpen ? null : "wf-invisible")" /> <span>@Text["toolbar.detailsPanel"]</span>
                             </button>
                             <div class="wf-menu-separator" role="separator"></div>
-                            <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(LoadAsync)">
-                                <Icon Name="refresh" /> <span>Refresh</span>
+                            <div class="wf-menu-heading">@Text["toolbar.language"]</div>
+                            @foreach (var language in Locales.Languages)
+                            {
+                                bool currentLanguage = string.Equals(text.Language, language.Tag, StringComparison.OrdinalIgnoreCase);
+                                <button type="button" role="menuitemradio" aria-checked="@(currentLanguage ? "true" : "false")"
+                                        class="wf-menu-item" @onclick="() => RunMenuAsync(() => SetLanguageAsync(language.Tag))">
+                                    <Icon Name="check" Class="@(currentLanguage ? null : "wf-invisible")" />
+                                    <span dir="@(language.IsRightToLeft ? "rtl" : "ltr")">@language.NativeName</span>
+                                </button>
+                            }
+                            <div class="wf-menu-separator" role="separator"></div>
+                            <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(RefreshAfterChangeAsync)">
+                                <Icon Name="refresh" /> <span>@Text["toolbar.refresh"]</span>
                             </button>
                         </div>
                     }
@@ -180,34 +198,69 @@
                 </div>
             }
 
-            <div class="wf-listing" @ref="listingElement"
+            <div class="wf-listing" tabindex="0" @ref="listingElement" data-drop-label="@Text["listing.dropOverlay"]"
                  @onclick="ClearSelection"
                  @oncontextmenu="ShowBackgroundMenu" @oncontextmenu:preventDefault="true">
-                @if (loadError is not null)
+                @if (ShowingSearch)
+                {
+                    <div class="wf-search-banner" @onclick:stopPropagation="true">
+                        @if (searchError is not null)
+                        {
+                            <span>@searchError</span>
+                            <button type="button" class="wf-button" @onclick="RunSearchAsync">@Text["listing.tryAgain"]</button>
+                        }
+                        else if (searchResults is null)
+                        {
+                            <span class="wf-spinner" role="status" aria-label="@Text["listing.loading"]"></span>
+                        }
+                        else
+                        {
+                            <span>@Text.Plural("count.items", searchResults.Hits.Count)</span>
+                            @if (searchResults.Truncated)
+                            {
+                                <span class="wf-muted">@Text["listing.truncated"]</span>
+                            }
+                            <button type="button" class="wf-button" @onclick="ClearSearchAsync">@Text["listing.clearSearch"]</button>
+                        }
+                    </div>
+                }
+                @if (loadError is not null && !ShowingSearch)
                 {
                     <div class="wf-empty">
                         <Icon Name="alert" Class="wf-empty-icon" />
                         <p>@loadError</p>
-                        <button type="button" class="wf-button" @onclick="LoadAsync" @onclick:stopPropagation="true">Try again</button>
+                        <button type="button" class="wf-button" @onclick="LoadAsync" @onclick:stopPropagation="true">@Text["listing.tryAgain"]</button>
                     </div>
                 }
-                else if (listing is null)
+                else if (listing is null && !ShowingSearch)
                 {
-                    <div class="wf-empty"><span class="wf-spinner" role="status" aria-label="Loading"></span></div>
+                    <div class="wf-empty"><span class="wf-spinner" role="status" aria-label="@Text["listing.loading"]"></span></div>
+                }
+                else if (ShowingSearch && searchResults is null && searchError is null)
+                {
+                    <div class="wf-empty"><span class="wf-spinner" role="status" aria-label="@Text["listing.loading"]"></span></div>
                 }
                 else
                 {
-                    <FileListing Items="listing.Items"
-                                 RootId="@(rootId!)"
+                    <FileListing Entries="Rows()"
                                  Urls="urls"
                                  ViewMode="viewMode"
                                  SortBy="sortBy"
                                  Descending="descending"
-                                 SelectedPaths="selection"
+                                 SelectedKeys="selection"
+                                 ActiveKey="activeKey"
                                  CutPaths="CutPaths"
-                                 HasFilter="@(!string.IsNullOrWhiteSpace(filter) || kindFilter != KindFilter.All)"
-                                 CanUpload="Can(FilePermission.Create)"
+                                 EmptyText="@(ShowingSearch ? Text["listing.noResults"] : !string.IsNullOrWhiteSpace(filter) || kindFilter != KindFilter.All ? Text["listing.noMatches"] : Text["listing.empty"])"
+                                 ShowDropHint="@(!ShowingSearch && Can(FilePermission.Create) && string.IsNullOrWhiteSpace(filter) && kindFilter == KindFilter.All)"
+                                 DropHint="@Text["listing.dropHint"]"
                                  ShowCheckboxes="@(SelectionMode != Constants.SelectionModes.Single)"
+                                 ShowLocation="ShowingSearch"
+                                 SelectAllLabel="@Text["listing.selectAll"]"
+                                 NameHeader="@Text["listing.name"]"
+                                 SizeHeader="@Text["listing.size"]"
+                                 ModifiedHeader="@Text["listing.modified"]"
+                                 LocationHeader="@Text["listing.location"]"
+                                 FolderLabel="@Text["listing.folder"]"
                                  IsSelectable="IsSelectable"
                                  CanDrag="CanDrag"
                                  OnItemClick="OnItemClickAsync"
@@ -218,13 +271,13 @@
                                  OnSort="SortByAsync"
                                  OnDragStart="OnDragStart"
                                  OnDragEnd="() => dragPaths = null"
-                                 OnDropOnto="e => DropOntoAsync(rootId!, e.Path, e.Args)" />
+                                 OnDropOnto="e => DropOntoAsync(e.RootId, e.Path, e.Args)" />
 
-                    @if (listing.TotalCount > listing.Items.Count)
+                    @if (!ShowingSearch && listing is not null && listing.TotalCount > listing.Items.Count)
                     {
                         <div class="wf-more">
                             <button type="button" class="wf-button" @onclick="LoadMoreAsync" @onclick:stopPropagation="true">
-                                Show more (@listing.Items.Count.ToString("N0") of @listing.TotalCount.ToString("N0"))
+                                @Text.Format("listing.showMore", listing.Items.Count.ToString("N0", Text.Culture), listing.TotalCount.ToString("N0", Text.Culture))
                             </button>
                         </div>
                     }
@@ -236,8 +289,8 @@
                 <InfoPanel Detail="detail"
                            Item="DetailItem"
                            SelectionCount="selection.Count"
-                           SelectedBytes="SelectedItems.Sum(i => i.SizeBytes)"
-                           RootId="@(rootId!)"
+                           SelectedBytes="SelectedBytes"
+                           RootId="@DetailRootId"
                            Urls="urls"
                            Service="Service"
                            Interop="interop"
@@ -250,15 +303,18 @@
         <div class="wf-status">
             @if (listing is not null)
             {
-                <span>@Format.Plural(listing.TotalCount, "item")</span>
-                <span class="wf-muted wf-hide-narrow">@Format.Size(listing.TotalSizeBytes)</span>
+                <span>@Text.Plural("count.items", ShowingSearch && searchResults is not null ? searchResults.Hits.Count : listing.TotalCount)</span>
+                @if (!ShowingSearch)
+                {
+                    <span class="wf-muted wf-hide-narrow">@Format.Size(listing.TotalSizeBytes)</span>
+                }
                 @if (selection.Count > 0)
                 {
-                    <span class="wf-muted">@selection.Count selected</span>
+                    <span class="wf-muted">@Text.Format("status.selected", selection.Count)</span>
                 }
                 @if (!Can(FilePermission.Create | FilePermission.Modify | FilePermission.Delete))
                 {
-                    <span class="wf-badge"><Icon Name="lock" /> Read only</span>
+                    <span class="wf-badge"><Icon Name="lock" /> @Text["status.readOnly"]</span>
                 }
             }
             <span class="wf-spacer"></span>
@@ -282,12 +338,12 @@
 
     <PreviewDialog Current="previewItem"
                    Items="PreviewableItems"
-                   RootId="@(rootId ?? string.Empty)"
+                   RootId="@(previewRoot ?? rootId ?? string.Empty)"
                    Urls="urls"
                    Service="Service"
                    Interop="interop"
                    OnNavigate="item => previewItem = item"
-                   OnDownload="item => DownloadAsync([item])"
+                   OnDownload="item => DownloadAsync(previewRoot ?? rootId ?? string.Empty, [item])"
                    OnClose="ClosePreviewAsync" />
 
     <TextEditorDialog @ref="editor"
@@ -295,7 +351,7 @@
                       Interop="interop"
                       Toasts="toasts"
                       ConfirmDiscard="ConfirmDiscardAsync"
-                      OnSaved="_ => LoadAsync()" />
+                      OnSaved="_ => RefreshAfterChangeAsync()" />
 
     <UploadTray Uploads="uploads" OnCancel="CancelUploadAsync" OnDismiss="() => uploads.Clear()" />
 
@@ -303,3 +359,4 @@
     <ConfirmDialog @ref="confirm" Interop="interop" />
     <Toaster Service="toasts" />
 </div>
+</CascadingValue>

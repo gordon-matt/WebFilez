@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
+using WebFilez.Services.Search;
 using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.Transfers;
@@ -10,6 +11,7 @@ public sealed class FileTransferService(
     FileNamePolicy fileNamePolicy,
     ImageResizer imageResizer,
     IFileActivitySink activitySink,
+    IFileIndex index,
     DownloadTicketService downloadTickets,
     IOptionsMonitor<WebFilezOptions> options) : IFileTransferService
 {
@@ -329,6 +331,15 @@ public sealed class FileTransferService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Activity sink failed for {Kind} of {Path}", activity.Kind, activity.Path);
+        }
+
+        try
+        {
+            index.Apply(activity);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Search index failed for {Kind} of {Path}", activity.Kind, activity.Path);
         }
     }
 

@@ -22,4 +22,8 @@
 		<ProjectReference Include="..\WebFilez.Core\WebFilez.Core.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<EmbeddedResource Include="Locales\*.json" LogicalName="WebFilez.Components.Locales.%(Filename)%(Extension)" />
+	</ItemGroup>
+
 </Project>

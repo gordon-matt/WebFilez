@@ -68,6 +68,31 @@ public static class EndpointRouteBuilderExtensions
             return (await service.ListAsync(request, ct)).ToHttpResult();
         });
 
+        group.MapGet(ApiRoutes.Search, async (
+            string? q,
+            string? root,
+            string? path,
+            KindFilter? kind,
+            bool? hidden,
+            ListingSortField? sort,
+            bool? desc,
+            int? max,
+            IFileManagerService service,
+            CancellationToken ct) =>
+        {
+            var request = new SearchRequest(
+                q ?? string.Empty,
+                string.IsNullOrWhiteSpace(root) ? null : root,
+                string.IsNullOrWhiteSpace(path) ? null : path,
+                kind ?? KindFilter.All,
+                hidden ?? false,
+                sort ?? ListingSortField.Name,
+                desc ?? false,
+                max ?? 200);
+
+            return (await service.SearchAsync(request, ct)).ToHttpResult();
+        });
+
         group.MapGet(ApiRoutes.Folders, async (string root, string? path, IFileManagerService service, CancellationToken ct) =>
             (await service.GetFoldersAsync(root, path, ct)).ToHttpResult());
 

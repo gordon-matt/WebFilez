@@ -6,7 +6,7 @@
         <div class="wf-toast wf-toast-@toast.Level.ToString().ToLowerInvariant()" @key="toast.Id">
             <Icon Name="@(toast.Level switch { ToastService.ToastLevel.Error => "alert", ToastService.ToastLevel.Info => "info", _ => "check" })" />
             <span class="wf-toast-message">@toast.Message</span>
-            <button type="button" class="wf-icon-button" aria-label="Dismiss" @onclick="() => Service.Dismiss(toast.Id)">
+            <button type="button" class="wf-icon-button" aria-label="@Text["upload.dismiss"]" @onclick="() => Service.Dismiss(toast.Id)">
                 <Icon Name="x" />
             </button>
         </div>
@@ -15,6 +15,8 @@
 
 @code {
     [Parameter, EditorRequired] public ToastService Service { get; set; } = default!;
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     protected override void OnInitialized() => Service.Changed += OnChanged;
 

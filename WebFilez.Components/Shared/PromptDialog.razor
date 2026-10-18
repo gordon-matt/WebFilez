@@ -11,7 +11,7 @@
                        @onkeydown="OnKeyDown" autocomplete="off" spellcheck="false" />
             </div>
             <div class="wf-dialog-actions">
-                <button type="button" class="wf-button" @onclick="() => Close(null)">Cancel</button>
+                <button type="button" class="wf-button" @onclick="() => Close(null)">@Text["dialog.cancel"]</button>
                 <button type="submit" class="wf-button wf-button-primary" disabled="@string.IsNullOrWhiteSpace(value)">@confirmLabel</button>
             </div>
         </form>
@@ -32,6 +32,8 @@
     private TaskCompletionSource<string?>? completion;
 
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     /// <summary>Completes with the entered text, or null if cancelled.</summary>
     /// <param name="selectStemOnly">Pre-select the name without its extension, as Explorer does on rename.</param>

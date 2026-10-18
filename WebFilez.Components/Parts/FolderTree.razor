@@ -1,6 +1,6 @@
 @* The navigation pane: every root, with folders loaded one level at a time as they open. *@
 
-<nav class="wf-tree" aria-label="Folders">
+<nav class="wf-tree" aria-label="@Text["tree.folders"]">
     @foreach (var root in Roots)
     {
         @Node(root.Id, Constants.RootPath, root.Name, hasChildren: true, depth: 0)
@@ -23,6 +23,8 @@
     [Parameter] public EventCallback<(string RootId, string Path)> OnNavigate { get; set; }
 
     [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -60,12 +62,12 @@
         bool isOpen = expanded.Contains(key);
         bool isCurrent = rootId == RootId && path == CurrentPath;
 
-        <div class="wf-tree-row @(isCurrent ? "wf-tree-current" : null)" style="padding-left: @(depth * 14 + 4)px"
+        <div class="wf-tree-row @(isCurrent ? "wf-tree-current" : null)" style="padding-inline-start: @(depth * 14 + 4)px"
              @ondragover:preventDefault="true"
              @ondrop="e => OnDropOnto.InvokeAsync((rootId, path, e))">
             @if (hasChildren)
             {
-                <button type="button" class="wf-tree-toggle" aria-label="@(isOpen ? "Collapse" : "Expand") @name"
+                <button type="button" class="wf-tree-toggle" aria-label="@((isOpen ? Text.Format("tree.collapse", name) : Text.Format("tree.expand", name)))"
                         aria-expanded="@(isOpen ? "true" : "false")" @onclick="() => ToggleAsync(rootId, path)">
                     <Icon Name="@(isOpen ? "chevron-down" : "chevron-right")" />
                 </button>
