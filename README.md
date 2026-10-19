@@ -30,6 +30,7 @@ Features in this version:
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. Editors are registered by the host page; this project does not reference one. |
 | `WebFilez.Plugins.FileRobot` | Optional FileRobot image editor. Load its script and name it in `Editors`. The component does not reference this package. |
 | `WebFilez.Plugins.SuperDoc` | Optional SuperDoc editor for `.docx`. Load its script and name it in `Editors`. SuperDoc itself is not included; a commercial license key is supplied by the host. |
+| `WebFilez.Plugins.FortuneSheet` | Optional Fortune Sheet editor for `.xlsx` and `.csv`. Load its script and name it in `Editors`. Fortune Sheet itself is not included. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
 | `WebFilez.Tests` | xUnit tests for the path safety rules, the services, and an HTTP round trip. |
 | `WebFilez.Demo.*` | Blazor, MVC and React demos. |
@@ -236,6 +237,13 @@ GIF animation is flattened to one frame. SVG is never rendered inline, and brows
 ```
 
 `registerSuperDoc({ licenseKey })` does the same thing from a module. The key is sent to SuperDoc as its client-visible license identity. Leave it unset and SuperDoc uses its community identity. The key is not a substitute for signing in to the file manager.
+
+`WebFilez.Plugins.FortuneSheet` registers id `fortunesheet` for `.xlsx` and `.csv`. The package does not contain Fortune Sheet. When a spreadsheet opens, the script loads Fortune Sheet 1.0.4 and the [fortune-excel](https://github.com/Corbe30/FortuneExcel) converter 2.3.4. Both are MIT. Fortune Sheet draws the grid, and fortune-excel reads the file into that grid and writes it back. Saving keeps the original format: a `.csv` is written as CSV, and a `.xlsx` is written as xlsx. The older `.xls` format is not opened here.
+
+```html
+<script type="module" src="_content/WebFilez.Plugins.FortuneSheet/fortunesheet.js"></script>
+<FileManager Editors="fortunesheet:.xlsx,.csv" />
+```
 
 ## Layout
 

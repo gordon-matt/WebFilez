@@ -11,7 +11,7 @@ function ManagerView() {
             <FileManager
                 height="calc(100vh - 150px)"
                 theme="auto"
-                editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif|superdoc:.docx"
+                editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif|superdoc:.docx|fortunesheet:.xlsx,.csv"
                 onNavigated={setLocation}
             />
             <p className="demo-muted">

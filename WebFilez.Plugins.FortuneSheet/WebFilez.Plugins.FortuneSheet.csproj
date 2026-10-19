@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>WebFilez.Plugins.FortuneSheet</RootNamespace>
+		<Description>Optional Fortune Sheet editor for WebFilez. Load fortunesheet.js and map its id with the Editors parameter. The file manager does not reference this package, and this package does not include Fortune Sheet.</Description>
+	</PropertyGroup>
+
+</Project>

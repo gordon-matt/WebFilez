@@ -29,7 +29,7 @@
 
     <main class="site-main">
         <section data-panel="manager">
-            <wf-file-manager height="70vh" theme="auto" editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif|superdoc:.docx"></wf-file-manager>
+            <wf-file-manager height="70vh" theme="auto" editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif|superdoc:.docx|fortunesheet:.xlsx,.csv"></wf-file-manager>
         </section>
         <section data-panel="picker" hidden>
             <wf-file-manager height="60vh" selection-mode="single" accept="image/*" select-label="Use image"></wf-file-manager>
@@ -39,6 +39,7 @@
 
     <script type="module" src="_content/WebFilez.Plugins.FileRobot/filerobot.js"></script>
     <script type="module" src="_content/WebFilez.Plugins.SuperDoc/superdoc.js"></script>
+    <script type="module" src="_content/WebFilez.Plugins.FortuneSheet/fortunesheet.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script>
         const tabs = document.querySelectorAll('.site-nav button');

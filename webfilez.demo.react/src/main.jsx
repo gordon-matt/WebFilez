@@ -4,6 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import '/_content/WebFilez.Plugins.FileRobot/filerobot.js'
 import '/_content/WebFilez.Plugins.SuperDoc/superdoc.js'
+import '/_content/WebFilez.Plugins.FortuneSheet/fortunesheet.js'
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
