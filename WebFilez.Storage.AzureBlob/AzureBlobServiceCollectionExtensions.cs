@@ -16,6 +16,7 @@ public static class AzureBlobServiceCollectionExtensions
         public IServiceCollection AddWebFilezAzureBlob()
         {
             services.AddSingleton<IStorageProvider, AzureBlobStorageProvider>();
+            services.AddSingleton<IStoragePublicUrl, AzureBlobPublicUrl>();
             return services;
         }
     }

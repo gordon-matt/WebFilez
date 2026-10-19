@@ -18,6 +18,7 @@ public static class GoogleCloudServiceCollectionExtensions
         public IServiceCollection AddWebFilezGoogleCloud()
         {
             services.AddSingleton<IStorageProvider, GoogleCloudStorageProvider>();
+            services.AddSingleton<IStoragePublicUrl, GoogleCloudPublicUrl>();
             return services;
         }
     }

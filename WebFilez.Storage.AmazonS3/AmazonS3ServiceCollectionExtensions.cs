@@ -17,6 +17,7 @@ public static class AmazonS3ServiceCollectionExtensions
         public IServiceCollection AddWebFilezAmazonS3()
         {
             services.AddSingleton<IStorageProvider, AmazonS3StorageProvider>();
+            services.AddSingleton<IStoragePublicUrl, AmazonS3PublicUrl>();
             return services;
         }
     }

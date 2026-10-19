@@ -357,7 +357,7 @@ Set `PublicBaseUrl` on a root, as `Settings.PublicBaseUrl`, or as `WebFilez:Publ
 
 `PublicUrl` still means "this address is the root". The path inside the root is appended, which is the existing behaviour for a file-system root and for any root that already set `PublicUrl`. A root's own `PublicUrl` wins over the global base. `PublicBaseUrl` wins over `PublicUrl`.
 
-Without either, a cloud root uses its plain object URL. A file-system root has no public URL, as before. Azure Files uses the same `PublicBaseUrl`; its plain URL is `https://{account}.file.core.windows.net/{share}/{key}`, which is not anonymously readable.
+Without either, the storage package's `IStoragePublicUrl` supplies the plain object URL. A file-system root has no public URL, as before. Azure Files uses the same `PublicBaseUrl`; its plain URL is `https://{account}.file.core.windows.net/{share}/{key}`, which is not anonymously readable.
 
 Amazon S3:
 
@@ -483,7 +483,7 @@ builder.Services.AddWebFilez(builder.Configuration);
 - `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access. This does not secure a public bucket or web root; see Storage setups and file URLs.
 - `IFileUrlResolver` returns the URL stored in content. The default is a stable public address. Replace it for a private bucket. See Storage setups and file URLs.
 - `IFileActivitySink` is told about every successful change and download, with the kind, root, path and target. Use it for an audit log, a search index or cache invalidation. Exceptions thrown from it are logged and swallowed.
-- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`, and its key is `FileSystemStorageProvider.ProviderKey`. Every other package publishes its own key, such as `AzureBlobStorageProvider.ProviderKey`, and is registered with `AddSingleton<IStorageProvider, ...>()` or that package's `Add` method. Registering before or after `AddWebFilez` both work. `WebFilez.Services` is the contract those packages reference.
+- `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`, and its key is `FileSystemStorageProvider.ProviderKey`. Every other package publishes its own key, such as `AzureBlobStorageProvider.ProviderKey`, and is registered with `AddSingleton<IStorageProvider, ...>()` or that package's `Add` method. Registering before or after `AddWebFilez` both work. `WebFilez.Services` is the contract those packages reference. A package that has a plain object URL also registers `IStoragePublicUrl`. The default resolver asks the first contributor whose key matches, and only when the root sets no public base. Adding a provider does not require a change in `WebFilez.Services`.
 
 ## Running the demos
 

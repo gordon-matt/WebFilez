@@ -15,6 +15,7 @@ public static class AzureFileServiceCollectionExtensions
         public IServiceCollection AddWebFilezAzureFiles()
         {
             services.AddSingleton<IStorageProvider, AzureFileStorageProvider>();
+            services.AddSingleton<IStoragePublicUrl, AzureFilePublicUrl>();
             return services;
         }
     }

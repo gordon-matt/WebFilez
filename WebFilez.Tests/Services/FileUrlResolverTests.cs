@@ -3,6 +3,10 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using WebFilez.Services.Storage;
+using WebFilez.Storage.AmazonS3;
+using WebFilez.Storage.AzureBlob;
+using WebFilez.Storage.AzureFiles;
+using WebFilez.Storage.GoogleCloud;
 using WebFilez.Tests.Infrastructure;
 
 namespace WebFilez.Tests.Services;
@@ -209,6 +213,51 @@ public class FileUrlResolverTests
     }
 
     [Fact]
+    public async Task UnknownProvider_HasNoPlainUrl_UntilABaseOrContributorIsSet()
+    {
+        var root = Root("custom-store", "campaigns");
+
+        Assert.Null(await Resolve(root, "/a.png"));
+
+        root.PublicBaseUrl = "https://cdn.example.com";
+        Assert.Equal("https://cdn.example.com/campaigns/a.png", await Resolve(root, "/a.png"));
+    }
+
+    [Fact]
+    public async Task CustomProvider_PlainUrl_ComesFromItsOwnContributor()
+    {
+        var resolver = new DefaultFileUrlResolver(
+            new FixedOptions(new WebFilezOptions()),
+            NullLogger<DefaultFileUrlResolver>.Instance,
+            [new CustomPublicUrl()]);
+
+        Assert.Equal(
+            "custom://store/campaigns/a.png",
+            await Resolve(resolver, Root("custom-store", "campaigns"), "/a.png"));
+    }
+
+    [Fact]
+    public async Task ProviderPackage_SuppliesThePlainUrl_ThroughTheDefaultResolver()
+    {
+        await using var provider = new ServiceCollection()
+            .AddLogging()
+            .AddWebFilezServices()
+            .AddWebFilezAmazonS3()
+            .BuildServiceProvider();
+
+        var resolver = provider.GetRequiredService<IFileUrlResolver>();
+        string? url = await resolver.ResolveAsync(
+            FileUrlContext.For(
+                Root("amazon-s3", "campaigns", new Dictionary<string, string> { ["Bucket"] = "files" }),
+                "/a.png",
+                isDirectory: false,
+                allowExpiringUrls: false),
+            Token);
+
+        Assert.Equal("https://files.s3.us-east-1.amazonaws.com/campaigns/a.png", url);
+    }
+
+    [Fact]
     public async Task MissingBucket_ReturnsNull_UntilABaseIsSet()
     {
         var root = Root("amazon-s3", "campaigns");
@@ -285,7 +334,10 @@ public class FileUrlResolverTests
         await resolver.ResolveAsync(FileUrlContext.For(root, path, directory, allowExpiring), Token);
 
     private static DefaultFileUrlResolver Create(WebFilezOptions options) =>
-        new(new FixedOptions(options), NullLogger<DefaultFileUrlResolver>.Instance);
+        new(
+            new FixedOptions(options),
+            NullLogger<DefaultFileUrlResolver>.Instance,
+            [new AzureBlobPublicUrl(), new AzureFilePublicUrl(), new AmazonS3PublicUrl(), new GoogleCloudPublicUrl()]);
 
     private static FileRoot Root(string provider, string path, Dictionary<string, string>? settings = null) => new()
     {
@@ -308,5 +360,13 @@ public class FileUrlResolverTests
     {
         public ValueTask<string?> ResolveAsync(FileUrlContext context, CancellationToken cancellationToken = default) =>
             ValueTask.FromResult<string?>("custom:" + context.VirtualPath);
+    }
+
+    private sealed class CustomPublicUrl : IStoragePublicUrl
+    {
+        public string ProviderKey => "custom-store";
+
+        public string? GetUrl(FileUrlContext context) =>
+            FileUrl.Combine("custom://store", FileUrl.ObjectKey(context), context.IsDirectory);
     }
 }

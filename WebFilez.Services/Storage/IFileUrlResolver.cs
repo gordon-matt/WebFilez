@@ -13,7 +13,9 @@ namespace WebFilez.Services.Storage;
 /// </para>
 /// <para>
 /// Register a replacement before <c>AddWebFilez</c>. The registration uses <c>TryAdd</c>, so the
-/// host's implementation is kept. The built-in resolver never returns an expiring URL.
+/// host's implementation is kept. The built-in resolver never returns an expiring URL. It asks
+/// <see cref="IStoragePublicUrl"/> for a provider's plain object URL, so a new provider adds that
+/// contributor in its own package.
 /// </para>
 /// <para>
 /// Downloads, previews and thumbnails inside the manager stay on the WebFilez API, which checks
