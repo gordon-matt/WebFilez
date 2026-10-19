@@ -1,4 +1,7 @@
+using LogVue;
+using LogVue.Data.Sqlite;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
 using WebFilez;
 using WebFilez.Demo;
 using WebFilez.Storage.AmazonS3;
@@ -7,6 +10,17 @@ using WebFilez.Storage.AzureFiles;
 using WebFilez.Storage.GoogleCloud;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLogVue(options =>
+    builder.Configuration.GetSection(LogVueOptions.SectionName).Bind(options));
+builder.Services.AddLogVueSqlite();
+
+builder.Services.AddSerilog((services, configuration) => configuration
+    .MinimumLevel.Information()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.LogVue(services));
 
 DemoFiles.Seed(builder.Environment.ContentRootPath);
 
@@ -23,6 +37,8 @@ builder.Services.AddWebFilezAmazonS3();
 builder.Services.AddWebFilezGoogleCloud();
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -48,5 +64,9 @@ app.MapBlazorHub();
 // Uploads, downloads and thumbnails always go through the API, even when the component runs
 // in-process. In a real app, protect it: app.MapWebFilezApi().RequireAuthorization();
 app.MapWebFilezApi();
+
+// The demo leaves the log dashboard open. In a real app, protect it:
+// app.MapLogVue().RequireAuthorization();
+app.MapLogVue();
 
 app.Run();

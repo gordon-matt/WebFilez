@@ -284,7 +284,7 @@ builder.Services.AddWebFilezGoogleCloud();
 
 `Path` is the folder inside the container, bucket or share. `Settings.Prefix` overrides it when you want the prefix separate from `Path`. The container, bucket or share is not created for you, and an Azure Files root also needs that directory to exist already.
 
-Blob folders are prefixes. An empty folder is a hidden zero-length marker blob inside that prefix, because the blob client drops a trailing slash from a blob name. Blob names are case-sensitive. For local blob testing, point `ConnectionString` at the [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) emulator (`UseDevelopmentStorage=true` on `127.0.0.1:10000`). Azurite emulates Blob, Queue, and Table only, so it cannot stand in for an Azure file share. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
+Blob folders are prefixes. An empty folder is a hidden zero-length marker blob inside that prefix, because the blob client drops a trailing slash from a blob name. Blob names are case-sensitive. For local blob testing, run the [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) image (`docker run -d --name azurite --restart unless-stopped -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`) and set `ConnectionString` to `UseDevelopmentStorage=true`. It listens on `127.0.0.1:10000`. Azurite emulates Blob, Queue, and Table only, so it cannot stand in for an Azure file share. An Azure file share has real directories, so creating a folder makes an empty one, and names are case-insensitive. Dot names stay hidden unless `ShowHiddenFiles` is on. Neither store has symbolic links.
 
 ```json
 {
@@ -327,7 +327,7 @@ Blob folders are prefixes. An empty folder is a hidden zero-length marker blob i
 }
 ```
 
-S3 and Cloud Storage folders are prefixes, with the same hidden marker as Azure Blob, and object names are case-sensitive. The bucket is not created for you. For local S3 testing, set `ServiceUrl` to a [LocalStack](https://docs.localstack.cloud/) endpoint (`http://127.0.0.1:4566`) and any access key. For local Cloud Storage testing, set `ServiceUrl` to [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) (`http://127.0.0.1:4443`) and leave the credentials out. `CredentialJson` is the other way to pass a Google service-account key.
+S3 and Cloud Storage folders are prefixes, with the same hidden marker as Azure Blob, and object names are case-sensitive. The bucket is not created for you. For local S3 testing, run the last community image, `localstack/localstack:4.14.0` (`docker run -d --name localstack -p 4566:4566 -e SERVICES=s3 localstack/localstack:4.14.0`). `localstack/localstack:latest` exits unless `LOCALSTACK_AUTH_TOKEN` is set. Set `ServiceUrl` to `http://127.0.0.1:4566` and any access key. For local Cloud Storage testing, start [fake-gcs-server](https://github.com/fsouza/fake-gcs-server) with `-scheme http` (the image defaults to HTTPS) and set `ServiceUrl` to `http://127.0.0.1:4443`. Leave the credentials out. `CredentialJson` is the other way to pass a Google service-account key.
 
 A host can add anything else by implementing `IStorageProvider` and registering it. The `Key` is the value used in `Provider`:
 

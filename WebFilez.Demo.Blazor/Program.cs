@@ -1,4 +1,7 @@
+using LogVue;
+using LogVue.Data.Sqlite;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
 using WebFilez;
 using WebFilez.Demo;
 using WebFilez.Demo.Blazor.Components;
@@ -10,6 +13,17 @@ using WebFilez.Storage.GoogleCloud;
 const string EmbedCorsPolicy = "WebFilezEmbeds";
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddLogVue(options =>
+    builder.Configuration.GetSection(LogVueOptions.SectionName).Bind(options));
+builder.Services.AddLogVueSqlite();
+
+builder.Services.AddSerilog((services, configuration) => configuration
+    .MinimumLevel.Information()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.LogVue(services));
 
 DemoFiles.Seed(builder.Environment.ContentRootPath);
 
@@ -31,6 +45,8 @@ builder.Services.AddCors(options => options.AddPolicy(EmbedCorsPolicy, policy =>
     .WithExposedHeaders("Content-Disposition")));
 
 var app = builder.Build();
+
+app.UseSerilogRequestLogging();
 
 if (!app.Environment.IsDevelopment())
 {
@@ -55,6 +71,10 @@ app.MapStaticAssets();
 // The demo leaves the API open. In a real app, protect it:
 // app.MapWebFilezApi().RequireAuthorization();
 app.MapWebFilezApi().RequireCors(EmbedCorsPolicy);
+
+// The demo leaves the log dashboard open. In a real app, protect it:
+// app.MapLogVue().RequireAuthorization();
+app.MapLogVue();
 
 app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
