@@ -41,6 +41,10 @@ public static class AspNetCoreServiceCollectionExtensions
             services.TryAddSingleton(provider => new WebFilezApiAddress(
                 provider.GetRequiredService<IOptions<WebFilezOptions>>().Value.ApiPrefix.Trim('/') + "/"));
 
+            services.AddHttpClient(PublicUrlProbe.HttpClientName, client => client.Timeout = TimeSpan.FromSeconds(15));
+            services.AddScoped<PublicUrlProbe>();
+            services.AddHostedService<PublicUrlProbeHostedService>();
+
             return services;
         }
     }

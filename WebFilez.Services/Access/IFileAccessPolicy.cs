@@ -6,9 +6,16 @@ namespace WebFilez.Services.Access;
 /// caller is, and can cache rule lookups for the lifetime of a request.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The result is always intersected with the root's own
 /// <see cref="FileRoot.EffectivePermissions"/>, so a policy can narrow a root but can never make
 /// a read-only root writable. Called once per listed item, so keep it cheap.
+/// </para>
+/// <para>
+/// These permissions only control what the file manager UI and API allow. They do not secure
+/// files in a public bucket or web root. A file this policy hides can still be fetched by its
+/// public URL.
+/// </para>
 /// </remarks>
 public interface IFileAccessPolicy
 {

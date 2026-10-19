@@ -99,6 +99,9 @@ public static class EndpointRouteBuilderExtensions
         group.MapGet(ApiRoutes.Detail, async (string root, string path, IFileManagerService service, CancellationToken ct) =>
             (await service.GetDetailAsync(root, path, ct)).ToHttpResult());
 
+        group.MapGet(ApiRoutes.UrlCheck, async (string? root, string? path, PublicUrlProbe probe, CancellationToken ct) =>
+            Results.Ok(await probe.CheckAsync(root, path, ct)));
+
         group.MapGet(ApiRoutes.Size, async (string root, string path, IFileManagerService service, CancellationToken ct) =>
             (await service.GetDirectorySizeAsync(root, path, ct)).ToHttpResult());
     }

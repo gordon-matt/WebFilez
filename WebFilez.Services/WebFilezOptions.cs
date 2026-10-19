@@ -1,3 +1,5 @@
+using WebFilez.Services.Storage;
+
 namespace WebFilez.Services;
 
 /// <summary>Configuration for WebFilez, bound from the <c>WebFilez</c> section.</summary>
@@ -66,6 +68,29 @@ public sealed class WebFilezOptions
     /// reports that the index was capped.
     /// </summary>
     public int MaxSearchIndexEntries { get; set; } = 100_000;
+
+    /// <summary>
+    /// Public base URL for roots that set neither <see cref="FileRoot.PublicBaseUrl"/> nor
+    /// <see cref="FileRoot.PublicUrl"/>. Insertable URLs are <c>{PublicBaseUrl}/{key}</c> instead
+    /// of the storage account's own host. A root's own setting wins, and the bucket or container
+    /// name is not added again.
+    /// </summary>
+    public string? PublicBaseUrl { get; set; }
+
+    /// <summary>
+    /// Opts in to presigned, SAS, or other expiring URLs. Off by default. The built-in
+    /// <see cref="IFileUrlResolver"/> never returns an expiring URL: one stored in content
+    /// stops loading after it expires and breaks old pages. Register your own resolver, and return
+    /// a signed URL only when this is true.
+    /// </summary>
+    public bool AllowExpiringUrls { get; set; }
+
+    /// <summary>
+    /// When true, resolves one file's insertable URL and requests it anonymously, once at startup
+    /// and from <c>GET {prefix}/url-check</c>. A 401, 403 or 404 is logged and returned as a
+    /// warning. The check never blocks startup and never fails an upload. Off by default.
+    /// </summary>
+    public bool ProbePublicUrls { get; set; }
 }
 
 /// <summary>How names supplied by users are cleaned up before they reach the disk.</summary>

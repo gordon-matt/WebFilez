@@ -4,6 +4,11 @@ namespace WebFilez.Enums;
 /// What the caller may do at a path. Roots carry a default set, and an
 /// <c>IFileAccessPolicy</c> can narrow or widen it per path and per user.
 /// </summary>
+/// <remarks>
+/// These permissions only control what the file manager UI and API allow. They do not secure
+/// files that a public bucket or the web root already serves. A denied path can still be fetched
+/// by anyone who has its public URL.
+/// </remarks>
 [Flags]
 public enum FilePermission
 {

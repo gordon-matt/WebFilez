@@ -6,11 +6,14 @@ namespace WebFilez.Services.FileSystem;
 /// <summary>Builds DTOs from disk entries and decides which entries a listing shows.</summary>
 internal static class FileItems
 {
-    public static FileSystemItemDto ToItem(
+    public static async ValueTask<FileSystemItemDto> ToItemAsync(
         StorageEntry entry,
         FileRoot root,
         string virtualPath,
-        FilePermission permissions)
+        FilePermission permissions,
+        IFileUrlResolver urls,
+        bool allowExpiringUrls,
+        CancellationToken cancellationToken = default)
     {
         var kind = FileKinds.Classify(entry.Name, entry.IsDirectory);
 
@@ -25,25 +28,9 @@ internal static class FileItems
             entry.IsHidden,
             permissions,
             HasThumbnail: !entry.IsDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
-            PublicUrl: BuildPublicUrl(root, virtualPath, entry.IsDirectory));
-    }
-
-    /// <summary>
-    /// Public address of a file or folder. Folder addresses end with a slash, including the
-    /// root itself, so a host can tell a directory from a file without a second lookup.
-    /// </summary>
-    public static string? BuildPublicUrl(FileRoot root, string virtualPath, bool directory = false)
-    {
-        if (string.IsNullOrWhiteSpace(root.PublicUrl))
-        {
-            return null;
-        }
-
-        string escaped = string.Concat(VirtualPath.GetSegments(virtualPath)
-            .Select(s => Constants.PathSeparator + Uri.EscapeDataString(s)));
-
-        string url = root.PublicUrl.TrimEnd(Constants.PathSeparator) + escaped;
-        return directory ? url + Constants.PathSeparator : url;
+            PublicUrl: await urls.ResolveAsync(
+                FileUrlContext.For(root, virtualPath, entry.IsDirectory, allowExpiringUrls),
+                cancellationToken));
     }
 
     /// <summary>

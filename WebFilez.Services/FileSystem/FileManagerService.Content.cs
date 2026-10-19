@@ -113,11 +113,12 @@ public sealed partial class FileManagerService
 
         var saved = await target.Storage.GetAsync(target.Location, cancellationToken)
             ?? before with { SizeBytes = size, ModifiedAt = DateTime.UtcNow };
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(
+        return Result<FileSystemItemDto>.Success(await ToItemAsync(
             saved,
             target.Root,
             target.VirtualPath,
-            target.Permissions));
+            target.Permissions,
+            cancellationToken));
     }
 
     public async Task<Result<DownloadTicketDto>> CreateDownloadTicketAsync(

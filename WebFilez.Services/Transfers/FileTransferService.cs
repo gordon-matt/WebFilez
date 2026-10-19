@@ -13,6 +13,7 @@ public sealed class FileTransferService(
     IFileActivitySink activitySink,
     IFileIndex index,
     DownloadTicketService downloadTickets,
+    IFileUrlResolver urlResolver,
     IOptionsMonitor<WebFilezOptions> options) : IFileTransferService
 {
     public async Task<Result<FileDownloadDto>> OpenReadAsync(
@@ -214,7 +215,16 @@ public sealed class FileTransferService(
         await RecordAsync(new FileActivity(FileActivityKind.Upload, folder.Root.Id, finalVirtual, SizeBytes: info.SizeBytes), cancellationToken);
 
         var permissions = await resolver.GetPermissionsAsync(folder.Root, finalVirtual, cancellationToken);
-        return Result<UploadResultDto>.Success(new UploadResultDto(FileItems.ToItem(info, folder.Root, finalVirtual, permissions), resized));
+        return Result<UploadResultDto>.Success(new UploadResultDto(
+            await FileItems.ToItemAsync(
+                info,
+                folder.Root,
+                finalVirtual,
+                permissions,
+                urlResolver,
+                options.CurrentValue.AllowExpiringUrls,
+                cancellationToken),
+            resized));
     }
 
     /// <summary>

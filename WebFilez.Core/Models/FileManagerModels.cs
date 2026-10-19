@@ -11,8 +11,9 @@ public sealed record FileRootDto(
     bool CanShowHiddenFiles);
 
 /// <param name="PublicUrl">
-/// Where the file or folder can be fetched without going through the file manager, when the root
-/// has a <c>PublicUrl</c>. Folder addresses end with a slash. This is what picker mode hands back.
+/// Where the file or folder can be fetched without going through the file manager. Folder addresses
+/// end with a slash. This is what picker mode hands back to store in content. Null when the file
+/// has no public address. It is not a presigned URL unless the host opted into expiring URLs.
 /// </param>
 public sealed record FileSystemItemDto(
     string Name,
@@ -193,3 +194,12 @@ public sealed record SearchResultDto(
     string? Path,
     IReadOnlyList<SearchHitDto> Hits,
     bool Truncated);
+
+/// <summary>Outcome of an anonymous request to one insertable file URL. <paramref name="Warning"/> is set when visitors would not be able to read it.</summary>
+public sealed record PublicUrlProbeResult(
+    bool Enabled,
+    string? RootId,
+    string? Path,
+    string? Url,
+    int? StatusCode,
+    string? Warning);

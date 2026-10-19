@@ -22,6 +22,8 @@ public static class ApiRoutes
     public const string Extract = "extract";
     public const string Tickets = "tickets";
 
+    public const string UrlCheck = "url-check";
+
     public const string Download = "download";
     public const string Thumbnail = "thumb";
     public const string Upload = "upload";

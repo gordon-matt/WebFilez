@@ -1,6 +1,10 @@
 namespace WebFilez.Components.Infrastructure;
 
-/// <summary>Absolute URLs for the requests the browser makes directly to the API.</summary>
+/// <summary>
+/// Absolute URLs for the requests the browser makes directly to the API. Downloads, previews and
+/// thumbnails use these permission-checked addresses. The URL stored in content is
+/// <see cref="FileSystemItemDto.PublicUrl"/>, produced on the server, and is not built here.
+/// </summary>
 public sealed class WebFilezUrls(NavigationManager navigation, WebFilezApiAddress address)
 {
     private readonly Uri pageUri = new(navigation.BaseUri);

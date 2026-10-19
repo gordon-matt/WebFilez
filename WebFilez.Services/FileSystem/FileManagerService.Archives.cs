@@ -118,7 +118,7 @@ public sealed partial class FileManagerService
             new FileActivity(FileActivityKind.Compress, request.RootId, created.Value.VirtualPath, SizeBytes: written.SizeBytes),
             cancellationToken);
 
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(written, destination.Value.Root, created.Value.VirtualPath, created.Value.Permissions));
+        return Result<FileSystemItemDto>.Success(await ToItemAsync(written, destination.Value.Root, created.Value.VirtualPath, created.Value.Permissions, cancellationToken));
     }
 
     public async Task<Result<BulkOperationResultDto>> ExtractAsync(

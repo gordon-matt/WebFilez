@@ -41,11 +41,12 @@ public sealed partial class FileManagerService
         await RecordAsync(new FileActivity(FileActivityKind.CreateFolder, request.RootId, created.Value.VirtualPath), cancellationToken);
 
         var createdEntry = await parent.Value.Storage.GetAsync(created.Value.Location, cancellationToken);
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(
+        return Result<FileSystemItemDto>.Success(await ToItemAsync(
             createdEntry ?? new StorageEntry(name.Value, true, 0, DateTime.UtcNow, DateTime.UtcNow, false, false),
             parent.Value.Root,
             created.Value.VirtualPath,
-            created.Value.Permissions));
+            created.Value.Permissions,
+            cancellationToken));
     }
 
     public async Task<Result<FileSystemItemDto>> CreateFileAsync(
@@ -83,11 +84,12 @@ public sealed partial class FileManagerService
         await RecordAsync(new FileActivity(FileActivityKind.CreateFile, request.RootId, created.Value.VirtualPath), cancellationToken);
 
         var createdEntry = await parent.Value.Storage.GetAsync(created.Value.Location, cancellationToken);
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(
+        return Result<FileSystemItemDto>.Success(await ToItemAsync(
             createdEntry ?? new StorageEntry(name.Value, false, 0, DateTime.UtcNow, DateTime.UtcNow, false, false),
             parent.Value.Root,
             created.Value.VirtualPath,
-            created.Value.Permissions));
+            created.Value.Permissions,
+            cancellationToken));
     }
 
     public async Task<Result<FileSystemItemDto>> RenameAsync(
@@ -154,7 +156,7 @@ public sealed partial class FileManagerService
             ?? new StorageEntry(name.Value, existing.IsDirectory, existing.SizeBytes, existing.CreatedAt, DateTime.UtcNow, false, false);
         var permissions = await resolver.GetPermissionsAsync(target.Root, newVirtualPath, cancellationToken);
 
-        return Result<FileSystemItemDto>.Success(FileItems.ToItem(renamed, target.Root, newVirtualPath, permissions));
+        return Result<FileSystemItemDto>.Success(await ToItemAsync(renamed, target.Root, newVirtualPath, permissions, cancellationToken));
     }
 
     public async Task<Result<BulkOperationResultDto>> DeleteAsync(

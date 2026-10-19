@@ -62,12 +62,12 @@ There is no database in this version. Roots come from configuration. Each root n
 Relative paths on a file system root resolve against the content root. A path on any other provider is a prefix inside that store and is left as written. Other root settings:
 
 - `Permissions`: a `FilePermission` set such as `ReadOnly`, `Contributor` or `Full` (the default). `IsReadOnly` clamps whatever is set to non-changing permissions.
-- `PublicUrl`: where the root is served as static files. When set, the picker returns that URL and the info panel shows it. WebFilez doesn't serve it; map it yourself with `UseStaticFiles`.
+- `PublicUrl`: where the root is served, such as `/media` for a folder under `wwwroot`. The path inside the root is appended, and the picker returns that URL. WebFilez doesn't serve it; map it yourself with `UseStaticFiles`. `PublicBaseUrl` is the CDN form of the same idea. See [Storage setups and file URLs](#storage-setups-and-file-urls).
 - `ShowHiddenFiles`: allow dot files and hidden-attribute files to be shown and reached. Off by default.
 - `FollowSymlinks`: allow paths through links, which may lead outside the root. Off by default.
 - `ExcludePatterns`: glob patterns, such as `*.bak` or `node_modules`, that are hidden and unreachable.
 
-Global settings on `WebFilezOptions` include `AllowedExtensions` (if set, only these may be uploaded or created), `BlockedExtensions`, `FileNames` (replace spaces, lower-case, remove diacritics), `Thumbnails`, `MaxEditableFileBytes`, `MaxExtractedBytes` and `MaxExtractedEntries`.
+Global settings on `WebFilezOptions` include `AllowedExtensions` (if set, only these may be uploaded or created), `BlockedExtensions`, `FileNames` (replace spaces, lower-case, remove diacritics), `Thumbnails`, `MaxEditableFileBytes`, `MaxExtractedBytes` and `MaxExtractedEntries`. `PublicBaseUrl` applies to every root that does not set its own. `AllowExpiringUrls` and `ProbePublicUrls` stay off unless you turn them on; both are described under Storage setups and file URLs.
 
 `BlockedExtensions` starts with a list of server-executable and script-capable types, such as `.php`, `.aspx`, `.html` and `.svg`. Every dotted suffix is checked, so `shell.php.jpg` is refused too. Configuration binding **adds to** a list rather than replacing it, so entries in `appsettings.json` extend the defaults. To remove a default, change the list in code:
 
@@ -252,6 +252,7 @@ The component fills its container's width and the `Height` you give it, and adap
 ## Security
 
 - Protect the API with `RequireAuthorization()` or your own policy. WebFilez does no authentication of its own.
+- Permissions and per-folder policies only control the manager UI and API. They do not secure a public bucket or a folder under `wwwroot`. Anyone with the file's URL can read it.
 - Every path is normalised and clamped to its root. Links, hidden files and excluded names are refused unless the root allows them, and archive entries that would land outside the destination are skipped.
 - HTML, SVG and other script-capable types are always downloaded as attachments, never rendered inline, and every file response sends `X-Content-Type-Options: nosniff`.
 - Uploads require the `X-WebFilez` header, which a cross-site form can't send, and are size-limited as they stream in.
@@ -338,6 +339,132 @@ builder.Services.AddWebFilez(builder.Configuration);
 
 Copy, move and zip across two providers stream the bytes. Two roots on the same provider use that provider's own copy.
 
+## Storage setups and file URLs
+
+The URL stored in page content is the file's `PublicUrl`. Listings, details, search hits, uploads and the picker's `PublicUrl` all come from `IFileUrlResolver`. Downloads, previews and thumbnails inside the manager stay on the WebFilez API, which checks permissions. Those addresses are for the manager, not for content.
+
+Bucket and container access is the host's responsibility. WebFilez does not change who can read an object. To make a bucket or container publicly readable behind a CDN, see [Azure Blob anonymous read access](https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-configure), [Amazon S3 Block Public Access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html) and [Cloud Storage public data](https://cloud.google.com/storage/docs/access-control/making-data-public).
+
+- **Public bucket:** works out of the box.
+- **Private bucket with the manager UI only:** browsing and uploads work, but inserted URLs won't load for visitors.
+- **Private bucket with embedded content:** the host must supply their own URL resolver.
+
+### Public base URL
+
+Set `PublicBaseUrl` on a root, as `Settings.PublicBaseUrl`, or as `WebFilez:PublicBaseUrl`. The insertable URL is then `{PublicBaseUrl}/{key}` instead of the account host (`bucket.s3.amazonaws.com`, `account.blob.core.windows.net`, `storage.googleapis.com`). The bucket, container or share name is not added again. Each path segment is encoded, including spaces, and slashes are not doubled.
+
+`PublicUrl` still means "this address is the root". The path inside the root is appended, which is the existing behaviour for a file-system root and for any root that already set `PublicUrl`. A root's own `PublicUrl` wins over the global base. `PublicBaseUrl` wins over `PublicUrl`.
+
+Without either, a cloud root uses its plain object URL. A file-system root has no public URL, as before. Azure Files uses the same `PublicBaseUrl`; its plain URL is `https://{account}.file.core.windows.net/{share}/{key}`, which is not anonymously readable.
+
+Amazon S3:
+
+```json
+{
+  "Id": "photos",
+  "Name": "Photos",
+  "Provider": "amazon-s3",
+  "Path": "campaigns",
+  "PublicBaseUrl": "https://cdn.example.com",
+  "Settings": {
+    "AccessKey": "...",
+    "SecretKey": "...",
+    "Region": "us-east-1",
+    "Bucket": "files"
+  }
+}
+```
+
+`https://cdn.example.com/campaigns/photo.png`, not `https://files.s3.us-east-1.amazonaws.com/files/campaigns/photo.png`.
+
+Azure Blob. `Settings.PublicBaseUrl` is the same setting as the root property:
+
+```json
+{
+  "Id": "uploads",
+  "Name": "Uploads",
+  "Provider": "azure-blob",
+  "Path": "campaigns",
+  "Settings": {
+    "ConnectionString": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
+    "Container": "files",
+    "PublicBaseUrl": "https://cdn.example.com"
+  }
+}
+```
+
+Google Cloud Storage:
+
+```json
+{
+  "Id": "archive",
+  "Name": "Archive",
+  "Provider": "google-cloud",
+  "Path": "campaigns",
+  "PublicBaseUrl": "https://cdn.example.com",
+  "Settings": {
+    "Bucket": "files"
+  }
+}
+```
+
+Local disk. `PublicUrl` stays a site path. `PublicBaseUrl` is the same kind of override when a CDN serves that folder:
+
+```json
+{
+  "Id": "media",
+  "Name": "Media",
+  "Path": "App_Data/media",
+  "PublicUrl": "/media",
+  "PublicBaseUrl": "https://cdn.example.com/media"
+}
+```
+
+`PublicBaseUrl` wins, so a file `holiday/a.jpg` is `https://cdn.example.com/media/holiday/a.jpg`. The disk path is not part of the URL.
+
+### Custom URL resolver
+
+Register it before `AddWebFilez`. The default is added with `TryAdd`, so yours is kept:
+
+```csharp
+builder.Services.AddSingleton<IFileUrlResolver, AppFileUrlResolver>();
+builder.Services.AddWebFilez(builder.Configuration);
+```
+
+For a private bucket whose contents are embedded in pages, return an address the application owns. The application checks the caller and redirects to a signed URL minted for that request, so nothing stored in the page expires:
+
+```csharp
+public sealed class AppFileUrlResolver : IFileUrlResolver
+{
+    public ValueTask<string?> ResolveAsync(FileUrlContext context, CancellationToken cancellationToken = default)
+    {
+        string path = context.VirtualPath.TrimStart('/');
+        return ValueTask.FromResult<string?>($"/files/{context.Root.Id}/{path}");
+    }
+}
+```
+
+```csharp
+// GET /files/{rootId}/{*path}
+// Check the caller, then redirect to a fresh SAS or presigned URL for that one object.
+```
+
+`FileUrlContext` carries the root, the provider key, the virtual path, and `AllowExpiringUrls`. Return null when the file has no public address.
+
+### Signed URLs
+
+WebFilez does not insert expiring signed URLs by default. A presigned or SAS URL works today and fails later, and pages that stored it keep the dead address. The built-in resolver always returns a stable URL.
+
+To opt in, set `AllowExpiringUrls` to true and register a resolver that returns a signed URL only when `FileUrlContext.AllowExpiringUrls` is true. With the flag set and no custom resolver, the built-in one still returns the stable URL and logs a warning.
+
+### Permissions
+
+Per-folder permissions and `IFileAccessPolicy` only control what the manager UI and API allow. They do not secure files in a public bucket or web root. A file the policy hides can still be fetched by its public URL.
+
+### Checking that a URL is public
+
+Set `ProbePublicUrls` to true. WebFilez then resolves one file's insertable URL and requests it anonymously, once at startup and from `GET /api/webfilez/url-check`. That route is on the same API group, so it follows the same authorization as the rest. A 401, 403 or 404 is logged, and the endpoint returns: "This URL is not publicly readable. Inserted files may not display for site visitors. See README: Storage setups." The check never blocks startup and never fails an upload. Leave the flag off and nothing is requested. `GET /api/webfilez/url-check?root=photos&path=/holiday/a.jpg` checks that file instead of the first one found.
+
 ## Extension points
 
 These are registered with `TryAdd`, so register your own implementation before calling `AddWebFilez`:
@@ -346,11 +473,13 @@ These are registered with `TryAdd`, so register your own implementation before c
 builder.Services.AddScoped<IFileRootProvider, TenantRootProvider>();
 builder.Services.AddScoped<IFileAccessPolicy, AclAccessPolicy>();
 builder.Services.AddScoped<IFileActivitySink, AuditLogSink>();
+builder.Services.AddSingleton<IFileUrlResolver, AppFileUrlResolver>();
 builder.Services.AddWebFilez(builder.Configuration);
 ```
 
 - `IFileRootProvider` supplies the roots for the current request. The default reads `WebFilezOptions.Roots`. Use it for per-user or per-tenant roots, or roots stored in a database.
-- `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access.
+- `IFileAccessPolicy` returns the `FilePermission` set for a root and path. The default uses the root's permissions. Use it to look up per-user or per-folder access. This does not secure a public bucket or web root; see Storage setups and file URLs.
+- `IFileUrlResolver` returns the URL stored in content. The default is a stable public address. Replace it for a private bucket. See Storage setups and file URLs.
 - `IFileActivitySink` is told about every successful change and download, with the kind, root, path and target. Use it for an audit log, a search index or cache invalidation. Exceptions thrown from it are logged and swallowed.
 - `IStorageProvider` stores the bytes for roots whose `Provider` matches its `Key`. The file system provider is registered by `AddWebFilez`, and its key is `FileSystemStorageProvider.ProviderKey`. Every other package publishes its own key, such as `AzureBlobStorageProvider.ProviderKey`, and is registered with `AddSingleton<IStorageProvider, ...>()` or that package's `Add` method. Registering before or after `AddWebFilez` both work. `WebFilez.Services` is the contract those packages reference.
 
@@ -370,3 +499,34 @@ The demos seed sample files into `App_Data` on first run. The custom element and
 ```powershell
 dotnet run --project WebFilez.Tests
 ```
+
+## Support
+
+If you find this project useful, consider supporting its development.
+
+<p align="center">
+  <a href="https://buymeacoffee.com/vnmatt">
+    <img src="https://github.com/gordon-matt/MyResume/blob/gh-pages/assets/images/BuyMeACoffee_Logo.png"
+         alt="Buy Me a Coffee"
+         height="40">
+  </a>&nbsp;&nbsp;&nbsp;
+  <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=gordon_matt%40live%2ecom&lc=AU&currency_code=AUD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted">
+    <img src="https://github.com/gordon-matt/MyResume/blob/gh-pages/assets/images/PayPal_Logo.png"
+         alt="Donate with PayPal"
+         height="40">
+  </a>
+</p>
+
+<p align="center">
+  Prefer using your phone? Scan the QR code:
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/vnmatt">
+    <img src="https://github.com/gordon-matt/MyResume/blob/gh-pages/assets/images/BuyMeACoffee_QR.png"
+         alt="Buy Me a Coffee QR Code"
+         width="180">
+  </a>
+</p>
+
+<img src="https://komarev.com/ghpvc/?username=gordon-matt&label=GitHub%20Hits%20Since%202025-06-01%3A%20&color=ff0000&style=flat" alt="gordon-matt" />

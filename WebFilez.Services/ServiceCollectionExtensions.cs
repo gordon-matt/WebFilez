@@ -17,8 +17,9 @@ public static class ServiceCollectionExtensions
         /// </summary>
         /// <remarks>
         /// Every extension point is registered with <c>TryAdd</c>, so register your own
-        /// <see cref="IFileRootProvider"/>, <see cref="IFileAccessPolicy"/> or
-        /// <see cref="IFileActivitySink"/> before or after calling this and yours wins.
+        /// <see cref="IFileRootProvider"/>, <see cref="IFileAccessPolicy"/>,
+        /// <see cref="IFileActivitySink"/> or <see cref="IFileUrlResolver"/> before or after
+        /// calling this and yours wins.
         /// </remarks>
         public IServiceCollection AddWebFilezServices(
             IConfiguration? configuration = null,
@@ -44,6 +45,7 @@ public static class ServiceCollectionExtensions
             services.TryAddScoped<IFileRootProvider, OptionsFileRootProvider>();
             services.TryAddScoped<IFileAccessPolicy, RootFileAccessPolicy>();
             services.TryAddScoped<IFileActivitySink, NullFileActivitySink>();
+            services.TryAddSingleton<IFileUrlResolver, DefaultFileUrlResolver>();
             services.TryAddSingleton<IFileIndex, MemoryFileIndex>();
 
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IStorageProvider, FileSystemStorageProvider>());

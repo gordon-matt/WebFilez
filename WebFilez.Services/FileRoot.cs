@@ -30,15 +30,29 @@ public sealed class FileRoot
     public Dictionary<string, string> Settings { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
-    /// The URL the folder is publicly served at, such as <c>/uploads</c> when it sits under
-    /// <c>wwwroot</c>. When set, files and folders carry a <c>PublicUrl</c> and picker mode returns it.
+    /// The URL this root is publicly served at, such as <c>/uploads</c> when it sits under
+    /// <c>wwwroot</c>. When set, files and folders carry a <c>PublicUrl</c> and picker mode returns
+    /// it. The file's path inside the root is appended. This is a stable address, not a presigned one.
     /// </summary>
     public string? PublicUrl { get; set; }
+
+    /// <summary>
+    /// CDN or custom domain for this root, such as <c>https://cdn.example.com</c>. When set, the
+    /// insertable URL is this base plus the object key (or, for the file system, the path inside
+    /// the root). The bucket, container, or share name is not added again. Takes precedence over
+    /// <see cref="PublicUrl"/>. A returned URL is stored in content, so it is not presigned.
+    /// </summary>
+    public string? PublicBaseUrl { get; set; }
 
     /// <summary>
     /// The most anyone can do in this root. An <see cref="Access.IFileAccessPolicy"/> may narrow
     /// it further per user or per path.
     /// </summary>
+    /// <remarks>
+    /// Permissions only control what the file manager UI and API allow. They do not secure files
+    /// that a public bucket or the web root already serves to anonymous visitors. Hiding a file
+    /// here does not stop someone who has its public URL.
+    /// </remarks>
     public FilePermission Permissions { get; set; } = FilePermission.Full;
 
     /// <summary>Clamps every caller to browse, read and download, whatever the policy says.</summary>

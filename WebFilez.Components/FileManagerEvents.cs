@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 namespace WebFilez.Components;
 
 /// <summary>A file chosen in picker mode.</summary>
-/// <param name="Url">Downloads the file through the WebFilez API, with permission checks.</param>
-/// <param name="PublicUrl">The file's public address, when its root has one. Usually what a CMS field wants.</param>
+/// <param name="Url">Downloads the file through the WebFilez API, with permission checks. For the manager, not for content.</param>
+/// <param name="PublicUrl">The address to store in content, when the file has one. Stable unless the host opted into expiring URLs.</param>
 public sealed record SelectedFile(
     string RootId,
     string Path,

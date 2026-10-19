@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using WebFilez.Services.Search;
+using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.FileSystem;
 
@@ -16,6 +17,7 @@ public sealed partial class FileManagerService(
     IFileActivitySink activitySink,
     IFileIndex index,
     DownloadTicketService downloadTickets,
+    IFileUrlResolver urlResolver,
     IOptionsMonitor<WebFilezOptions> options) : IFileManagerService
 {
     public async Task<Result<IReadOnlyList<FileRootDto>>> GetRootsAsync(CancellationToken cancellationToken = default)
@@ -36,7 +38,7 @@ public sealed partial class FileManagerService(
                 root.DisplayName,
                 permissions,
                 root.IsReadOnly,
-                !string.IsNullOrWhiteSpace(root.PublicUrl),
+                await ResolvePublicUrlAsync(root, Constants.RootPath, isDirectory: true, cancellationToken) is not null,
                 root.ShowHiddenFiles));
         }
 
@@ -85,7 +87,7 @@ public sealed partial class FileManagerService(
                     continue;
                 }
 
-                items.Add(FileItems.ToItem(entry, target.Root, childPath, childPermissions));
+                items.Add(await ToItemAsync(entry, target.Root, childPath, childPermissions, cancellationToken));
             }
         }
         catch (UnauthorizedAccessException ex)
@@ -124,7 +126,7 @@ public sealed partial class FileManagerService(
             pageNumber,
             pageSize,
             filtered.Sum(i => i.SizeBytes),
-            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, directory: true)));
+            await ResolvePublicUrlAsync(target.Root, target.VirtualPath, isDirectory: true, cancellationToken)));
     }
 
     public async Task<Result<IReadOnlyList<FolderNodeDto>>> GetFoldersAsync(
@@ -219,7 +221,7 @@ public sealed partial class FileManagerService(
             target.Permissions,
             width,
             height,
-            FileItems.BuildPublicUrl(target.Root, target.VirtualPath, info.IsDirectory)));
+            await ResolvePublicUrlAsync(target.Root, target.VirtualPath, info.IsDirectory, cancellationToken)));
     }
 
     public async Task<Result<DirectorySizeDto>> GetDirectorySizeAsync(
@@ -328,6 +330,30 @@ public sealed partial class FileManagerService(
                 : ordered.ThenBy(i => i.Name, NaturalComparer.Instance),
         };
     }
+
+    private ValueTask<FileSystemItemDto> ToItemAsync(
+        StorageEntry entry,
+        FileRoot root,
+        string virtualPath,
+        FilePermission permissions,
+        CancellationToken cancellationToken) =>
+        FileItems.ToItemAsync(
+            entry,
+            root,
+            virtualPath,
+            permissions,
+            urlResolver,
+            options.CurrentValue.AllowExpiringUrls,
+            cancellationToken);
+
+    private ValueTask<string?> ResolvePublicUrlAsync(
+        FileRoot root,
+        string virtualPath,
+        bool isDirectory,
+        CancellationToken cancellationToken) =>
+        urlResolver.ResolveAsync(
+            FileUrlContext.For(root, virtualPath, isDirectory, options.CurrentValue.AllowExpiringUrls),
+            cancellationToken);
 
     private async Task RecordAsync(FileActivity activity, CancellationToken cancellationToken)
     {

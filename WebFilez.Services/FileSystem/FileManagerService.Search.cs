@@ -100,7 +100,7 @@ public sealed partial class FileManagerService
                     entry.IsHidden,
                     permissions,
                     HasThumbnail: !entry.IsDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
-                    PublicUrl: FileItems.BuildPublicUrl(root, entry.Path, entry.IsDirectory)));
+                    PublicUrl: await ResolvePublicUrlAsync(root, entry.Path, entry.IsDirectory, cancellationToken)));
             }
         }
 
