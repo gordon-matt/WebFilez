@@ -9,6 +9,13 @@ const instances = new WeakMap();
 const activeUploads = new Map();
 let nextUploadId = 1;
 
+// Editors are registered by the host page. The map lives on globalThis so it is shared even when
+// the page and the component import this file through two different URLs (a fingerprinted asset
+// and the plain one). One editor can be open at a time. It is mounted on document.body so a
+// Blazor re-render cannot wipe the third-party DOM out of the component.
+const editorRegistry = (globalThis.WebFilez ??= {}).editorRegistry ??= new Map();
+let editorSession = null;
+
 const INTERNAL_DRAG_TYPE = 'application/x-webfilez';
 
 export function attach(root, dropZone, dotNetRef) {
@@ -234,6 +241,303 @@ export function setStored(key, value) {
     }
 }
 
+/**
+ * Registers an editor for the file types in `accept` (an HTML accept list: `.jpg,.png,image/webp`).
+ * `open(file, host)` mounts into `host.element` and returns a dispose function.
+ * `host.save(blob, fileName)` writes the bytes back. The original name replaces the file; a new
+ * name is saved beside it. `host.close()` dismisses the editor. `file.sourceUrl` is a blob URL.
+ */
+export function registerEditor(editor) {
+    if (editor === null || typeof editor !== 'object') {
+        return;
+    }
+
+    const id = typeof editor.id === 'string' ? editor.id.trim() : '';
+    if (id.length === 0 || typeof editor.open !== 'function') {
+        return;
+    }
+
+    const name = typeof editor.name === 'string' && editor.name.trim().length > 0 ? editor.name.trim() : id;
+    editorRegistry.set(id, {
+        id,
+        name,
+        accept: typeof editor.accept === 'string' ? editor.accept.trim() : '',
+        open: editor.open,
+    });
+}
+
+/** JSON for the component, so the payload survives trimming. The open function stays here. */
+export function listEditors() {
+    return JSON.stringify([...editorRegistry.values()].map(editor => ({
+        id: editor.id,
+        name: editor.name,
+        accept: editor.accept,
+    })));
+}
+
+/**
+ * Loads the file, then lets the named editor mount into a full-screen container.
+ * `fileJson` is `{ name, path, rootId, url, mimeType, theme, language, loadingLabel }`.
+ */
+export async function openEditor(id, fileJson, uploadUrl, includeCredentials, dotNetRef) {
+    const editor = editorRegistry.get(id);
+    if (!editor) {
+        throw new Error('That editor is not available.');
+    }
+
+    // Replacing another file manager's editor tells it to drop the session. Replacing our own
+    // does not, or the close callback would run while this open is still in progress.
+    const previous = editorSession;
+    if (previous) {
+        const notify = sameOwner(previous.owner, dotNetRef) ? null : previous.owner;
+        await dismissEditor(previous);
+        if (notify) {
+            try {
+                await notify.invokeMethodAsync('OnEditorClosed');
+            } catch {
+                // That file manager is already gone.
+            }
+        }
+    }
+
+    const file = JSON.parse(fileJson);
+    const session = { owner: dotNetRef, closing: false, sourceUrl: null, shell: null, dispose: null };
+    editorSession = session;
+
+    try {
+        const sourceUrl = await fetchBlobUrl(file.url, includeCredentials);
+        if (editorSession !== session) {
+            URL.revokeObjectURL(sourceUrl);
+            return;
+        }
+
+        session.sourceUrl = sourceUrl;
+        const theme = editorTheme(file.theme);
+        const shell = document.createElement('div');
+        shell.className = 'wf-editor-host';
+        shell.dataset.theme = theme;
+        shell.setAttribute('role', 'dialog');
+        shell.setAttribute('aria-modal', 'true');
+        shell.setAttribute('aria-label', file.name);
+
+        const status = document.createElement('p');
+        status.className = 'wf-editor-status';
+        status.textContent = file.loadingLabel || 'Opening editor…';
+
+        const mount = document.createElement('div');
+        mount.className = 'wf-editor-mount';
+        mount.tabIndex = -1;
+        shell.append(status, mount);
+        document.body.append(shell);
+        document.body.classList.add('wf-editor-open');
+        session.shell = shell;
+
+        const host = {
+            element: mount,
+            save: (blob, fileName) => saveEditedFile(file, blob, fileName, uploadUrl, includeCredentials, dotNetRef),
+            close() {
+                if (session.closing) {
+                    return;
+                }
+
+                session.closing = true;
+                // FileRobot calls this from its click handler and then keeps running, so unmount
+                // on the next turn. The shell has to go here: the .NET callback arrives with a new
+                // wrapper for this component, and closeEditor matches that by id.
+                queueMicrotask(() => {
+                    void dismissEditor(session);
+                });
+                dotNetRef.invokeMethodAsync('OnEditorClosed').catch(() => { });
+            },
+        };
+
+        const dispose = await editor.open({ ...file, sourceUrl, theme }, host);
+        if (editorSession !== session) {
+            try {
+                await dispose?.();
+            } catch {
+                // The editor was already going away.
+            }
+
+            shell.remove();
+            URL.revokeObjectURL(sourceUrl);
+            return;
+        }
+
+        session.dispose = typeof dispose === 'function' ? dispose : null;
+        shell.classList.add('is-ready');
+        mount.focus();
+    } catch (error) {
+        if (editorSession === session) {
+            editorSession = null;
+        }
+
+        session.shell?.remove();
+        if (session.sourceUrl) {
+            URL.revokeObjectURL(session.sourceUrl);
+        }
+
+        if (!editorSession) {
+            document.body.classList.remove('wf-editor-open');
+        }
+
+        throw error;
+    }
+}
+
+/** Closes the editor when it belongs to this file manager. A missing owner closes whichever is open. */
+export async function closeEditor(owner) {
+    if (owner && !sameOwner(editorSession?.owner, owner)) {
+        return;
+    }
+
+    await dismissEditor(editorSession);
+}
+
+// Blazor builds a new JS object for the same .NET reference on every call. The id stays put.
+function sameOwner(left, right) {
+    if (!left || !right) {
+        return false;
+    }
+
+    if (left === right) {
+        return true;
+    }
+
+    const leftId = left._id;
+    const rightId = right._id;
+    return leftId != null && leftId === rightId;
+}
+
+async function dismissEditor(session) {
+    if (!session || editorSession !== session) {
+        return;
+    }
+
+    editorSession = null;
+    session.closing = true;
+
+    try {
+        await session.dispose?.();
+    } catch {
+        // Already unmounted.
+    }
+
+    session.shell?.remove();
+    if (session.sourceUrl) {
+        URL.revokeObjectURL(session.sourceUrl);
+    }
+
+    if (!editorSession) {
+        document.body.classList.remove('wf-editor-open');
+    }
+}
+
+function editorTheme(theme) {
+    if (theme === 'dark') {
+        return 'dark';
+    }
+
+    if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+    }
+
+    return 'light';
+}
+
+async function fetchBlobUrl(url, includeCredentials) {
+    const response = await fetch(url, { credentials: includeCredentials ? 'include' : 'same-origin' });
+    if (!response.ok) {
+        throw new Error('The file could not be opened.');
+    }
+
+    return URL.createObjectURL(await response.blob());
+}
+
+async function saveEditedFile(file, blob, fileName, uploadUrl, includeCredentials, dotNetRef) {
+    if (!(blob instanceof Blob)) {
+        throw new Error('The editor did not return a file.');
+    }
+
+    const requested = bareFileName(fileName);
+    const overwrite = requested.length === 0 || sameFileName(requested, file.name);
+    const name = overwrite ? file.name : requested;
+
+    try {
+        await postFile(uploadUrl, file.rootId, parentPath(file.path), blob, name, overwrite, includeCredentials);
+        await dotNetRef.invokeMethodAsync('OnEditorSaved', name);
+    } catch (error) {
+        const message = String(error?.message ?? error);
+        try {
+            await dotNetRef.invokeMethodAsync('OnEditorFailed', message);
+        } catch {
+            // The circuit is gone; the rejection still tells the editor the save failed.
+        }
+
+        throw error;
+    }
+}
+
+function postFile(url, rootId, path, blob, fileName, overwrite, includeCredentials) {
+    const form = new FormData();
+    form.append('root', rootId);
+    form.append('path', path);
+    form.append('relativePath', fileName);
+    form.append('overwrite', overwrite ? 'true' : 'false');
+    form.append('file', blob, fileName);
+
+    return new Promise((resolve, reject) => {
+        const request = new XMLHttpRequest();
+        request.open('POST', url, true);
+        request.withCredentials = !!includeCredentials;
+        request.setRequestHeader('X-WebFilez', '1');
+
+        request.onload = () => {
+            if (request.status >= 200 && request.status < 300) {
+                resolve();
+                return;
+            }
+
+            reject(new Error(problemText(request) || `HTTP ${request.status}`));
+        };
+
+        request.onerror = () => reject(new Error('The connection was lost.'));
+        request.onabort = () => reject(new Error('Cancelled.'));
+        request.send(form);
+    });
+}
+
+function problemText(request) {
+    let message = request.responseText;
+    try {
+        const problem = JSON.parse(request.responseText);
+        message = problem.detail || Object.values(problem.errors ?? {}).flat()[0] || problem.title || message;
+    } catch {
+        // Not a problem-details response.
+    }
+
+    return message;
+}
+
+function parentPath(path) {
+    const normalized = String(path ?? '').replaceAll('\\', '/');
+    const slash = normalized.lastIndexOf('/');
+    return slash > 0 ? normalized.slice(0, slash) : '/';
+}
+
+function bareFileName(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    const name = value.trim().split(/[/\\]/).pop() ?? '';
+    return name === '.' || name === '..' ? '' : name;
+}
+
+function sameFileName(left, right) {
+    return left.localeCompare(right, undefined, { sensitivity: 'accent' }) === 0;
+}
+
 /** Raises a DOM event that bubbles out of shadow roots, for React and plain-HTML hosts. */
 export function dispatch(root, eventName, detailJson) {
     if (root instanceof Element) {
@@ -242,6 +546,10 @@ export function dispatch(root, eventName, detailJson) {
 }
 
 function onKeyDown(e, state) {
+    if (editorSession) {
+        return;
+    }
+
     const target = e.target;
 
     // The editor saves on Ctrl+S in .NET; stop the browser's own "save page" dialog.
@@ -436,3 +744,12 @@ function walkEntry(entry, prefix, results) {
         readBatch();
     });
 }
+
+// A host can push editors onto WebFilez.editors before this module loads. Later calls use
+// registerEditor, which replaces an id, so configuring twice keeps the latest one.
+const queuedEditors = globalThis.WebFilez?.editors;
+if (Array.isArray(queuedEditors)) {
+    queuedEditors.forEach(registerEditor);
+}
+
+globalThis.WebFilez = Object.assign(globalThis.WebFilez ?? {}, { registerEditor, listEditors });

@@ -53,6 +53,20 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
     public async ValueTask SetStoredAsync(string key, string value) =>
         await (await Module).InvokeVoidAsync("setStored", key, value);
 
+    /// <summary>The editors the page has registered, as JSON, so the list survives trimming.</summary>
+    public async ValueTask<string> ListEditorsAsync() =>
+        await (await Module).InvokeAsync<string>("listEditors");
+
+    /// <summary>Mounts a registered editor for one file. The file is JSON for the same reason.</summary>
+    public async ValueTask OpenEditorAsync<T>(string id, string fileJson, string uploadUrl, bool includeCredentials, DotNetObjectReference<T> callback)
+        where T : class =>
+        await (await Module).InvokeVoidAsync("openEditor", id, fileJson, uploadUrl, includeCredentials, callback);
+
+    /// <summary>Closes the editor when this file manager opened it.</summary>
+    public async ValueTask CloseEditorAsync<T>(DotNetObjectReference<T> callback)
+        where T : class =>
+        await (await Module).InvokeVoidAsync("closeEditor", callback);
+
     /// <summary>
     /// Raises a bubbling DOM event on the root, for hosts that aren't Blazor. The detail is
     /// passed as JSON text so the payload survives trimming in WebAssembly.

@@ -24,7 +24,7 @@ public sealed partial class FileManager
 
         menuX = e.Args.ClientX;
         menuY = e.Args.ClientY;
-        contextMenu = BuildSelectionMenu(e.Entry);
+        contextMenu = await BuildSelectionMenu(e.Entry);
     }
 
     private void ShowBackgroundMenu(MouseEventArgs args)
@@ -37,7 +37,7 @@ public sealed partial class FileManager
         contextMenu = BuildBackgroundMenu();
     }
 
-    private List<MenuEntry> BuildSelectionMenu(ListingEntry entry)
+    private async Task<List<MenuEntry>> BuildSelectionMenu(ListingEntry entry)
     {
         var item = entry.Item;
         var entries = new List<MenuEntry>();
@@ -52,6 +52,14 @@ public sealed partial class FileManager
             if (IsPicker && IsSelectable(item))
             {
                 entries.Add(new(SelectLabel, "check-circle", ConfirmSelectionAsync));
+            }
+
+            if (!IsPicker && CanOn(item, FilePermission.Modify))
+            {
+                foreach (var editor in await EditorsForAsync(item))
+                {
+                    entries.Add(new(Text.Format("menu.editWith", editor.Name), "pencil", () => OpenExternalEditorAsync(entry.RootId, item, editor)));
+                }
             }
 
             if (FileKinds.CanPreview(item.Kind) && CanOn(item, FilePermission.Read))

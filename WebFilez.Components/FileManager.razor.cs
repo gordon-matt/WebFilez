@@ -146,6 +146,13 @@ public sealed partial class FileManager
     /// <summary>IETF language tag, such as <c>fr-CA</c>. Empty follows the saved choice, then the UI culture.</summary>
     [Parameter] public string? Language { get; set; }
 
+    /// <summary>
+    /// Which registered editors this file manager offers, and for which files.
+    /// <c>images:.jpg,.png|annotate:.webp</c> uses those editors for those types.
+    /// An id with no accept list keeps the types it registered. Empty offers every registered editor.
+    /// </summary>
+    [Parameter] public string? Editors { get; set; }
+
     /// <summary>Raised by the Select button in picker mode.</summary>
     [Parameter] public EventCallback<IReadOnlyList<SelectedFile>> OnSelected { get; set; }
 
@@ -756,6 +763,16 @@ public sealed partial class FileManager
 
     private async Task OpenFileAsync(string itemRoot, FileSystemItemDto item)
     {
+        if (CanOn(item, FilePermission.Modify))
+        {
+            var editors = await EditorsForAsync(item);
+            if (editors.Count > 0)
+            {
+                await OpenExternalEditorAsync(itemRoot, item, editors[0]);
+                return;
+            }
+        }
+
         if (FileKinds.IsEditable(item.Kind) && CanOn(item, FilePermission.Read))
         {
             await EditAsync(item, itemRoot);
@@ -986,6 +1003,11 @@ public sealed partial class FileManager
             // interactive render installed.
             if (isAttached)
             {
+                if (callbackReference is not null)
+                {
+                    await interop.CloseEditorAsync(callbackReference);
+                }
+
                 await interop.DetachAsync(rootElement);
             }
 

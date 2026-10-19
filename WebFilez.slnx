@@ -19,6 +19,9 @@
   <Project Path="WebFilez.Storage.GoogleCloud/WebFilez.Storage.GoogleCloud.csproj" />
   <Project Path="WebFilez.AspNetCore/WebFilez.AspNetCore.csproj" />
   <Project Path="WebFilez.Components/WebFilez.Components.csproj" />
+  <Folder Name="/Plugins/">
+    <Project Path="WebFilez.Plugins.FileRobot/WebFilez.Plugins.FileRobot.csproj" />
+  </Folder>
   <Project Path="WebFilez.CustomElements/WebFilez.CustomElements.csproj" />
   <Project Path="WebFilez.Tests/WebFilez.Tests.csproj" />
 </Solution>

@@ -4,7 +4,9 @@
 
 <h1 class="demo-title">Files</h1>
 
-<component type="typeof(FileManager)" render-mode="Server" param-Height="@("calc(100vh - 170px)")" />
+<component type="typeof(FileManager)" render-mode="Server"
+           param-Height="@("calc(100vh - 170px)")"
+           param-Editors="@("filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif")" />
 
 <p id="demo-status" class="demo-muted">Drop files anywhere on the listing to upload them.</p>
 

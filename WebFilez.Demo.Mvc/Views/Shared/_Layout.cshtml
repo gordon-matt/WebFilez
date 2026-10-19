@@ -13,6 +13,7 @@
     <base href="~/" />
     <link rel="stylesheet" href="~/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/_content/WebFilez.Components/webfilez.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" />
 </head>
 <body>
     <header class="demo-nav">
@@ -35,6 +36,7 @@
     </div>
 
     <script src="~/_framework/blazor.server.js"></script>
+    <script type="module" src="~/_content/WebFilez.Plugins.FileRobot/filerobot.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -14,7 +14,7 @@
     </label>
 </div>
 
-<FileManager Theme="@theme" Height="calc(100vh - 170px)" OnNavigated="location => current = location" />
+<FileManager Theme="@theme" Height="calc(100vh - 170px)" Editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif" OnNavigated="location => current = location" />
 
 <p class="demo-muted">
     @if (current is null)

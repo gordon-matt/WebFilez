@@ -29,7 +29,7 @@ public static class DemoFiles
             - Drag files from your desktop to upload them, or drop a whole folder.
             - Right-click for more actions, or press F2 to rename and Delete to delete.
             - Drag items onto a folder, in the listing or the tree, to move them. Hold Ctrl to copy.
-            - Double-click a text file to edit it, or an image to preview it.
+            - Double-click a text file to edit it, or a photo to edit it in FileRobot. Right-click a photo and choose Preview to look without changing it.
             """);
 
         Write(root, "Documents/Meeting notes.txt", """

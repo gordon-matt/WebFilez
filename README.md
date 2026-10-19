@@ -11,7 +11,7 @@ Features in this version:
 - Create, rename, delete, copy, cut, paste, duplicate, and drag-and-drop moves (also across roots)
 - Zip and tar compression, extraction with zip-slip and zip-bomb protection
 - Single-file download, or a zip of any selection streamed from a one-time link
-- Image, audio, video, PDF and text preview; a text editor that detects concurrent edits
+- Image, audio, video, PDF and text preview; a text editor that detects concurrent edits; other editors plugged in per file type
 - Thumbnails (WebP, cached on disk) and an info panel with dimensions and folder sizes
 - A picker mode (single or multiple, with an `accept` filter) for choosing files from a form
 - Keyboard shortcuts, context menus, light, dark, auto and Bootstrap-friendly themes, and a layout that adapts to its container's width
@@ -27,7 +27,8 @@ Features in this version:
 | `WebFilez.Storage.AmazonS3` | The Amazon S3 provider. Register it with `AddWebFilezAmazonS3()`. |
 | `WebFilez.Storage.GoogleCloud` | The Google Cloud Storage provider. Register it with `AddWebFilezGoogleCloud()`. |
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
-| `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. |
+| `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. Editors are registered by the host page; this project does not reference one. |
+| `WebFilez.Plugins.FileRobot` | Optional FileRobot image editor. Load its script and name it in `Editors`. The component does not reference this package. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
 | `WebFilez.Tests` | xUnit tests for the path safety rules, the services, and an HTTP round trip. |
 | `WebFilez.Demo.*` | Blazor, MVC and React demos. |
@@ -175,7 +176,54 @@ app.MapWebFilezApi().RequireCors("WebFilez");
 
 `IncludeCredentials` makes uploads, downloads and thumbnails send cookies to that origin. In the custom elements app, `IncludeCredentialsHandler` does the same for JSON calls. For bearer tokens, add your own handler through the `configureClient` argument of `AddWebFilezHttpClient`. Downloads and thumbnails are plain URLs, so they need cookie authentication when the API is protected.
 
-### Layout
+### File editors
+
+The built-in editor is for text and code. Anything else is a JavaScript editor the host page registers, with the file types it should open. Several can be registered, and one file manager can use a different mapping from another.
+
+```js
+import { registerEditor } from '/_content/WebFilez.Components/webfilez.js';
+
+registerEditor({
+  id: 'pintura',
+  name: 'Pintura',
+  accept: '.jpg,.jpeg,.png,.webp', // same syntax as the Accept parameter
+  open(file, host) {
+    // file.sourceUrl is a blob URL of the bytes, so a canvas is not tainted.
+    // file also has name, path, rootId, url, mimeType, theme and language.
+    // host.element is an empty full-screen container.
+    // return a function that disposes the editor.
+  },
+});
+```
+
+`host.save(blob, fileName)` writes the bytes back through the upload endpoint and resolves when that finishes, so the editor can keep its own spinner up until then. The same file name replaces the original. A different name is saved beside it, and a conflict or a rejected type comes back as a rejected promise. `host.close()` dismisses the editor.
+
+`Editors` on the component (the `editors` attribute on `<wf-file-manager>`) assigns those ids to types for one instance:
+
+```html
+<FileManager Editors="images:.jpg,.jpeg,.png,.webp|annotate:.gif,.bmp" />
+```
+
+Entries are separated by `|`. An id with no accept list keeps the types from `registerEditor`. Leave `Editors` empty and every registered editor is offered for the types it named. Double-click opens the first match when the file can be modified. The context menu lists every match as "Edit with ...", and Preview stays there too. Types that no editor claims still open in the text editor or the preview, as before.
+
+An editor can also be queued before the module loads, which suits a plain script tag:
+
+```html
+<script>
+  window.WebFilez = { editors: [{ id: 'pintura', name: 'Pintura', accept: '.jpg,.png', open(file, host) { /* ... */ } }] };
+</script>
+```
+
+`WebFilez.Plugins.FileRobot` is one such editor, shipped separately so the file manager does not know about it. The demos reference that package and load its script, which registers id `filerobot` for JPEG, PNG, WebP, GIF, BMP and AVIF:
+
+```html
+<script type="module" src="_content/WebFilez.Plugins.FileRobot/filerobot.js"></script>
+<FileManager Editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif" />
+```
+
+GIF animation is flattened to one frame. SVG is never rendered inline, and browsers do not decode TIFF, so those stay on preview or download. The script loads the Roboto font FileRobot asks for; the demo pages load it too. FileRobot's save dialog spells a JPEG as `.jpeg`; saving the original name that way still replaces a `.jpg`. Another editor is the same shape: its own package, its own script, and an entry in `Editors`.
+
+## Layout
 
 The component fills its container's width and the `Height` you give it, and adapts its layout to the container rather than the window. Menus and dialogs are fixed-position overlays, so don't place the component inside an element with a CSS `transform`, `filter` or `perspective`. Those create a new containing block and misplace the overlays. To centre a modal around the picker, use flexbox or `<dialog>`, not `translate(-50%, -50%)`.
 

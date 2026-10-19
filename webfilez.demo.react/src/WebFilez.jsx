@@ -6,7 +6,8 @@ import { useEffect, useRef } from 'react'
  *
  * onNavigated receives { rootId, path, publicUrl }. onSelected receives the picked files, each with
  * { rootId, path, name, sizeBytes, mimeType, url, publicUrl }, when selectionMode is "single" or
- * "multiple". kind locks the listing (images, media, folders, and so on).
+ * "multiple". kind locks the listing (images, media, folders, and so on). editors assigns
+ * registered editors to file types, such as "images:.jpg,.png|annotate:.webp".
  */
 export function FileManager({
     root,
@@ -20,6 +21,7 @@ export function FileManager({
     selectLabel,
     showTree = true,
     readOnly = false,
+    editors,
     onNavigated,
     onSelected,
 }) {
@@ -58,6 +60,7 @@ export function FileManager({
             select-label={selectLabel}
             show-tree={String(showTree)}
             read-only={String(readOnly)}
+            editors={editors}
         />
     )
 }

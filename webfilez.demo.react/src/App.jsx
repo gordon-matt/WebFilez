@@ -8,7 +8,12 @@ function ManagerView() {
 
     return (
         <>
-            <FileManager height="calc(100vh - 150px)" theme="auto" onNavigated={setLocation} />
+            <FileManager
+                height="calc(100vh - 150px)"
+                theme="auto"
+                editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif"
+                onNavigated={setLocation}
+            />
             <p className="demo-muted">
                 {location
                     ? <>React heard <code>wf-navigated</code>: {location.rootId}:{location.path}</>

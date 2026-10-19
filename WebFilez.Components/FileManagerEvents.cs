@@ -22,7 +22,20 @@ public sealed record FileLocation(string RootId, string Path, string? PublicUrl 
 /// <summary>The <c>detail</c> of the <c>wf-selected</c> DOM event.</summary>
 public sealed record FileSelection(IReadOnlyList<SelectedFile> Files);
 
+/// <summary>The file handed to a registered editor. <paramref name="Url"/> downloads it through the API.</summary>
+public sealed record EditorFile(
+    string Name,
+    string Path,
+    string RootId,
+    string Url,
+    string MimeType,
+    string Theme,
+    string Language,
+    string LoadingLabel);
+
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
 [JsonSerializable(typeof(FileSelection))]
 [JsonSerializable(typeof(FileLocation))]
+[JsonSerializable(typeof(EditorFile))]
+[JsonSerializable(typeof(FileEditor[]))]
 internal sealed partial class FileManagerEventJsonContext : JsonSerializerContext;
