@@ -20,6 +20,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
 		<ProjectReference Include="..\WebFilez.Plugins.FileRobot\WebFilez.Plugins.FileRobot.csproj" />
+		<ProjectReference Include="..\WebFilez.Plugins.SuperDoc\WebFilez.Plugins.SuperDoc.csproj" />
 	</ItemGroup>
 
 </Project>

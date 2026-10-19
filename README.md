@@ -29,6 +29,7 @@ Features in this version:
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. Editors are registered by the host page; this project does not reference one. |
 | `WebFilez.Plugins.FileRobot` | Optional FileRobot image editor. Load its script and name it in `Editors`. The component does not reference this package. |
+| `WebFilez.Plugins.SuperDoc` | Optional SuperDoc editor for `.docx`. Load its script and name it in `Editors`. SuperDoc itself is not included; a commercial license key is supplied by the host. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
 | `WebFilez.Tests` | xUnit tests for the path safety rules, the services, and an HTTP round trip. |
 | `WebFilez.Demo.*` | Blazor, MVC and React demos. |
@@ -222,6 +223,19 @@ An editor can also be queued before the module loads, which suits a plain script
 ```
 
 GIF animation is flattened to one frame. SVG is never rendered inline, and browsers do not decode TIFF, so those stay on preview or download. The script loads the Roboto font FileRobot asks for; the demo pages load it too. FileRobot's save dialog spells a JPEG as `.jpeg`; saving the original name that way still replaces a `.jpg`. Another editor is the same shape: its own package, its own script, and an entry in `Editors`.
+
+`WebFilez.Plugins.SuperDoc` registers id `superdoc` for `.docx`. The package does not contain SuperDoc. When a document opens, the script loads SuperDoc 2.24.0 and its DOCX engine from jsDelivr. SuperDoc's editor is [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) for open-source use, and the engine it downloads is proprietary software used as SuperDoc's dependency. A proprietary or commercial deployment needs a [commercial license](https://www.superdocportal.dev/get-in-touch) and passes that license key itself. No key is included.
+
+```html
+<script>
+  window.WebFilez = window.WebFilez || {};
+  window.WebFilez.superdoc = { licenseKey: 'your-commercial-key' };
+</script>
+<script type="module" src="_content/WebFilez.Plugins.SuperDoc/superdoc.js"></script>
+<FileManager Editors="superdoc:.docx" />
+```
+
+`registerSuperDoc({ licenseKey })` does the same thing from a module. The key is sent to SuperDoc as its client-visible license identity. Leave it unset and SuperDoc uses its community identity. The key is not a substitute for signing in to the file manager.
 
 ## Layout
 
