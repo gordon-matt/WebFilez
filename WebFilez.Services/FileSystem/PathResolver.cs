@@ -21,8 +21,11 @@ public sealed record ResolvedPath(
 public sealed class PathResolver(
     IFileRootProvider rootProvider,
     IFileAccessPolicy accessPolicy,
-    IStorageProviderSelector storage)
+    IStorageProviderSelector storage,
+    FileScope scope)
 {
+    /// <summary>The folder this caller cannot leave. Empty unless a file manager set a base path.</summary>
+    public FileScope Scope => scope;
     public Task<FileRoot?> FindRootAsync(string? rootId, CancellationToken cancellationToken = default) =>
         string.IsNullOrWhiteSpace(rootId)
             ? Task.FromResult<FileRoot?>(null)
@@ -54,6 +57,12 @@ public sealed class PathResolver(
         string virtualPath = VirtualPath.Normalize(path);
         string notFound = $"'{virtualPath}' was not found.";
 
+        // Same answer as a missing folder, so the refusal doesn't confirm that a parent exists.
+        if (!scope.Allows(root.Id, virtualPath))
+        {
+            return Result<ResolvedPath>.NotFound(notFound);
+        }
+
         IStorageProvider provider;
         try
         {
@@ -83,8 +92,15 @@ public sealed class PathResolver(
     public async ValueTask<FilePermission> GetPermissionsAsync(
         FileRoot root,
         string virtualPath,
-        CancellationToken cancellationToken = default) =>
-        await accessPolicy.GetPermissionsAsync(root, virtualPath, cancellationToken) & root.EffectivePermissions;
+        CancellationToken cancellationToken = default)
+    {
+        if (!scope.Allows(root.Id, virtualPath))
+        {
+            return FilePermission.None;
+        }
+
+        return await accessPolicy.GetPermissionsAsync(root, virtualPath, cancellationToken) & root.EffectivePermissions;
+    }
 
     /// <summary>
     /// Maps a normalized virtual path to a physical path under the root, refusing anything a

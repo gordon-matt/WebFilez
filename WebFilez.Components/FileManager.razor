@@ -16,13 +16,13 @@
                     </button>
                 }
                 <button type="button" class="wf-icon-button" title="@Text["toolbar.up"]"
-                        disabled="@(CurrentPath == Constants.RootPath)" @onclick="GoUpAsync">
+                        disabled="@IsAtFloor" @onclick="GoUpAsync">
                     <Icon Name="arrow-up" />
                 </button>
 
                 @if (listing is not null)
                 {
-                    <Breadcrumbs Items="listing.Breadcrumbs" OnNavigate="p => NavigateAsync(rootId!, p)" OnDropOnto="e => DropOntoAsync(rootId!, e.Path, e.Args)" />
+                    <Breadcrumbs Items="VisibleBreadcrumbs" OnNavigate="p => NavigateAsync(rootId!, p)" OnDropOnto="e => DropOntoAsync(rootId!, e.Path, e.Args)" />
                 }
 
                 <span class="wf-spacer"></span>
@@ -36,7 +36,10 @@
                 <select class="wf-input wf-scope" aria-label="@Text["toolbar.scopeLabel"]" value="@searchScope" @onchange="OnScopeChangedAsync">
                     <option value="@SearchScope.Folder">@Text["scope.folder"]</option>
                     <option value="@SearchScope.Root">@Text["scope.root"]</option>
-                    <option value="@SearchScope.All">@Text["scope.all"]</option>
+                    @if (!IsConfined)
+                    {
+                        <option value="@SearchScope.All">@Text["scope.all"]</option>
+                    }
                 </select>
             </div>
 
@@ -192,7 +195,7 @@
             @if (ShowTree && isTreeOpen && roots.Count > 0)
             {
                 <div class="wf-tree-pane">
-                    <FolderTree @ref="tree" Service="Service" Roots="roots" RootId="@rootId" CurrentPath="@CurrentPath"
+                    <FolderTree @ref="tree" Service="Service" Roots="roots" RootId="@rootId" CurrentPath="@CurrentPath" StartPath="@Floor"
                                 OnNavigate="e => NavigateAsync(e.RootId, e.Path)"
                                 OnDropOnto="e => DropOntoAsync(e.RootId, e.Path, e.Args)" />
                 </div>

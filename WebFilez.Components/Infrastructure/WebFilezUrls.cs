@@ -12,19 +12,22 @@ public sealed class WebFilezUrls(NavigationManager navigation, WebFilezApiAddres
 
     public bool IncludeCredentials => address.IncludeCredentials;
 
-    public string Upload => Combine(ApiRoutes.Upload);
+    /// <summary>When set, browser calls to the API stay inside the folder this token was issued for.</summary>
+    public string? ScopeToken { get; set; }
+
+    public string Upload => WithScope(Combine(ApiRoutes.Upload));
 
     public string Download(string rootId, string path, bool inline = false) =>
-        Combine($"{ApiRoutes.Download}?root={Escape(rootId)}&path={Escape(path)}{(inline ? "&inline=true" : string.Empty)}");
+        WithScope(Combine($"{ApiRoutes.Download}?root={Escape(rootId)}&path={Escape(path)}{(inline ? "&inline=true" : string.Empty)}"));
 
     /// <summary>
     /// The file's modification ticks make each version of it a distinct URL, which is what lets
     /// the endpoint send a long cache lifetime.
     /// </summary>
     public string Thumbnail(string rootId, FileSystemItemDto item, int size) =>
-        Combine($"{ApiRoutes.Thumbnail}?root={Escape(rootId)}&path={Escape(item.Path)}&size={size}&v={item.ModifiedAt.Ticks}");
+        WithScope(Combine($"{ApiRoutes.Thumbnail}?root={Escape(rootId)}&path={Escape(item.Path)}&size={size}&v={item.ModifiedAt.Ticks}"));
 
-    public string Zip(string token) => Combine($"{ApiRoutes.Zip}/{Escape(token)}");
+    public string Zip(string token) => WithScope(Combine($"{ApiRoutes.Zip}/{Escape(token)}"));
 
     /// <summary>
     /// A root's public URL as the page should use it. A relative one, such as
@@ -37,6 +40,11 @@ public sealed class WebFilezUrls(NavigationManager navigation, WebFilezApiAddres
         baseUri, pageUri, UriComponents.SchemeAndServer, UriFormat.Unescaped, StringComparison.OrdinalIgnoreCase) == 0;
 
     private string Combine(string relative) => new Uri(baseUri, relative).ToString();
+
+    private string WithScope(string url) =>
+        string.IsNullOrEmpty(ScopeToken)
+            ? url
+            : url + (url.Contains('?') ? "&" : "?") + Constants.ScopeQueryName + "=" + Escape(ScopeToken);
 
     private static string Escape(string value) => Uri.EscapeDataString(value);
 }

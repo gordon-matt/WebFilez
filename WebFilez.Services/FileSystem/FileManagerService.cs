@@ -27,7 +27,17 @@ public sealed partial class FileManagerService(
 
         foreach (var root in roots)
         {
-            var permissions = await resolver.GetPermissionsAsync(root, Constants.RootPath, cancellationToken);
+            if (resolver.Scope.BasePath is not null
+                && resolver.Scope.RootId is not null
+                && !resolver.Scope.RootId.Equals(root.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            // Permissions at the confined folder, not the real root: the real root is above the
+            // caller and would otherwise look like it has no access at all.
+            string gate = resolver.Scope.BasePath is not null ? resolver.Scope.BasePath : Constants.RootPath;
+            var permissions = await resolver.GetPermissionsAsync(root, gate, cancellationToken);
             if (!permissions.HasAny(FilePermission.Browse | FilePermission.Read))
             {
                 continue;
@@ -120,7 +130,7 @@ public sealed partial class FileManagerService(
             target.Root.DisplayName,
             target.VirtualPath,
             page,
-            BuildBreadcrumbs(target.Root.DisplayName, target.VirtualPath),
+            BuildBreadcrumbs(target.Root.DisplayName, target.VirtualPath, resolver.Scope),
             target.Permissions,
             filtered.Count,
             pageNumber,
@@ -289,7 +299,7 @@ public sealed partial class FileManagerService(
         }
     }
 
-    private static List<BreadcrumbDto> BuildBreadcrumbs(string rootName, string virtualPath)
+    private static List<BreadcrumbDto> BuildBreadcrumbs(string rootName, string virtualPath, FileScope scope)
     {
         var crumbs = new List<BreadcrumbDto> { new(rootName, Constants.RootPath) };
 
@@ -300,7 +310,14 @@ public sealed partial class FileManagerService(
             crumbs.Add(new BreadcrumbDto(segment, accumulated));
         }
 
-        return crumbs;
+        if (scope.BasePath is not { } floor)
+        {
+            return crumbs;
+        }
+
+        // The confined folder is this listing's root, so crumbs above it are not offered as links.
+        var visible = crumbs.Where(crumb => VirtualPath.IsSameOrUnder(crumb.Path, floor)).ToList();
+        return visible.Count == 0 ? crumbs : visible;
     }
 
     private static IEnumerable<FileSystemItemDto> Sort(

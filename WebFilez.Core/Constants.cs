@@ -25,6 +25,15 @@ public static class Constants
 
     public const string RequestHeaderValue = "1";
 
+    /// <summary>
+    /// Carries a scope token (<see cref="IFileScopeProtector"/>) on API calls the file manager
+    /// makes itself. Also accepted as the <c>scope</c> query value, because an image or a download
+    /// cannot set a header.
+    /// </summary>
+    public const string ScopeHeaderName = "X-WebFilez-Scope";
+
+    public const string ScopeQueryName = "scope";
+
     /// <summary>Largest file the built-in editor opens.</summary>
     public const long DefaultMaxEditableFileBytes = 5 * 1024 * 1024;
 

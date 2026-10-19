@@ -1,9 +1,16 @@
 @* The navigation pane: every root, with folders loaded one level at a time as they open. *@
 
 <nav class="wf-tree" aria-label="@Text["tree.folders"]">
-    @foreach (var root in Roots)
+    @if (StartPath == Constants.RootPath)
     {
-        @Node(root.Id, Constants.RootPath, root.Name, hasChildren: true, depth: 0)
+        @foreach (var root in Roots)
+        {
+            @Node(root.Id, Constants.RootPath, root.Name, hasChildren: true, depth: 0)
+        }
+    }
+    else if (RootId is not null)
+    {
+        @Node(RootId, StartPath, VirtualPath.GetName(StartPath), hasChildren: true, depth: 0)
     }
 </nav>
 
@@ -20,6 +27,9 @@
 
     [Parameter] public string CurrentPath { get; set; } = Constants.RootPath;
 
+    /// <summary>The highest folder shown. The root itself when the manager is not confined.</summary>
+    [Parameter] public string StartPath { get; set; } = Constants.RootPath;
+
     [Parameter] public EventCallback<(string RootId, string Path)> OnNavigate { get; set; }
 
     [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
@@ -34,12 +44,19 @@
             return;
         }
 
-        string accumulated = Constants.RootPath;
+        if (!VirtualPath.IsSameOrUnder(CurrentPath, StartPath))
+        {
+            return;
+        }
+
+        string accumulated = StartPath;
         await ExpandAsync(RootId, accumulated);
 
-        foreach (string segment in VirtualPath.GetSegments(CurrentPath).SkipLast(1))
+        string[] current = VirtualPath.GetSegments(CurrentPath);
+        string[] origin = VirtualPath.GetSegments(StartPath);
+        for (int i = origin.Length; i < current.Length - 1; i++)
         {
-            accumulated = VirtualPath.Combine(accumulated, segment);
+            accumulated = VirtualPath.Combine(accumulated, current[i]);
             await ExpandAsync(RootId, accumulated);
         }
     }

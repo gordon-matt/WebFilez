@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
 
             services.TryAddScoped<IFileRootProvider, OptionsFileRootProvider>();
             services.TryAddScoped<IFileAccessPolicy, RootFileAccessPolicy>();
+            services.TryAddScoped<FileScope>();
             services.TryAddScoped<IFileActivitySink, NullFileActivitySink>();
             services.TryAddSingleton<IFileUrlResolver, DefaultFileUrlResolver>();
             services.TryAddSingleton<IFileIndex, MemoryFileIndex>();

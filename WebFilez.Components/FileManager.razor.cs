@@ -56,7 +56,7 @@ public sealed partial class FileManager
     private string? appliedKind;
     private bool kindLocked;
     private string? loadError;
-    private (string? Root, string? Path)? appliedParameters;
+    private (string? Root, string? Path, string? BasePath)? appliedParameters;
 
     private ListingViewMode viewMode;
     private ListingSortField sortBy = ListingSortField.Name;
@@ -108,6 +108,23 @@ public sealed partial class FileManager
 
     /// <summary>The folder to open within <see cref="Root"/>.</summary>
     [Parameter] public string? Path { get; set; }
+
+    /// <summary>
+    /// The highest folder this instance can show, inside <see cref="Root"/>. The up button,
+    /// breadcrumbs, folder tree and search stop here, and the server refuses any path above it
+    /// for this instance, including uploads, downloads and thumbnails. Empty means the whole root.
+    /// Use it when a shared root should open as if a subfolder were the root, such as one
+    /// tenant's folder. On the server the component issues the token that enforces this. A
+    /// WebAssembly host passes that token as <see cref="ScopeToken"/>.
+    /// </summary>
+    [Parameter] public string? BasePath { get; set; }
+
+    /// <summary>
+    /// A token from <see cref="IFileScopeProtector"/> for a WebAssembly host, which cannot mint
+    /// one. Ignored when this component is rendered on the server: it mints its own from
+    /// <see cref="BasePath"/>.
+    /// </summary>
+    [Parameter] public string? ScopeToken { get; set; }
 
     /// <summary><c>light</c>, <c>dark</c>, <c>auto</c> (follow the OS) or <c>bootstrap</c> (follow the page's Bootstrap 5.3 colours).</summary>
     [Parameter] public string Theme { get; set; } = Constants.Themes.Light;
@@ -161,6 +178,16 @@ public sealed partial class FileManager
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string CurrentPath => listing?.Path ?? VirtualPath.Normalize(Path);
+
+    /// <summary>The folder this instance cannot navigate above. <see cref="Constants.RootPath"/> when it isn't confined.</summary>
+    private string Floor => string.IsNullOrWhiteSpace(BasePath) ? Constants.RootPath : VirtualPath.Normalize(BasePath);
+
+    private bool IsConfined => Floor != Constants.RootPath;
+
+    private bool IsAtFloor => CurrentPath.Equals(Floor, StringComparison.OrdinalIgnoreCase);
+
+    private IReadOnlyList<BreadcrumbDto> VisibleBreadcrumbs =>
+        listing is null ? [] : listing.Breadcrumbs.Where(crumb => IsWithinBase(crumb.Path)).ToList();
 
     private string? CurrentPublicUrl => urls.Public(listing?.PublicUrl);
 
@@ -257,10 +284,11 @@ public sealed partial class FileManager
     {
         ApplyHostLanguage();
         bool kindChanged = UpdateKind();
+        ApplyScope();
 
         // Only a change the host made moves the component. Re-rendering with the same Root and
         // Path must not throw the user back to where they started.
-        if (appliedParameters == (Root, Path))
+        if (appliedParameters == (Root, Path, BasePath))
         {
             if (kindChanged && rootId is not null && listing is not null)
             {
@@ -270,7 +298,7 @@ public sealed partial class FileManager
             return;
         }
 
-        appliedParameters = (Root, Path);
+        appliedParameters = (Root, Path, BasePath);
 
         if (roots.Count == 0)
         {
@@ -293,8 +321,43 @@ public sealed partial class FileManager
             return;
         }
 
+        if (IsConfined && searchScope == SearchScope.All)
+        {
+            searchScope = SearchScope.Root;
+        }
+
+        ApplyScope();
         await OpenAsync(rootId, VirtualPath.Normalize(Path), notify: false);
     }
+
+    /// <summary>
+    /// Tells the in-process service, and the browser calls that carry a token, which folder this
+    /// instance may not leave. A server render mints the token. A WebAssembly host supplies one.
+    /// </summary>
+    private void ApplyScope()
+    {
+        string? token = CurrentScopeToken();
+        urls.ScopeToken = token;
+
+        if (Services.GetService<Http.FileScopeToken>() is { } holder)
+        {
+            holder.Value = token;
+        }
+
+        Services.GetService<FileScope>()?.Confine(IsConfined ? rootId : null, IsConfined ? Floor : null);
+    }
+
+    private string? CurrentScopeToken()
+    {
+        if (!string.IsNullOrWhiteSpace(ScopeToken))
+        {
+            return ScopeToken;
+        }
+
+        return IsConfined ? Services.GetService<IFileScopeProtector>()?.Protect(rootId, Floor) : null;
+    }
+
+    private bool IsWithinBase(string path) => VirtualPath.IsSameOrUnder(VirtualPath.Normalize(path), Floor);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -344,6 +407,11 @@ public sealed partial class FileManager
 
     private async Task NavigateAsync(string targetRoot, string path)
     {
+        if (IsConfined && rootId is not null && !targetRoot.Equals(rootId, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         if (ShowingSearch)
         {
             await LeaveSearchAsync();
@@ -355,6 +423,8 @@ public sealed partial class FileManager
     private async Task OpenAsync(string targetRoot, string path, bool notify)
     {
         rootId = targetRoot;
+        ApplyScope();
+        path = IsWithinBase(path) ? VirtualPath.Normalize(path) : Floor;
         selection.Clear();
         rangeAnchor = null;
         detail = null;
@@ -411,21 +481,29 @@ public sealed partial class FileManager
             return;
         }
 
-        if (listing is null || result.Status != ResultStatus.NotFound || path == Constants.RootPath)
+        if (listing is null || result.Status != ResultStatus.NotFound || path.Equals(Floor, StringComparison.OrdinalIgnoreCase))
         {
             listing = null;
             loadError = result.GetDisplayMessage();
             return;
         }
 
-        // The folder vanished underneath us; fall back to its nearest parent.
+        // The folder vanished underneath us; fall back to its nearest parent, not above the floor.
+        string fallback = VirtualPath.GetParent(path) ?? Floor;
+        if (!IsWithinBase(fallback) || fallback.Equals(path, StringComparison.OrdinalIgnoreCase))
+        {
+            listing = null;
+            loadError = result.GetDisplayMessage();
+            return;
+        }
+
         toasts.Error(result.GetDisplayMessage());
-        await LoadAsync(VirtualPath.GetParent(path) ?? Constants.RootPath);
+        await LoadAsync(fallback);
     }
 
     private async Task GoUpAsync()
     {
-        if (rootId is not null && VirtualPath.GetParent(CurrentPath) is { } parent)
+        if (rootId is not null && VirtualPath.GetParent(CurrentPath) is { } parent && IsWithinBase(parent))
         {
             await NavigateAsync(rootId, parent);
         }
@@ -488,11 +566,12 @@ public sealed partial class FileManager
 
         var result = await Service.SearchAsync(new SearchRequest(
             query,
-            searchScope == SearchScope.All ? null : rootId,
-            Kind: kindFilter,
-            ShowHidden: showHidden,
-            SortBy: sortBy,
-            Descending: descending));
+            IsConfined || searchScope != SearchScope.All ? rootId : null,
+            IsConfined ? Floor : null,
+            kindFilter,
+            showHidden,
+            sortBy,
+            descending));
 
         if (version != searchVersion)
         {

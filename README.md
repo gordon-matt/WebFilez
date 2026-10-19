@@ -156,11 +156,13 @@ const folder = document.querySelector('[data-wf-public-url]')?.getAttribute('dat
 
 ```html
 <link rel="stylesheet" href="/_content/WebFilez.Components/webfilez.css" />
-<wf-file-manager height="600px" theme="auto" root="media" path="42/7" selection-mode="single" kind="images" accept="image/*"></wf-file-manager>
+<wf-file-manager height="600px" theme="auto" root="media" path="42/7" base-path="42/7" selection-mode="single" kind="images" accept="image/*"></wf-file-manager>
 <script src="/_framework/blazor.webassembly.js"></script>
 ```
 
 Attributes are kebab-case versions of the component parameters, and the same `wf-navigated` and `wf-selected` events are raised. The React demo has a wrapper component, `src/WebFilez.jsx`, and a Vite plugin that publishes the custom elements and serves their output, so `npm run dev` is all that's needed.
+
+`base-path` makes that folder the top of this instance. The up button, breadcrumbs, folder tree and search stop there, and the server refuses every path above it, including uploads, downloads and thumbnails. Leave it empty to browse the whole root. A server render mints the token that enforces this. A WebAssembly page cannot, so pass `scope-token` from `IFileScopeProtector.Protect` on your server along with the same `base-path`.
 
 When the API is on another origin, it needs a CORS policy. Uploads send an `X-WebFilez` header, so that header must be allowed:
 

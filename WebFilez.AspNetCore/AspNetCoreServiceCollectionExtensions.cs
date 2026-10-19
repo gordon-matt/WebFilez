@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,8 @@ public static class AspNetCoreServiceCollectionExtensions
         {
             services.AddWebFilezServices(configuration, configure);
             services.AddProblemDetails();
+            services.AddDataProtection();
+            services.TryAddSingleton<IFileScopeProtector, DataProtectionFileScopeProtector>();
 
             services.AddOptions<WebFilezOptions>().PostConfigure<IHostEnvironment>((options, environment) =>
             {

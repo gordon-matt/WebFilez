@@ -34,6 +34,7 @@ public static class ComponentsServiceCollectionExtensions
             var builder = services.AddHttpClient<WebFilezApiClient>(client => client.BaseAddress = baseAddress);
             configureClient?.Invoke(builder);
 
+            services.TryAddScoped<FileScopeToken>();
             services.TryAddScoped<IFileManagerService, HttpFileManagerService>();
             services.TryAddSingleton(new WebFilezApiAddress(normalized, includeCredentials));
             services.AddWebFilezComponents();

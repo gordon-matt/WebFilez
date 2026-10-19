@@ -43,6 +43,36 @@ public class FileManagerServiceTests : ServiceTest
     }
 
     [Fact]
+    public async Task List_BasePathHidesTheParentAndSiblingFolders()
+    {
+        Files.Write("Tenant_1/a.txt");
+        Files.Write("Tenant_2/b.txt");
+        Files.Write("Tenant_10/c.txt");
+        Files.Write("root.txt");
+
+        Scope.Confine("files", "Tenant_1");
+
+        Assert.Equal(ResultStatus.NotFound, (await Service.ListAsync(new ListingRequest("files", "/"), Token)).Status);
+        Assert.Equal(ResultStatus.NotFound, (await Service.ListAsync(new ListingRequest("files", "/Tenant_2"), Token)).Status);
+        Assert.Equal(ResultStatus.NotFound, (await Service.ListAsync(new ListingRequest("files", "/Tenant_10"), Token)).Status);
+        Assert.Equal(ResultStatus.NotFound, (await Service.ListAsync(new ListingRequest("files", "/Tenant_1/../Tenant_2"), Token)).Status);
+        Assert.Equal(ResultStatus.NotFound, (await Service.ListAsync(new ListingRequest("docs", "/Tenant_1"), Token)).Status);
+
+        var listing = (await Service.ListAsync(new ListingRequest("files", "/Tenant_1"), Token)).ShouldSucceed();
+        Assert.Equal(["a.txt"], listing.Items.Select(i => i.Name));
+        Assert.Equal(["Tenant_1"], listing.Breadcrumbs.Select(crumb => crumb.Name));
+
+        var child = (await Service.ListAsync(new ListingRequest("files", "/Tenant_1/missing/.."), Token)).ShouldSucceed();
+        Assert.Equal("/Tenant_1", child.Path);
+
+        var roots = (await Service.GetRootsAsync(Token)).ShouldSucceed();
+        Assert.Equal("files", Assert.Single(roots).Id);
+
+        var hits = (await Service.SearchAsync(new SearchRequest("txt", "files"), Token)).ShouldSucceed();
+        Assert.Equal(["/Tenant_1/a.txt"], hits.Hits.Select(hit => hit.Path));
+    }
+
+    [Fact]
     public async Task List_UnknownRootIsNotFound()
     {
         var result = await Service.ListAsync(new ListingRequest("nope"), Token);

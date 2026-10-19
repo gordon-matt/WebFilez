@@ -35,6 +35,26 @@ public sealed partial class FileManagerService
         }
 
         string? prefix = string.IsNullOrWhiteSpace(request.Path) ? null : VirtualPath.Normalize(request.Path);
+        var scope = resolver.Scope;
+        if (scope.BasePath is not null)
+        {
+            if (scope.RootId is not null)
+            {
+                if (!string.IsNullOrWhiteSpace(request.RootId)
+                    && !request.RootId.Equals(scope.RootId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return Result<SearchResultDto>.NotFound($"'{request.RootId}' was not found.");
+                }
+
+                roots = roots.Where(root => root.Id.Equals(scope.RootId, StringComparison.OrdinalIgnoreCase)).ToList();
+            }
+
+            if (prefix is null || !VirtualPath.IsSameOrUnder(prefix, scope.BasePath))
+            {
+                prefix = scope.BasePath;
+            }
+        }
+
         int maxResults = Math.Clamp(request.MaxResults <= 0 ? 200 : request.MaxResults, 1, 1_000);
         var hits = new List<SearchHitDto>();
         bool truncated = false;
@@ -43,7 +63,7 @@ public sealed partial class FileManagerService
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var rootPermissions = await resolver.GetPermissionsAsync(root, Constants.RootPath, cancellationToken);
+            var rootPermissions = await resolver.GetPermissionsAsync(root, prefix ?? Constants.RootPath, cancellationToken);
             if (!rootPermissions.HasAny(FilePermission.Browse | FilePermission.Read))
             {
                 continue;
@@ -155,6 +175,10 @@ public sealed partial class FileManagerService
         CancellationToken cancellationToken)
     {
         int cap = Math.Max(1, options.CurrentValue.MaxSearchIndexEntries);
+
+        // The index is shared by every caller of this root. Scan it whole, then let the query
+        // and the scope drop what this caller must not see.
+        using var unrestricted = resolver.Scope.Suspend();
         var resolved = await resolver.RequireAsync(root.Id, Constants.RootPath, FilePermission.Browse, cancellationToken);
         if (!resolved.IsSuccess)
         {

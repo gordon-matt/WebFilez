@@ -60,6 +60,26 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ScopeToken_RejectsPathsOutsideTheBase()
+    {
+        files.Write("Tenant_1/a.txt");
+        files.Write("Tenant_2/b.txt");
+
+        string token = app.Services.GetRequiredService<IFileScopeProtector>().Protect("files", "/Tenant_1");
+        string encoded = Uri.EscapeDataString(token);
+
+        var parent = await http.GetAsync($"list?root=files&path=/&scope={encoded}", Token);
+        var sibling = await http.GetAsync($"list?root=files&path=/Tenant_2&scope={encoded}", Token);
+        var inside = await http.GetAsync($"list?root=files&path=/Tenant_1&scope={encoded}", Token);
+        var forged = await http.GetAsync("list?root=files&path=/&scope=not-a-token", Token);
+
+        Assert.Equal(HttpStatusCode.NotFound, parent.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, sibling.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, inside.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, forged.StatusCode);
+    }
+
+    [Fact]
     public async Task Listing_RoundTrip()
     {
         files.Write("dir/a.txt", "alpha");

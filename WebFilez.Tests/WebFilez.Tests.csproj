@@ -29,6 +29,7 @@
 
 	<ItemGroup>
 		<Using Include="Ardalis.Result" />
+		<Using Include="WebFilez" />
 		<Using Include="WebFilez.Enums" />
 		<Using Include="WebFilez.Models" />
 		<Using Include="WebFilez.Services" />

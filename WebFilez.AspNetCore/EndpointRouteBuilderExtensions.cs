@@ -26,6 +26,11 @@ public static class EndpointRouteBuilderExtensions
             prefix ??= endpoints.ServiceProvider.GetRequiredService<IOptions<WebFilezOptions>>().Value.ApiPrefix;
 
             var group = endpoints.MapGroup("/" + prefix.Trim('/')).WithTags("WebFilez");
+            group.AddEndpointFilter(async (context, next) =>
+            {
+                ApplyRequestScope(context.HttpContext);
+                return await next(context);
+            });
 
             MapBrowsing(group);
             MapMutations(group);
@@ -335,4 +340,29 @@ public static class EndpointRouteBuilderExtensions
     }
 
     private static EntityTagHeaderValue Weak(string tag) => new($"\"{tag}\"", isWeak: true);
+
+    /// <summary>
+    /// Applies a scope token from the header or the <c>scope</c> query. A missing or forged token
+    /// leaves the call unconfined, which is the ordinary API. A valid token cannot be widened.
+    /// </summary>
+    private static void ApplyRequestScope(HttpContext http)
+    {
+        if (http.RequestServices.GetService<IFileScopeProtector>() is not { } protector)
+        {
+            return;
+        }
+
+        string? token = http.Request.Headers[Constants.ScopeHeaderName].FirstOrDefault();
+        if (string.IsNullOrEmpty(token))
+        {
+            token = http.Request.Query[Constants.ScopeQueryName];
+        }
+
+        if (!protector.TryUnprotect(token, out string? rootId, out string basePath))
+        {
+            return;
+        }
+
+        http.RequestServices.GetRequiredService<FileScope>().Confine(rootId, basePath);
+    }
 }

@@ -18,6 +18,8 @@ public abstract class ServiceTest : IAsyncLifetime
 
     protected IFileManagerService Service => scope.ServiceProvider.GetRequiredService<IFileManagerService>();
 
+    protected FileScope Scope => scope.ServiceProvider.GetRequiredService<FileScope>();
+
     protected IFileTransferService Transfers => scope.ServiceProvider.GetRequiredService<IFileTransferService>();
 
     protected static CancellationToken Token => TestContext.Current.CancellationToken;

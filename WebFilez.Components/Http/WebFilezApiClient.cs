@@ -9,7 +9,7 @@ namespace WebFilez.Components.Http;
 /// Calls the API mapped by <c>MapWebFilezApi()</c> and turns its responses back into the results
 /// the server-side services return, so the components can't tell the two apart.
 /// </summary>
-internal sealed class WebFilezApiClient(HttpClient http)
+internal sealed class WebFilezApiClient(HttpClient http, FileScopeToken scope)
 {
     private const string UnreachableMessage = "Couldn't reach the file service. Check your connection and try again.";
 
@@ -34,6 +34,10 @@ internal sealed class WebFilezApiClient(HttpClient http)
         {
             using var request = createRequest();
             request.Headers.Add(Constants.RequestHeaderName, Constants.RequestHeaderValue);
+            if (!string.IsNullOrEmpty(scope.Value))
+            {
+                request.Headers.TryAddWithoutValidation(Constants.ScopeHeaderName, scope.Value);
+            }
 
             using var response = await http.SendAsync(request, cancellationToken);
             if (!response.IsSuccessStatusCode)
