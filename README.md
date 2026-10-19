@@ -223,7 +223,7 @@ An editor can also be queued before the module loads, which suits a plain script
 <FileManager Editors="filerobot:.jpg,.jpeg,.png,.webp,.gif,.bmp,.avif" />
 ```
 
-GIF animation is flattened to one frame. SVG is never rendered inline, and browsers do not decode TIFF, so those stay on preview or download. The script loads the Roboto font FileRobot asks for; the demo pages load it too. FileRobot's save dialog spells a JPEG as `.jpeg`; saving the original name that way still replaces a `.jpg`. Another editor is the same shape: its own package, its own script, and an entry in `Editors`.
+GIF animation is flattened to one frame. SVG is never rendered inline, and browsers do not decode TIFF, so those stay on preview or download. The script loads the Roboto font FileRobot asks for; the demo pages load it too. FileRobot's save dialog spells a JPEG as `.jpeg`; saving the original name that way still replaces a `.jpg`. FileRobot Image Editor is MIT, including commercial use, and it has no license key. Another editor is the same shape: its own package, its own script, and an entry in `Editors`.
 
 `WebFilez.Plugins.SuperDoc` registers id `superdoc` for `.docx`. The package does not contain SuperDoc. When a document opens, the script loads SuperDoc 2.24.0 and its DOCX engine from jsDelivr. SuperDoc's editor is [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) for open-source use, and the engine it downloads is proprietary software used as SuperDoc's dependency. A proprietary or commercial deployment needs a [commercial license](https://www.superdocportal.dev/get-in-touch) and passes that license key itself. No key is included.
 
@@ -238,7 +238,7 @@ GIF animation is flattened to one frame. SVG is never rendered inline, and brows
 
 `registerSuperDoc({ licenseKey })` does the same thing from a module. The key is sent to SuperDoc as its client-visible license identity. Leave it unset and SuperDoc uses its community identity. The key is not a substitute for signing in to the file manager.
 
-`WebFilez.Plugins.FortuneSheet` registers id `fortunesheet` for `.xlsx` and `.csv`. The package does not contain Fortune Sheet. When a spreadsheet opens, the script loads Fortune Sheet 1.0.4 and the [fortune-excel](https://github.com/Corbe30/FortuneExcel) converter 2.3.4. Both are MIT. Fortune Sheet draws the grid, and fortune-excel reads the file into that grid and writes it back. Saving keeps the original format: a `.csv` is written as CSV, and a `.xlsx` is written as xlsx. The older `.xls` format is not opened here.
+`WebFilez.Plugins.FortuneSheet` registers id `fortunesheet` for `.xlsx` and `.csv`. The package does not contain Fortune Sheet. When a spreadsheet opens, the script loads Fortune Sheet 1.0.4 and the [fortune-excel](https://github.com/Corbe30/FortuneExcel) converter 2.3.4. Both are MIT, including commercial use, and neither takes a license key. Fortune Sheet draws the grid, and fortune-excel reads the file into that grid and writes it back. Saving keeps the original format: a `.csv` is written as CSV, and a `.xlsx` is written as xlsx. The older `.xls` format is not opened here.
 
 ```html
 <script type="module" src="_content/WebFilez.Plugins.FortuneSheet/fortunesheet.js"></script>
