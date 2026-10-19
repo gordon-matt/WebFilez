@@ -55,8 +55,8 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/media",
 });
 
-// Azurite blobs for an azure-blob root. PublicBaseUrl is /azurite/{container}.
-app.MapAzuritePublicFiles();
+// Emulator objects for the cloud roots. PublicBaseUrl is /azurite/{container} or /gcs/{bucket}.
+app.MapEmulatorPublicFiles();
 
 app.UseRouting();
 
