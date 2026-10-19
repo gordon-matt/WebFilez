@@ -55,6 +55,9 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/media",
 });
 
+// Azurite blobs for an azure-blob root. PublicBaseUrl is /azurite/{container}.
+app.MapAzuritePublicFiles();
+
 app.UseRouting();
 
 app.MapStaticAssets();

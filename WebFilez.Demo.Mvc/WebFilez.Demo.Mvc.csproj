@@ -11,6 +11,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\WebFilez.Demo.Blazor\DemoFiles.cs" Link="DemoFiles.cs" />
+		<Compile Include="..\WebFilez.Demo.Blazor\AzuritePublicFiles.cs" Link="AzuritePublicFiles.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
