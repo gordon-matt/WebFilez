@@ -143,7 +143,15 @@ const folder = document.querySelector('[data-wf-public-url]')?.getAttribute('dat
 
 ### React and plain HTML
 
-`WebFilez.CustomElements` is a WebAssembly app that registers `<wf-file-manager>`. Publish it, serve its `_framework` and `_content` folders from your site, and give it an `appsettings.json` that points at the API:
+`WebFilez.CustomElements` is a Blazor WebAssembly app that registers `<wf-file-manager>`. It is not a NuGet package and not an npm package. Publish it and serve the static files from the site that hosts the page:
+
+```bash
+dotnet publish WebFilez.CustomElements -c Release
+```
+
+Copy `wwwroot/_framework` and `wwwroot/_content` from that output so the site serves them at `/_framework` and `/_content`. In a Vite app, put both folders in `public/`. Asset names stay stable between publishes.
+
+The app reads its API address from `/appsettings.json` on the page's origin. In Vite that file is `public/appsettings.json`:
 
 ```json
 {
@@ -154,15 +162,80 @@ const folder = document.querySelector('[data-wf-public-url]')?.getAttribute('dat
 }
 ```
 
+A plain page loads the stylesheet and the runtime, then uses the element. The script is a classic script tag, not `type="module"`:
+
 ```html
 <link rel="stylesheet" href="/_content/WebFilez.Components/webfilez.css" />
-<wf-file-manager height="600px" theme="auto" root="media" path="42/7" base-path="42/7" selection-mode="single" kind="images" accept="image/*"></wf-file-manager>
+<wf-file-manager height="600px" theme="auto" root="media" path="42/7" base-path="42/7" scope-token="..." selection-mode="single" kind="images" accept="image/*"></wf-file-manager>
 <script src="/_framework/blazor.webassembly.js"></script>
 ```
 
-Attributes are kebab-case versions of the component parameters, and the same `wf-navigated` and `wf-selected` events are raised. The React demo has a wrapper component, `src/WebFilez.jsx`, and a Vite plugin that publishes the custom elements and serves their output, so `npm run dev` is all that's needed.
+Attributes are kebab-case versions of the component parameters. `wf-navigated` and `wf-selected` are DOM events.
 
-`base-path` makes that folder the top of this instance. The up button, breadcrumbs, folder tree and search stop there, and the server refuses every path above it, including uploads, downloads and thumbnails. Leave it empty to browse the whole root. A server render mints the token that enforces this. A WebAssembly page cannot, so pass `scope-token` from `IFileScopeProtector.Protect` on your server along with the same `base-path`.
+`base-path` makes that folder the top of this instance. The up button, breadcrumbs, folder tree and search stop there, and the server refuses every path above it, including uploads, downloads and thumbnails. Leave it empty to browse the whole root. A server render mints the token that enforces this. A WebAssembly page cannot, so pass `scope-token` from `IFileScopeProtector.Protect(rootId, basePath)` on your server, using the same base path.
+
+#### React
+
+Add the same stylesheet and script to `index.html`. The script follows the React module:
+
+```html
+<link rel="stylesheet" href="/_content/WebFilez.Components/webfilez.css" />
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+<script src="/_framework/blazor.webassembly.js"></script>
+```
+
+React does not pass custom-element events through as props. Listen for them on the element. Boolean parameters are HTML attributes, so pass `"true"` and `"false"`:
+
+```jsx
+import { useEffect, useRef } from 'react'
+
+export function FileManager({
+  root, path, basePath, scopeToken, theme = 'auto', height = '600px',
+  selectionMode = 'none', accept, kind, selectLabel, showTree = true,
+  readOnly = false, editors, onNavigated, onSelected,
+}) {
+  const ref = useRef(null)
+  const handlers = useRef({ onNavigated, onSelected })
+
+  useEffect(() => {
+    handlers.current = { onNavigated, onSelected }
+  })
+
+  useEffect(() => {
+    const element = ref.current
+    const navigated = event => handlers.current.onNavigated?.(event.detail)
+    const selected = event => handlers.current.onSelected?.(event.detail.files)
+    element.addEventListener('wf-navigated', navigated)
+    element.addEventListener('wf-selected', selected)
+    return () => {
+      element.removeEventListener('wf-navigated', navigated)
+      element.removeEventListener('wf-selected', selected)
+    }
+  }, [])
+
+  return (
+    <wf-file-manager
+      ref={ref}
+      root={root}
+      path={path}
+      base-path={basePath}
+      scope-token={scopeToken}
+      theme={theme}
+      height={height}
+      selection-mode={selectionMode}
+      accept={accept}
+      kind={kind}
+      select-label={selectLabel}
+      show-tree={String(showTree)}
+      read-only={String(readOnly)}
+      editors={editors}
+    />
+  )
+}
+```
+
+`onNavigated` receives `{ rootId, path, publicUrl }`. `onSelected` receives the picked files, each with `{ rootId, path, name, sizeBytes, mimeType, url, publicUrl }`, when `selectionMode` is `"single"` or `"multiple"`. The React demo's `src/WebFilez.jsx` listens for those events the same way. Its Vite plugin publishes the custom-element app and copies `_framework` and `_content` into the build, so `npm run dev` is enough inside that demo. Another React app copies those folders itself. Start the API before the page.
 
 When the API is on another origin, it needs a CORS policy. Uploads send an `X-WebFilez` header, so that header must be allowed:
 
