@@ -2,6 +2,11 @@
 
 An embeddable web file manager for .NET 10, in the spirit of elFinder and Responsive File Manager. It is written in Blazor and also runs in ASP.NET Core MVC, React, or any HTML page through a custom element.
 
+## Screenshots
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/Light.png" alt="Light Theme" width="100%" />
+
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/Dark.png" alt="Dark Theme" width="100%" />
+
 Features in this version:
 
 - Browse several roots, each with its own path, permissions and optional public URL
