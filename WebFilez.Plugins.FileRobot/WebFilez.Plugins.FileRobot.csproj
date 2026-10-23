@@ -6,6 +6,7 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>WebFilez.Plugins.FileRobot</RootNamespace>
 		<Description>Optional FileRobot image editor for WebFilez. Load filerobot.js and map its id with the Editors parameter. The file manager does not reference this package.</Description>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 </Project>

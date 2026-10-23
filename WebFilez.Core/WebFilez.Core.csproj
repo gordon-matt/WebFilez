@@ -7,6 +7,7 @@
 		<RootNamespace>WebFilez</RootNamespace>
 		<Description>Models, service contracts and path rules shared by the WebFilez server and the browser.</Description>
 		<IsTrimmable>true</IsTrimmable>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

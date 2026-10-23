@@ -6,6 +6,7 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>WebFilez.Plugins.SuperDoc</RootNamespace>
 		<Description>Optional SuperDoc editor for WebFilez. Load superdoc.js and map its id with the Editors parameter. The file manager does not reference this package, and this package does not include SuperDoc.</Description>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 </Project>

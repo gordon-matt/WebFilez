@@ -400,3 +400,5 @@ FodyWeavers.xsd
 
 # Demo databases
 App_Data/
+
+NuGet-Push.ps1
