@@ -406,13 +406,17 @@ public sealed class AzureFileStorageProvider : IStorageProvider
                 content = owned = new FileStream(temporary, FileMode.Open, FileAccess.Read, FileShare.Read);
             }
 
-            await file.UploadAsync(content, cancellationToken: cancellationToken);
-            await file.SetHttpHeadersAsync(
-                newSize: null,
-                httpHeaders: new ShareFileHttpHeaders { ContentType = ContentType(path) },
-                smbProperties: null,
-                filePermission: null,
-                cancellationToken: cancellationToken);
+            // An Azure file has a fixed size and must exist before its ranges are written; UploadAsync only writes ranges and rejects an empty one.
+            long length = content.Length - content.Position;
+            await file.CreateAsync(length, new ShareFileCreateOptions
+            {
+                HttpHeaders = new ShareFileHttpHeaders { ContentType = ContentType(path) },
+            }, conditions: null, cancellationToken);
+
+            if (length > 0)
+            {
+                await file.UploadAsync(content, cancellationToken: cancellationToken);
+            }
         }
         catch (RequestFailedException ex) when (ex.Status == 409)
         {
