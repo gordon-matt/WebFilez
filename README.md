@@ -7,7 +7,33 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 
 <img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/Dark.png" alt="Dark Theme" width="100%" />
 
-Features in this version:
+## Core NuGet Packages
+
+| Package | Link | Downloads |
+|---------|------|-------------|
+| WebFilez.AspNetCore | [![NuGet](https://img.shields.io/nuget/v/WebFilez.AspNetCore?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.AspNetCore) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.AspNetCore?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.AspNetCore) |
+| WebFilez.Components | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Components?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Components) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Components?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Components) |
+| WebFilez.Core | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Core?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Core) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Core?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Core) |
+| WebFilez.Services | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Services?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Services) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Services?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Services) |
+
+## Storage Providers
+
+| Package | Link | Downloads |
+|---------|------|-------------|
+| WebFilez.Storage.AmazonS3 | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Storage.AmazonS3?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Storage.AmazonS3) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Storage.AmazonS3?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Storage.AmazonS3) |
+| WebFilez.Storage.AzureBlob | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Storage.AzureBlob?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Storage.AzureBlob) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Storage.AzureBlob?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Storage.AzureBlob) |
+| WebFilez.Storage.AzureFiles | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Storage.AzureFiles?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Storage.AzureFiles) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Storage.AzureFiles?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Storage.AzureFiles) |
+| WebFilez.Storage.GoogleCloud | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Storage.GoogleCloud?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Storage.GoogleCloud) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Storage.GoogleCloud?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Storage.GoogleCloud) |
+
+## Plugins
+
+| Package | Link | Downloads |
+|---------|------|-------------|
+| WebFilez.Plugins.FileRobot | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.FileRobot?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.FileRobot) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.FileRobot?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.FileRobot) |
+| WebFilez.Plugins.FortuneSheet | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.FortuneSheet?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.FortuneSheet) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.FortuneSheet?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.FortuneSheet) |
+| WebFilez.Plugins.SuperDoc | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.SuperDoc?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.SuperDoc) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.SuperDoc?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.SuperDoc) |
+
+## Features
 
 - Browse several roots, each with its own path, permissions and optional public URL
 - Folder tree, breadcrumbs, tiles, list and compact views, sorting, filtering by name and kind, paging
