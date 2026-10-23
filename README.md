@@ -580,6 +580,10 @@ The demos seed sample files into `App_Data` on first run. The custom element and
 dotnet run --project WebFilez.Tests
 ```
 
+## Credits
+
+Many thanks to [Flavio Smirne](https://github.com/fsmirne) for his contribution of the Azure Files storage provider.
+
 ## Support
 
 If you find this project useful, consider supporting its development.
