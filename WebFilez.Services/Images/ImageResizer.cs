@@ -1,11 +1,13 @@
+using Heroicsoft.NetForge.Drawing;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 
 namespace WebFilez.Services.Images;
 
 /// <summary>Shrinks uploaded images that exceed <see cref="ImageResizeOptions"/>.</summary>
-public sealed class ImageResizer(ILogger<ImageResizer> logger, IOptionsMonitor<WebFilezOptions> options)
+public sealed class ImageResizer(
+    ILogger<ImageResizer> logger,
+    IOptionsMonitor<WebFilezOptions> options,
+    IImageProcessor imageProcessor)
 {
     /// <summary>
     /// Refuses to decode images beyond this many pixels. Decoding cost follows pixel count, not
@@ -28,40 +30,12 @@ public sealed class ImageResizer(ILogger<ImageResizer> logger, IOptionsMonitor<W
 
         try
         {
-            var info = await Image.IdentifyAsync(physicalPath, cancellationToken);
-            if ((long)info.Width * info.Height > MaxPixels)
+            return await imageProcessor.TryShrinkFileAsync(physicalPath, new ImageShrinkOptions
             {
-                return false;
-            }
-
-            bool tooWide = settings.MaxWidth > 0 && info.Width > settings.MaxWidth;
-            bool tooTall = settings.MaxHeight > 0 && info.Height > settings.MaxHeight;
-            if (!tooWide && !tooTall)
-            {
-                return false;
-            }
-
-            using var image = await Image.LoadAsync(physicalPath, cancellationToken);
-            var format = image.Metadata.DecodedImageFormat;
-            if (format is null)
-            {
-                return false;
-            }
-
-            image.Mutate(context => context.Resize(new ResizeOptions
-            {
-                Size = new Size(
-                    settings.MaxWidth > 0 ? settings.MaxWidth : int.MaxValue,
-                    settings.MaxHeight > 0 ? settings.MaxHeight : int.MaxValue),
-                Mode = ResizeMode.Max,
-                Sampler = KnownResamplers.Lanczos3,
-            }));
-
-            string resized = physicalPath + ".resize";
-            await image.SaveAsync(resized, image.Configuration.ImageFormatsManager.GetEncoder(format), cancellationToken);
-            File.Move(resized, physicalPath, overwrite: true);
-
-            return true;
+                MaxWidth = settings.MaxWidth,
+                MaxHeight = settings.MaxHeight,
+                MaxPixels = MaxPixels,
+            }, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -10,6 +10,9 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.Services\WebFilez.Services.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Azure.Storage.Files.Shares" Version="12.28.0" />
 	</ItemGroup>
 

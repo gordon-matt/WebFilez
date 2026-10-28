@@ -10,8 +10,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.Services\WebFilez.Services.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Google.Cloud.Storage.V1" Version="5.0.0" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.13" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
 	</ItemGroup>
 
 	<ItemGroup>

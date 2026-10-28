@@ -1,3 +1,4 @@
+using Heroicsoft.NetForge.Drawing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -25,6 +26,8 @@ public static class ServiceCollectionExtensions
             IConfiguration? configuration = null,
             Action<WebFilezOptions>? configure = null)
         {
+            services.AddNetForgeDrawing();
+
             var builder = services.AddOptions<WebFilezOptions>();
 
             if (configuration is not null)

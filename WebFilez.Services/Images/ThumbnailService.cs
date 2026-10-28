@@ -1,10 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
+using Heroicsoft.NetForge.Drawing;
 using Microsoft.Extensions.Options;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
 using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 
@@ -20,7 +17,8 @@ public interface IThumbnailService
 public sealed class ThumbnailService(
     ILogger<ThumbnailService> logger,
     PathResolver resolver,
-    IOptionsMonitor<WebFilezOptions> options) : IThumbnailService
+    IOptionsMonitor<WebFilezOptions> options,
+    IImageProcessor images) : IThumbnailService
 {
     private const string WebpMimeType = "image/webp";
 
@@ -96,41 +94,34 @@ public sealed class ThumbnailService(
         }
     }
 
-    private static async Task<byte[]> GenerateAsync(ResolvedPath target, int size, int quality, CancellationToken cancellationToken)
+    private async Task<byte[]> GenerateAsync(ResolvedPath target, int size, int quality, CancellationToken cancellationToken)
     {
         await using var content = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
-        var header = await Image.IdentifyAsync(content, cancellationToken);
+        var header = await images.TryIdentifyAsync(content, cancellationToken);
+        if (header is null)
+        {
+            throw new InvalidOperationException("The file is not a decodable image.");
+        }
+
         if ((long)header.Width * header.Height > ImageResizer.MaxPixels)
         {
             throw new InvalidOperationException($"{header.Width}x{header.Height} exceeds the decode limit.");
         }
 
-        if (content.CanSeek)
+        // EXIF can carry GPS coordinates; a thumbnail has no need to. The processor rewinds a
+        // seekable stream, so the identify above does not consume the bytes ResizeAsync reads.
+        var processed = await images.ResizeAsync(content, new ImageTransform
         {
-            content.Position = 0;
-        }
+            Width = size,
+            Height = size,
+            Mode = ImageScaleMode.Max,
+            Format = RasterFormat.Webp,
+            Quality = Math.Clamp(quality, 1, 100),
+            StripMetadata = true,
+            MaxPixels = ImageResizer.MaxPixels,
+        }, cancellationToken);
 
-        // Asking the decoder for roughly the target size lets JPEG scale during decode instead
-        // of materialising the full-resolution bitmap.
-        var decoderOptions = new DecoderOptions { TargetSize = new Size(size, size) };
-        using var image = await Image.LoadAsync(decoderOptions, content, cancellationToken);
-
-        image.Mutate(context => context.Resize(new ResizeOptions
-        {
-            Size = new Size(size, size),
-            Mode = ResizeMode.Max,
-            Sampler = KnownResamplers.Lanczos3,
-        }));
-
-        // EXIF can carry GPS coordinates; a thumbnail has no need to.
-        image.Metadata.ExifProfile = null;
-        image.Metadata.IptcProfile = null;
-        image.Metadata.XmpProfile = null;
-
-        using var output = new MemoryStream();
-        await image.SaveAsync(output, new WebpEncoder { Quality = Math.Clamp(quality, 1, 100) }, cancellationToken);
-
-        return output.ToArray();
+        return processed.Bytes;
     }
 
     private async Task WriteCacheAsync(string cachePath, byte[] bytes, CancellationToken cancellationToken)

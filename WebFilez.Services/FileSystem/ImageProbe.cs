@@ -1,9 +1,9 @@
-using SixLabors.ImageSharp;
+using Heroicsoft.NetForge.Drawing;
 
 namespace WebFilez.Services.FileSystem;
 
 /// <summary>
-/// Reads image dimensions without decoding pixel data. <c>Identify</c> parses only the header,
+/// Reads image dimensions without decoding pixel data. Identification parses only the header,
 /// so this stays cheap even for a large photo.
 /// </summary>
 internal static class ImageProbe
@@ -16,8 +16,8 @@ internal static class ImageProbe
     {
         try
         {
-            var info = await Image.IdentifyAsync(content, cancellationToken);
-            return (info.Width, info.Height);
+            var info = await new ImageProcessor().TryIdentifyAsync(content, cancellationToken);
+            return (info?.Width, info?.Height);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

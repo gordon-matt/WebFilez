@@ -15,21 +15,22 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LogVue" Version="1.0.1" />
-		<PackageReference Include="LogVue.Data.Sqlite" Version="1.0.1" />
-		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.AspNetCore\WebFilez.AspNetCore.csproj" />
 		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
 		<ProjectReference Include="..\WebFilez.Plugins.FileRobot\WebFilez.Plugins.FileRobot.csproj" />
-		<ProjectReference Include="..\WebFilez.Plugins.SuperDoc\WebFilez.Plugins.SuperDoc.csproj" />
 		<ProjectReference Include="..\WebFilez.Plugins.FortuneSheet\WebFilez.Plugins.FortuneSheet.csproj" />
+		<ProjectReference Include="..\WebFilez.Plugins.SuperDoc\WebFilez.Plugins.SuperDoc.csproj" />
+		<ProjectReference Include="..\WebFilez.Storage.AmazonS3\WebFilez.Storage.AmazonS3.csproj" />
 		<ProjectReference Include="..\WebFilez.Storage.AzureBlob\WebFilez.Storage.AzureBlob.csproj" />
 		<ProjectReference Include="..\WebFilez.Storage.AzureFiles\WebFilez.Storage.AzureFiles.csproj" />
-		<ProjectReference Include="..\WebFilez.Storage.AmazonS3\WebFilez.Storage.AmazonS3.csproj" />
 		<ProjectReference Include="..\WebFilez.Storage.GoogleCloud\WebFilez.Storage.GoogleCloud.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="LogVue" Version="1.1.1" />
+		<PackageReference Include="LogVue.Data.Sqlite" Version="1.1.1" />
+		<PackageReference Include="LogVue.Providers.Serilog" Version="1.1.1" />
+		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
 	</ItemGroup>
 
 </Project>
