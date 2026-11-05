@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Description>Google Cloud Storage provider for WebFilez. Register it with AddWebFilezGoogleCloud().</Description>
-		<Version>1.0.1</Version>
+		<PackageTags>file-manager;storage-provider;google-cloud;google-cloud-storage;gcs;webfilez</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>

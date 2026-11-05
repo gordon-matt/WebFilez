@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Description>Registers WebFilez in an ASP.NET Core app and maps its HTTP API.</Description>
-		<Version>1.0.1</Version>
+		<PackageTags>file-manager;file-browser;aspnetcore;web-api;minimal-api;webfilez</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>

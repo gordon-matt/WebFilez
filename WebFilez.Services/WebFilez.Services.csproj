@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Description>Server-side WebFilez: the filesystem service, archives, thumbnails and the extension points (roots, access policy, activity) a host plugs into.</Description>
-		<Version>1.0.1</Version>
+		<PackageTags>file-manager;filesystem;archives;thumbnails;image-resize;webfilez</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -13,10 +13,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Heroicsoft.NetForge.Drawing" Version="1.1.0" />
+		<PackageReference Include="Heroicsoft.NetForge.Drawing" Version="1.2.3" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
-		<PackageReference Include="SharpCompress" Version="0.50.7" />
+		<PackageReference Include="SharpCompress" Version="0.50.8" />
 	</ItemGroup>
 
 	<ItemGroup>

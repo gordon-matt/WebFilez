@@ -5,7 +5,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Description>Azure Blob Storage provider for WebFilez. Register it with AddWebFilezAzureBlob().</Description>
-		<Version>1.0.1</Version>
+		<PackageTags>file-manager;storage-provider;azure;azure-blob-storage;blob;webfilez</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -6,8 +6,8 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>WebFilez</RootNamespace>
 		<Description>Models, service contracts and path rules shared by the WebFilez server and the browser.</Description>
+		<PackageTags>file-manager;file-browser;file-picker;path-rules;webfilez</PackageTags>
 		<IsTrimmable>true</IsTrimmable>
-		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

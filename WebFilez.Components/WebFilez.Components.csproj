@@ -6,8 +6,8 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>WebFilez.Components</RootNamespace>
 		<Description>The WebFilez file manager and file picker component, for Blazor Server, Blazor WebAssembly and MVC.</Description>
+		<PackageTags>file-manager;file-browser;file-picker;blazor;razor-components;aspnetcore-mvc;webfilez</PackageTags>
 		<IsTrimmable>true</IsTrimmable>
-		<Version>1.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

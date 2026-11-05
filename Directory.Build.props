@@ -2,13 +2,27 @@
 
 	<PropertyGroup>
 		<LangVersion>latest</LangVersion>
-		<Version>1.0.0</Version>
+		<Version>1.0.2</Version>
 		<Authors>Matt Gordon</Authors>
 		<Company>Matt Gordon</Company>
 		<Product>WebFilez</Product>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageTags>file-manager;file-browser;file-picker;blazor;mvc;react;custom-elements</PackageTags>
+		<PackageProjectUrl>https://github.com/gordon-matt/WebFilez</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/gordon-matt/WebFilez</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
+
+	<!-- Demo and test projects are never packed; everything else gets the icon and README in its package. -->
+	<PropertyGroup Condition="'$(IsPackable)' == ''">
+		<IsPackable Condition="$(MSBuildProjectName.Contains('.Demo.')) Or $(MSBuildProjectName.EndsWith('.Tests'))">false</IsPackable>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(IsPackable)' != 'false'">
+		<None Include="$(MSBuildThisFileDirectory)_Misc\Icon.png" Pack="true" PackagePath="\" Visible="false" />
+		<None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+	</ItemGroup>
 
 </Project>

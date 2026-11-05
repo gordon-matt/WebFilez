@@ -20,9 +20,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="LogVue" Version="1.1.1" />
-		<PackageReference Include="LogVue.Data.Sqlite" Version="1.1.1" />
-		<PackageReference Include="LogVue.Providers.Serilog" Version="1.1.1" />
+		<PackageReference Include="LogVue" Version="1.1.4" />
+		<PackageReference Include="LogVue.Data.Sqlite" Version="1.1.4" />
+		<PackageReference Include="LogVue.Providers.Serilog" Version="1.1.4" />
 		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
 	</ItemGroup>
 

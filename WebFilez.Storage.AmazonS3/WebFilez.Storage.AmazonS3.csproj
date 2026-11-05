@@ -5,12 +5,12 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Description>Amazon S3 provider for WebFilez. Register it with AddWebFilezAmazonS3().</Description>
-		<Version>1.0.1</Version>
+		<PackageTags>file-manager;storage-provider;amazon-s3;aws;s3;webfilez</PackageTags>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.Services\WebFilez.Services.csproj" />
-		<PackageReference Include="AWSSDK.S3" Version="4.0.104.7" />
+		<PackageReference Include="AWSSDK.S3" Version="4.0.104.9" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.14" />
 	</ItemGroup>
 
