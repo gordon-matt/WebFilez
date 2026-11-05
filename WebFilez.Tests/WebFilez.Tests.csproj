@@ -21,6 +21,13 @@
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
+		<PackageReference Include="SkiaSharp" Version="4.154.0" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0">
+			<ExcludeAssets>all</ExcludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>none</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
 		<PackageReference Include="Moq" Version="4.21.0" />
 		<PackageReference Include="xunit.v3" Version="4.0.2" />

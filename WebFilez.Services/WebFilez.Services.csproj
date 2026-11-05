@@ -13,10 +13,19 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Heroicsoft.NetForge.Drawing" Version="1.2.3" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
 		<PackageReference Include="SharpCompress" Version="0.50.8" />
+		<PackageReference Include="SkiaSharp" Version="4.154.0" />
+		<!-- The default Linux asset expects libfontconfig and libfreetype on the host. Containers
+		     usually do not have them; this build bundles those libraries. The direct reference
+		     with ExcludeAssets drops the dependency SkiaSharp would otherwise pull in. -->
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0">
+			<ExcludeAssets>all</ExcludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>none</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
 	</ItemGroup>
 
 	<ItemGroup>

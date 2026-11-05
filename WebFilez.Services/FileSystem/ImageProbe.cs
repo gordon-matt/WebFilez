@@ -1,5 +1,3 @@
-using Heroicsoft.NetForge.Drawing;
-
 namespace WebFilez.Services.FileSystem;
 
 /// <summary>
@@ -16,8 +14,12 @@ internal static class ImageProbe
     {
         try
         {
-            var info = await new ImageProcessor().TryIdentifyAsync(content, cancellationToken);
-            return (info?.Width, info?.Height);
+            if (await ImageProcessor.TryIdentifyAsync(content, cancellationToken) is not (int width, int height))
+            {
+                return (null, null);
+            }
+
+            return (width, height);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

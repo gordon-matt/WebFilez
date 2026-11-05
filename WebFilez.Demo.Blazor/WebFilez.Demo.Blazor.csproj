@@ -21,6 +21,14 @@
 
 	<ItemGroup>
 		<PackageReference Include="LogVue" Version="1.1.4" />
+		<PackageReference Include="SkiaSharp" Version="4.154.0" />
+		<!-- Same Linux native assets as WebFilez.Services: seeding images must not need fontconfig. -->
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0">
+			<ExcludeAssets>all</ExcludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>none</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.154.0" />
 		<PackageReference Include="LogVue.Data.Sqlite" Version="1.1.4" />
 		<PackageReference Include="LogVue.Providers.Serilog" Version="1.1.4" />
 		<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />

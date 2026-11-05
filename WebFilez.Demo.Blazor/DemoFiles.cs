@@ -1,5 +1,6 @@
 using System.IO.Compression;
-using Heroicsoft.NetForge.Drawing;
+using System.Runtime.InteropServices;
+using SkiaSharp;
 
 namespace WebFilez.Demo;
 
@@ -121,19 +122,49 @@ public static class DemoFiles
             }
         }
 
-        RasterFormat format = ImageFormats.FromExtension(Path.GetExtension(path));
-        if (format == RasterFormat.Unknown)
+        var info = new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Unpremul);
+        var handle = GCHandle.Alloc(bgra, GCHandleType.Pinned);
+
+        try
         {
-            format = RasterFormat.Png;
+            using var wrapped = new SKBitmap();
+            wrapped.InstallPixels(info, handle.AddrOfPinnedObject(), width * 4);
+            using var copy = wrapped.Copy() ?? throw new InvalidOperationException($"Could not encode {path}.");
+            using var image = SKImage.FromBitmap(copy);
+            using var encoded = image.Encode(FormatFor(path), 80) ?? throw new InvalidOperationException($"Could not encode {path}.");
+            File.WriteAllBytes(path, encoded.ToArray());
+        }
+        finally
+        {
+            handle.Free();
+        }
+    }
+
+    private static SKEncodedImageFormat FormatFor(string path)
+    {
+        string extension = Path.GetExtension(path);
+
+        if (extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
+        {
+            return SKEncodedImageFormat.Jpeg;
         }
 
-        var processed = new ImageProcessor().EncodeBgraAsync(
-            bgra,
-            width,
-            height,
-            new ImageEncode(format)).GetAwaiter().GetResult();
+        if (extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
+        {
+            return SKEncodedImageFormat.Webp;
+        }
 
-        File.WriteAllBytes(path, processed.Bytes);
+        if (extension.Equals(".gif", StringComparison.OrdinalIgnoreCase))
+        {
+            return SKEncodedImageFormat.Gif;
+        }
+
+        if (extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase))
+        {
+            return SKEncodedImageFormat.Bmp;
+        }
+
+        return SKEncodedImageFormat.Png;
     }
 
     private static (byte R, byte G, byte B) ParseHex(string hex)

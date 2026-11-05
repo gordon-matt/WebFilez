@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using WebFilez.Services.Images;
 using WebFilez.Services.Transfers;
 
 namespace WebFilez.Tests.Infrastructure;
@@ -21,6 +22,8 @@ public abstract class ServiceTest : IAsyncLifetime
     protected FileScope Scope => scope.ServiceProvider.GetRequiredService<FileScope>();
 
     protected IFileTransferService Transfers => scope.ServiceProvider.GetRequiredService<IFileTransferService>();
+
+    protected IThumbnailService Thumbnails => scope.ServiceProvider.GetRequiredService<IThumbnailService>();
 
     protected static CancellationToken Token => TestContext.Current.CancellationToken;
 

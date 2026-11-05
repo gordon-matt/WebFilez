@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using Heroicsoft.NetForge.Drawing;
 using Microsoft.Extensions.Options;
+using SkiaSharp;
 using WebFilez.Services.Storage;
 using WebFilez.Services.Transfers;
 
@@ -17,8 +17,7 @@ public interface IThumbnailService
 public sealed class ThumbnailService(
     ILogger<ThumbnailService> logger,
     PathResolver resolver,
-    IOptionsMonitor<WebFilezOptions> options,
-    IImageProcessor images) : IThumbnailService
+    IOptionsMonitor<WebFilezOptions> options) : IThumbnailService
 {
     private const string WebpMimeType = "image/webp";
 
@@ -97,31 +96,28 @@ public sealed class ThumbnailService(
     private async Task<byte[]> GenerateAsync(ResolvedPath target, int size, int quality, CancellationToken cancellationToken)
     {
         await using var content = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
-        var header = await images.TryIdentifyAsync(content, cancellationToken);
-        if (header is null)
+
+        // One buffer for identify and resize, so this does not depend on the stream being seekable.
+        // WebP from Skia is pixels only, so GPS in the original EXIF does not survive into the thumbnail.
+        byte[] source = await ImageProcessor.ReadAllAsync(content, cancellationToken);
+
+        if (ImageProcessor.TryIdentify(source) is not (int width, int height))
         {
             throw new InvalidOperationException("The file is not a decodable image.");
         }
 
-        if ((long)header.Width * header.Height > ImageResizer.MaxPixels)
+        if ((long)width * height > ImageResizer.MaxPixels)
         {
-            throw new InvalidOperationException($"{header.Width}x{header.Height} exceeds the decode limit.");
+            throw new InvalidOperationException($"{width}x{height} exceeds the decode limit.");
         }
 
-        // EXIF can carry GPS coordinates; a thumbnail has no need to. The processor rewinds a
-        // seekable stream, so the identify above does not consume the bytes ResizeAsync reads.
-        var processed = await images.ResizeAsync(content, new ImageTransform
-        {
-            Width = size,
-            Height = size,
-            Mode = ImageScaleMode.Max,
-            Format = RasterFormat.Webp,
-            Quality = Math.Clamp(quality, 1, 100),
-            StripMetadata = true,
-            MaxPixels = ImageResizer.MaxPixels,
-        }, cancellationToken);
-
-        return processed.Bytes;
+        return ImageProcessor.ResizeToFit(
+            source,
+            size,
+            size,
+            SKEncodedImageFormat.Webp,
+            Math.Clamp(quality, 1, 100),
+            ImageResizer.MaxPixels);
     }
 
     private async Task WriteCacheAsync(string cachePath, byte[] bytes, CancellationToken cancellationToken)
