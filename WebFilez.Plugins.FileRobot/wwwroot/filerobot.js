@@ -84,26 +84,80 @@ function savedFileName(originalName, fullName) {
     return bothJpeg && sameStem ? originalName : requested;
 }
 
-/** Filerobot's default theme is light. Dark follows the file manager's palette. */
+/**
+ * Filerobot's default theme is light, and an omitted token keeps that light value.
+ * Save is a primary button: its fill is accent-stateless, and while it is disabled
+ * (until the image changes) the fill is accent_1_2_opacity with borders-disabled text.
+ * Secondary and icon buttons use bg-stateless, which is white unless it is set here.
+ * The icon token is icon-primary; icons-primary is not a key this build reads.
+ * accent-primary-active is the selected tool colour and also Save's pressed fill,
+ * so it stays a dark blue. filerobot.css lifts the selected foreground off that blue,
+ * and paints the value field, which ignores this palette for its resting fill.
+ */
 function theme(mode) {
     if (mode !== 'dark') {
         return undefined;
     }
 
+    const accent = '#4493f8';
+
     return {
         palette: {
-            'bg-secondary': '#161b22',
-            'bg-primary': '#0d1117',
-            'bg-primary-active': '#1c2128',
-            'accent-primary': '#4493f8',
-            'accent-primary-active': '#2f6fbf',
+            'txt-primary': '#e6edf3',
+            'txt-secondary': '#8d96a0',
+            'txt-secondary-invert': '#c9d1d9',
+            'txt-placeholder': '#8d96a0',
+            'icon-primary': '#e6edf3',
             'icons-primary': '#e6edf3',
             'icons-secondary': '#8d96a0',
-            'borders-secondary': '#30363d',
+            'icons-placeholder': '#6e7681',
+            'icons-muted': '#6e7681',
+            'icons-primary-hover': '#ffffff',
+            'icons-secondary-hover': '#e6edf3',
+            'bg-primary': '#0d1117',
+            'bg-primary-light': '#161b22',
+            'bg-primary-hover': '#1c2128',
+            'bg-primary-active': '#2d333b',
+            'bg-primary-0-5-opacity': 'rgba(13, 17, 23, 0.5)',
+            'bg-secondary': '#161b22',
+            'bg-stateless': '#1c2128',
+            'bg-hover': '#2d333b',
+            'bg-active': '#30363d',
+            'bg-grey': '#21262d',
+            'accent-primary': accent,
+            'accent-primary-hover': '#2f6fbf',
+            'accent-primary-active': '#1f5aa8',
+            'accent-stateless': accent,
+            'accent-stateless_0_4_opacity': 'rgba(68, 147, 248, 0.4)',
+            'accent_0_5_opacity': 'rgba(68, 147, 248, 0.12)',
+            'accent_1_2_opacity': 'rgba(68, 147, 248, 0.35)',
+            'accent_1_8_opacity': 'rgba(68, 147, 248, 0.28)',
+            'accent_2_8_opacity': 'rgba(68, 147, 248, 0.4)',
+            'accent_4_0_opacity': 'rgba(68, 147, 248, 0.5)',
+            'btn-primary-text': '#ffffff',
+            'btn-primary-text-0-6': 'rgba(255, 255, 255, 0.6)',
+            'btn-secondary-text': '#e6edf3',
+            'btn-disabled-text': '#8d96a0',
             'borders-primary': '#30363d',
+            'borders-secondary': '#30363d',
             'borders-strong': '#8d96a0',
+            'borders-button': '#3d444d',
+            'borders-item': '#30363d',
+            'borders-disabled': '#c9d1d9',
+            'border-primary-stateless': '#30363d',
+            'link-primary': '#8d96a0',
+            'link-stateless': '#e6edf3',
+            'link-hover': '#ffffff',
+            'link-active': '#e6edf3',
+            'link-muted': '#6e7681',
+            'active-secondary': '#1c2128',
+            'active-secondary-hover': '#2d333b',
             'light-shadow': 'rgba(1, 4, 9, 0.6)',
+            'medium-shadow': 'rgba(1, 4, 9, 0.7)',
             'warning': '#d29922',
+            'gradient-right': 'linear-gradient(270deg, #0d1117 1.56%, rgba(13, 17, 23, 0) 100%)',
+            'gradient-right-active': 'linear-gradient(270deg, #1c2128 1.56%, rgba(28, 33, 40, 0) 100%)',
+            'gradient-right-hover': 'linear-gradient(270deg, #161b22 1.56%, rgba(22, 27, 34, 0) 100%)',
         },
         typography: { fontFamily: 'Roboto, Arial' },
     };
@@ -126,7 +180,8 @@ function blobFromDataUrl(dataUrl) {
 }
 
 async function open(file, host) {
-    await Promise.all([loadStyle(FONT), loadScript(SCRIPT)]);
+    const style = new URL('./filerobot.css', import.meta.url).href;
+    await Promise.all([loadStyle(FONT), loadStyle(style), loadScript(SCRIPT)]);
 
     const Filerobot = globalThis.FilerobotImageEditor;
     if (typeof Filerobot !== 'function') {

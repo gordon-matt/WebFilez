@@ -5,6 +5,9 @@
     height: 100%;
     min-height: 0;
     background: #fff;
+    /* Fortune Sheet's grid is a light surface with its own colours. The dark editor host
+       would otherwise hand it light gray text and leave the formula bar unreadable. */
+    color: #1f2328;
 }
 
 .wf-fortune-bar {
@@ -33,15 +36,45 @@
     cursor: pointer;
 }
 
+.wf-fortune-bar button:hover:not(:disabled) {
+    background: #f6f7f9;
+}
+
 .wf-fortune-bar button:disabled {
     opacity: 0.55;
     cursor: default;
 }
 
-.wf-fortune-save {
+.wf-fortune-bar button.wf-fortune-save {
     background: #2563eb;
     border-color: #2563eb;
     color: #fff;
+}
+
+.wf-fortune-bar button.wf-fortune-save:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-fortune-bar button {
+    background: #1c2128;
+    border-color: #30363d;
+    color: #e6edf3;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-fortune-bar button:hover:not(:disabled) {
+    background: #2d333b;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-fortune-bar button.wf-fortune-save {
+    background: #4493f8;
+    border-color: #4493f8;
+    color: #fff;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-fortune-bar button.wf-fortune-save:hover:not(:disabled) {
+    background: #2f6fbf;
+    border-color: #2f6fbf;
 }
 
 .wf-fortune-close {

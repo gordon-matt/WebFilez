@@ -32,8 +32,12 @@
     border-radius: 6px;
     border: 1px solid #dde1e6;
     background: #fff;
-    color: inherit;
+    color: #1f2328;
     cursor: pointer;
+}
+
+.wf-superdoc-bar button:hover:not(:disabled) {
+    background: #f6f7f9;
 }
 
 .wf-superdoc-bar button:disabled {
@@ -41,10 +45,93 @@
     cursor: default;
 }
 
-.wf-superdoc-save {
+.wf-superdoc-bar button.wf-superdoc-save {
     background: #2563eb;
     border-color: #2563eb;
     color: #fff;
+}
+
+.wf-superdoc-bar button.wf-superdoc-save:hover:not(:disabled) {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* The host's light text was inherited by these buttons while their fill stayed white.
+   SuperDoc's own chrome follows --sd-ui-* and is portaled under body, so the same
+   tokens have to live on the document element while a dark document is open.
+   The page itself stays white: a dark --sd-ui-bg would otherwise paint the paper. */
+.wf-editor-host[data-theme="dark"] .wf-superdoc-bar button,
+html.wf-superdoc-dark .wf-superdoc-bar button {
+    background: #1c2128;
+    border-color: #30363d;
+    color: #e6edf3;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-superdoc-bar button:hover:not(:disabled),
+html.wf-superdoc-dark .wf-superdoc-bar button:hover:not(:disabled) {
+    background: #2d333b;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-superdoc-bar button.wf-superdoc-save,
+html.wf-superdoc-dark .wf-superdoc-bar button.wf-superdoc-save {
+    background: #4493f8;
+    border-color: #4493f8;
+    color: #fff;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-superdoc-bar button.wf-superdoc-save:hover:not(:disabled),
+html.wf-superdoc-dark .wf-superdoc-bar button.wf-superdoc-save:hover:not(:disabled) {
+    background: #2f6fbf;
+    border-color: #2f6fbf;
+}
+
+.wf-editor-host[data-theme="dark"] .wf-superdoc,
+html.wf-superdoc-dark {
+    --sd-ui-bg: #161b22;
+    --sd-ui-text: #e6edf3;
+    --sd-ui-text-muted: #8d96a0;
+    --sd-ui-text-disabled: #6e7681;
+    --sd-ui-hover-bg: #2d333b;
+    --sd-ui-active-bg: #30363d;
+    --sd-ui-disabled-bg: #21262d;
+    --sd-ui-border: #30363d;
+    --sd-ui-action: #4493f8;
+    --sd-ui-action-hover: #2f6fbf;
+    --sd-ui-action-text: #ffffff;
+    --sd-ui-shadow: 0 8px 24px rgba(1, 4, 9, 0.6);
+    --sd-ui-toolbar-bg: #161b22;
+    --sd-ui-toolbar-button-text: #e6edf3;
+    --sd-ui-toolbar-button-hover-bg: #2d333b;
+    --sd-ui-toolbar-button-active-bg: #30363d;
+    --sd-ui-dropdown-bg: #1c2128;
+    --sd-ui-dropdown-border: #30363d;
+    --sd-ui-dropdown-text: #e6edf3;
+    --sd-ui-dropdown-hover-text: #e6edf3;
+    --sd-ui-dropdown-selected-text: #e6edf3;
+    --sd-ui-dropdown-hover-bg: #2d333b;
+    --sd-ui-dropdown-active-bg: #30363d;
+    --sd-ui-menu-bg: #1c2128;
+    --sd-ui-menu-text: #e6edf3;
+    --sd-ui-menu-text-muted: #8d96a0;
+    --sd-ui-menu-border: #30363d;
+    --sd-ui-menu-header-bg: #161b22;
+    --sd-ui-menu-item-hover-bg: #2d333b;
+    --sd-ui-menu-item-active-bg: #30363d;
+    --sd-ui-menu-input-border: #30363d;
+    --sd-ui-surface-bg: #161b22;
+    --sd-ui-surface-border: #30363d;
+    --sd-ui-find-replace-input-bg: #0d1117;
+    --sd-ui-find-replace-input-border: #30363d;
+    --sd-ui-find-replace-btn-color: #e6edf3;
+    --sd-ui-find-replace-count-color: #8d96a0;
+    --sd-ui-find-replace-search-icon-color: #8d96a0;
+    --sd-popover-bg: #1c2128;
+    --sd-surface-canvas: #0d1117;
+    --sd-surface-card: #161b22;
+    --sd-surface-hover: #1c2128;
+    --sd-surface-muted: #21262d;
+    --sd-layout-page-bg: #ffffff;
+    --sd-surface-page: #ffffff;
 }
 
 .wf-superdoc-close {

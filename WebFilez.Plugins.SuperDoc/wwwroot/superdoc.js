@@ -90,6 +90,12 @@ async function open(file, host, options) {
         type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
+    // Menus and dialogs mount under document.body, outside this editor, so the dark
+    // tokens in superdoc.css have to sit on the document element for as long as it is open.
+    const releaseTheme = file.theme === 'dark'
+        ? holdClass(document.documentElement, 'wf-superdoc-dark')
+        : () => { };
+
     const root = document.createElement('div');
     root.className = 'wf-superdoc';
 
@@ -118,18 +124,24 @@ async function open(file, host, options) {
     host.element.replaceChildren(root);
 
     const key = licenseKey(options);
-    const editor = new SuperDoc({
-        selector: documentHost,
-        document: docx,
-        documentMode: 'editing',
-        contained: true,
-        title: stem(file.name),
-        ...(key ? { licenseKey: key } : {}),
-        ui: { toolbar: { container: toolbar } },
-        onReady: () => {
-            save.disabled = false;
-        },
-    });
+    let editor;
+    try {
+        editor = new SuperDoc({
+            selector: documentHost,
+            document: docx,
+            documentMode: 'editing',
+            contained: true,
+            title: stem(file.name),
+            ...(key ? { licenseKey: key } : {}),
+            ui: { toolbar: { container: toolbar } },
+            onReady: () => {
+                save.disabled = false;
+            },
+        });
+    } catch (error) {
+        releaseTheme();
+        throw error;
+    }
 
     close.addEventListener('click', () => host.close());
     save.addEventListener('click', async () => {
@@ -147,12 +159,18 @@ async function open(file, host, options) {
     });
 
     return () => {
+        releaseTheme();
         try {
             editor.destroy();
         } catch {
             // Already unmounted.
         }
     };
+}
+
+function holdClass(element, className) {
+    element.classList.add(className);
+    return () => element.classList.remove(className);
 }
 
 export function registerSuperDoc(options = {}) {
