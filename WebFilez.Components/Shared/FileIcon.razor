@@ -1,8 +1,14 @@
 <Icon Name="@IconName" Class="@($"wf-kind wf-kind-{Kind.ToString().ToLowerInvariant()} {Class}")" />
 
 @code {
+    /// <summary>
+    /// Gets or sets the kind.
+    /// </summary>
     [Parameter] public FileKind Kind { get; set; }
 
+    /// <summary>
+    /// Gets or sets the class.
+    /// </summary>
     [Parameter] public string? Class { get; set; }
 
     private string IconName => Kind switch

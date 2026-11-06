@@ -12,6 +12,9 @@ namespace WebFilez.Enums;
 [Flags]
 public enum FilePermission
 {
+    /// <summary>
+    /// The none value.
+    /// </summary>
     None = 0,
 
     /// <summary>See the folder and list its children. Without this the path is invisible.</summary>
@@ -29,11 +32,17 @@ public enum FilePermission
     /// <summary>Overwrite an existing file (editor save, upload-replace).</summary>
     Modify = 1 << 4,
 
+    /// <summary>
+    /// The rename value.
+    /// </summary>
     Rename = 1 << 5,
 
     /// <summary>Move out of this path. The destination separately needs <see cref="Create"/>.</summary>
     Move = 1 << 6,
 
+    /// <summary>
+    /// The delete value.
+    /// </summary>
     Delete = 1 << 7,
 
     /// <summary>Write a zip or tar of a selection. Also needs <see cref="Create"/> where it's written.</summary>
@@ -48,9 +57,15 @@ public enum FilePermission
     /// <summary>Read-only plus additions. Nothing that already exists can be changed or removed.</summary>
     Contributor = ReadOnly | Create | Compress | Extract,
 
+    /// <summary>
+    /// The full value.
+    /// </summary>
     Full = Contributor | Modify | Rename | Move | Delete,
 }
 
+/// <summary>
+/// Provides extension methods for file permissions.
+/// </summary>
 public static class FilePermissionExtensions
 {
     /// <summary>Permissions that never change the filesystem. Used to clamp read-only roots.</summary>
@@ -58,8 +73,20 @@ public static class FilePermissionExtensions
         | FilePermission.Read
         | FilePermission.Download;
 
+    /// <summary>
+    /// Determines whether this instance has the value.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="required">The required.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public static bool Has(this FilePermission value, FilePermission required) =>
         required == FilePermission.None || (value & required) == required;
 
+    /// <summary>
+    /// Determines whether this instance has the any.
+    /// </summary>
+    /// <param name="value">The value.</param>
+    /// <param name="any">The any.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public static bool HasAny(this FilePermission value, FilePermission any) => (value & any) != 0;
 }

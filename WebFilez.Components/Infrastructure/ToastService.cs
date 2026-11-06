@@ -10,8 +10,14 @@ public sealed class ToastService : IDisposable
     private readonly List<Toast> toasts = [];
     private readonly Dictionary<Guid, Timer> timers = [];
 
+    /// <summary>
+    /// Occurs when changed.
+    /// </summary>
     public event Action? Changed;
 
+    /// <summary>
+    /// Gets the toasts.
+    /// </summary>
     public IReadOnlyList<Toast> Toasts
     {
         get
@@ -23,12 +29,28 @@ public sealed class ToastService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Performs the success operation.
+    /// </summary>
+    /// <param name="message">The message.</param>
     public void Success(string message) => Show(message, ToastLevel.Success);
 
+    /// <summary>
+    /// Performs the error operation.
+    /// </summary>
+    /// <param name="message">The message.</param>
     public void Error(string message) => Show(message, ToastLevel.Error, TimeSpan.FromSeconds(8));
 
+    /// <summary>
+    /// Performs the info operation.
+    /// </summary>
+    /// <param name="message">The message.</param>
     public void Info(string message) => Show(message, ToastLevel.Info);
 
+    /// <summary>
+    /// Performs the show failure operation.
+    /// </summary>
+    /// <param name="result">The result.</param>
     public void ShowFailure(Ardalis.Result.IResult result) => Error(result.GetDisplayMessage());
 
     /// <summary>Summarises a bulk operation, naming the first failure so the user knows why.</summary>
@@ -50,6 +72,10 @@ public sealed class ToastService : IDisposable
             : $"{verb} {result.SucceededCount} {noun}; {result.FailedCount} failed. {reason}");
     }
 
+    /// <summary>
+    /// Performs the dismiss operation.
+    /// </summary>
+    /// <param name="id">The identifier.</param>
     public void Dismiss(Guid id)
     {
         lock (gate)
@@ -64,6 +90,9 @@ public sealed class ToastService : IDisposable
         Changed?.Invoke();
     }
 
+    /// <summary>
+    /// Releases the resources used by this instance.
+    /// </summary>
     public void Dispose()
     {
         lock (gate)
@@ -91,12 +120,30 @@ public sealed class ToastService : IDisposable
         Changed?.Invoke();
     }
 
+    /// <summary>
+    /// Specifies the toast level.
+    /// </summary>
     public enum ToastLevel
     {
+        /// <summary>
+        /// The success value.
+        /// </summary>
         Success,
+        /// <summary>
+        /// The error value.
+        /// </summary>
         Error,
+        /// <summary>
+        /// The info value.
+        /// </summary>
         Info,
     }
 
+    /// <summary>
+    /// Represents the toast.
+    /// </summary>
+    /// <param name="Id">The identifier.</param>
+    /// <param name="Message">The message.</param>
+    /// <param name="Level">The level.</param>
     public sealed record Toast(Guid Id, string Message, ToastLevel Level);
 }

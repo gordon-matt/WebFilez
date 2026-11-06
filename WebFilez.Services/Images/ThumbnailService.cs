@@ -7,6 +7,9 @@ using WebFilez.Services.Transfers;
 
 namespace WebFilez.Services.Images;
 
+/// <summary>
+/// Defines the contract for the thumbnail service.
+/// </summary>
 public interface IThumbnailService
 {
     /// <summary>A WebP thumbnail of an image, snapped to the nearest supported size.</summary>
@@ -30,6 +33,14 @@ public sealed class ThumbnailService(
     /// <summary>Bounds concurrent decodes, so a grid of a hundred tiles can't pin every core.</summary>
     private static readonly SemaphoreSlim GenerationLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="size">The size.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the thumbnail.</returns>
     public async Task<Result<ThumbnailDto>> GetAsync(
         string rootId,
         string path,

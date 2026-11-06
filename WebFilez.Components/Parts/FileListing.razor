@@ -144,66 +144,159 @@ else
 }
 
 @code {
+    /// <summary>
+    /// Gets or sets the text.
+    /// </summary>
     [CascadingParameter] public WebFilezText Text { get; set; } = WebFilezText.English;
 
+    /// <summary>
+    /// Gets or sets the entries.
+    /// </summary>
     [Parameter] public IReadOnlyList<ListingEntry> Entries { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the urls.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the view mode.
+    /// </summary>
     [Parameter] public ListingViewMode ViewMode { get; set; }
 
+    /// <summary>
+    /// Gets or sets the sort by.
+    /// </summary>
     [Parameter] public ListingSortField SortBy { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is descending.
+    /// </summary>
     [Parameter] public bool Descending { get; set; }
 
+    /// <summary>
+    /// Gets or sets the selected keys.
+    /// </summary>
     [Parameter] public IReadOnlySet<string> SelectedKeys { get; set; } = new HashSet<string>();
 
+    /// <summary>
+    /// Gets or sets the active key.
+    /// </summary>
     [Parameter] public string? ActiveKey { get; set; }
 
+    /// <summary>
+    /// Gets or sets the cut paths.
+    /// </summary>
     [Parameter] public IReadOnlySet<string> CutPaths { get; set; } = new HashSet<string>();
 
+    /// <summary>
+    /// Gets or sets the empty text.
+    /// </summary>
     [Parameter] public string EmptyText { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is show drop hint.
+    /// </summary>
     [Parameter] public bool ShowDropHint { get; set; }
 
+    /// <summary>
+    /// Gets or sets the drop hint.
+    /// </summary>
     [Parameter] public string DropHint { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is show checkboxes.
+    /// </summary>
     [Parameter] public bool ShowCheckboxes { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is show location.
+    /// </summary>
     [Parameter] public bool ShowLocation { get; set; }
 
+    /// <summary>
+    /// Gets or sets the select all label.
+    /// </summary>
     [Parameter] public string SelectAllLabel { get; set; } = "Select all";
 
+    /// <summary>
+    /// Gets or sets the name header.
+    /// </summary>
     [Parameter] public string NameHeader { get; set; } = "Name";
 
+    /// <summary>
+    /// Gets or sets the size header.
+    /// </summary>
     [Parameter] public string SizeHeader { get; set; } = "Size";
 
+    /// <summary>
+    /// Gets or sets the modified header.
+    /// </summary>
     [Parameter] public string ModifiedHeader { get; set; } = "Modified";
 
+    /// <summary>
+    /// Gets or sets the location header.
+    /// </summary>
     [Parameter] public string LocationHeader { get; set; } = "Location";
 
+    /// <summary>
+    /// Gets or sets the folder label.
+    /// </summary>
     [Parameter] public string FolderLabel { get; set; } = "Folder";
 
+    /// <summary>
+    /// Gets or sets the is selectable.
+    /// </summary>
     [Parameter] public Func<FileSystemItemDto, bool> IsSelectable { get; set; } = _ => true;
 
+    /// <summary>
+    /// Gets or sets the can drag.
+    /// </summary>
     [Parameter] public Func<FileSystemItemDto, bool> CanDrag { get; set; } = _ => false;
 
+    /// <summary>
+    /// Gets or sets the callback raised for the item click event.
+    /// </summary>
     [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnItemClick { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the item activate event.
+    /// </summary>
     [Parameter] public EventCallback<ListingEntry> OnItemActivate { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the toggle select event.
+    /// </summary>
     [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnToggleSelect { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the item context menu event.
+    /// </summary>
     [Parameter] public EventCallback<(ListingEntry Entry, MouseEventArgs Args)> OnItemContextMenu { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the select all event.
+    /// </summary>
     [Parameter] public EventCallback<bool> OnSelectAll { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the sort event.
+    /// </summary>
     [Parameter] public EventCallback<ListingSortField> OnSort { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the drag start event.
+    /// </summary>
     [Parameter] public EventCallback<ListingEntry> OnDragStart { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the drag end event.
+    /// </summary>
     [Parameter] public EventCallback OnDragEnd { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the drop onto event.
+    /// </summary>
     [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
 
     private bool AreAllSelected => Entries.Count > 0 && Entries.Where(entry => IsSelectable(entry.Item)).All(entry => SelectedKeys.Contains(entry.Key));

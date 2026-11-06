@@ -5,6 +5,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.Transfers;
 
+/// <summary>
+/// Represents the file transfer service.
+/// </summary>
 public sealed class FileTransferService(
     ILogger<FileTransferService> logger,
     PathResolver resolver,
@@ -16,6 +19,13 @@ public sealed class FileTransferService(
     IFileUrlResolver urlResolver,
     IOptionsMonitor<WebFilezOptions> options) : IFileTransferService
 {
+    /// <summary>
+    /// Opens the read.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file download.</returns>
     public async Task<Result<FileDownloadDto>> OpenReadAsync(
         string rootId,
         string path,
@@ -65,11 +75,23 @@ public sealed class FileTransferService(
             FileItems.BuildETag(info.SizeBytes, info.ModifiedAt)));
     }
 
+    /// <summary>
+    /// Gets the redeem ticket.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>The outcome for the download ticket.</returns>
     public Result<DownloadTicket> RedeemTicket(string token) =>
         downloadTickets.Redeem(token) is { } ticket
             ? Result<DownloadTicket>.Success(ticket)
             : Result<DownloadTicket>.NotFound("That download link has expired. Start the download again.");
 
+    /// <summary>
+    /// Writes the zip.
+    /// </summary>
+    /// <param name="ticket">The ticket.</param>
+    /// <param name="destination">The destination.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the result.</returns>
     public async Task<Result> WriteZipAsync(
         DownloadTicket ticket,
         Stream destination,
@@ -133,6 +155,12 @@ public sealed class FileTransferService(
         return Result.Success();
     }
 
+    /// <summary>
+    /// Uploads the value.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the upload result.</returns>
     public async Task<Result<UploadResultDto>> UploadAsync(
         UploadRequest request,
         CancellationToken cancellationToken = default)

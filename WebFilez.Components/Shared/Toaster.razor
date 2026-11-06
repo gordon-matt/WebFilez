@@ -14,14 +14,21 @@
 </div>
 
 @code {
+    /// <summary>
+    /// Gets or sets the service.
+    /// </summary>
     [Parameter, EditorRequired] public ToastService Service { get; set; } = default!;
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
+    /// <inheritdoc/>
     protected override void OnInitialized() => Service.Changed += OnChanged;
 
     // Toasts expire on a timer thread, outside the renderer's synchronization context.
     private void OnChanged() => _ = InvokeAsync(StateHasChanged);
 
+    /// <summary>
+    /// Releases the resources used by this instance.
+    /// </summary>
     public void Dispose() => Service.Changed -= OnChanged;
 }

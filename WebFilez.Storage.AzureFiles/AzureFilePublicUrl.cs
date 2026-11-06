@@ -10,8 +10,16 @@ namespace WebFilez.Storage.AzureFiles;
 /// </summary>
 public sealed class AzureFilePublicUrl : IStoragePublicUrl
 {
+    /// <summary>
+    /// Gets the provider key.
+    /// </summary>
     public string ProviderKey => AzureFileStorageProvider.ProviderKey;
 
+    /// <summary>
+    /// Gets the URL.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The URL.</returns>
     public string? GetUrl(FileUrlContext context)
     {
         string? endpoint = Endpoint(context.Root);

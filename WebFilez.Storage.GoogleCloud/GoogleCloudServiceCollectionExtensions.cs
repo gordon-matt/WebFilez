@@ -3,6 +3,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez.Storage.GoogleCloud;
 
+/// <summary>
+/// Provides extension methods for google cloud service collections.
+/// </summary>
 public static class GoogleCloudServiceCollectionExtensions
 {
     extension(IServiceCollection services)

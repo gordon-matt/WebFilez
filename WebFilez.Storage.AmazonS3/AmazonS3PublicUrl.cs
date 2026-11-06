@@ -10,8 +10,16 @@ namespace WebFilez.Storage.AmazonS3;
 /// </summary>
 public sealed class AmazonS3PublicUrl : IStoragePublicUrl
 {
+    /// <summary>
+    /// Gets the provider key.
+    /// </summary>
     public string ProviderKey => AmazonS3StorageProvider.ProviderKey;
 
+    /// <summary>
+    /// Gets the URL.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The URL.</returns>
     public string? GetUrl(FileUrlContext context)
     {
         string? bucket = Setting(context.Root, AmazonS3Paths.BucketKey);

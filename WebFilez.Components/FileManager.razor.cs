@@ -151,13 +151,22 @@ public sealed partial class FileManager
     /// </summary>
     [Parameter] public string? Kind { get; set; }
 
+    /// <summary>
+    /// Gets or sets the select label.
+    /// </summary>
     [Parameter] public string SelectLabel { get; set; } = "Select";
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is show tree.
+    /// </summary>
     [Parameter] public bool ShowTree { get; set; } = true;
 
     /// <summary>Hides every action that changes files. The server's permissions still apply either way.</summary>
     [Parameter] public bool ReadOnly { get; set; }
 
+    /// <summary>
+    /// Gets or sets the class.
+    /// </summary>
     [Parameter] public string? Class { get; set; }
 
     /// <summary>IETF language tag, such as <c>fr-CA</c>. Empty follows the saved choice, then the UI culture.</summary>
@@ -173,8 +182,14 @@ public sealed partial class FileManager
     /// <summary>Raised by the Select button in picker mode.</summary>
     [Parameter] public EventCallback<IReadOnlyList<SelectedFile>> OnSelected { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the navigated event.
+    /// </summary>
     [Parameter] public EventCallback<FileLocation> OnNavigated { get; set; }
 
+    /// <summary>
+    /// Gets or sets the additional attributes.
+    /// </summary>
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string CurrentPath => listing?.Path ?? VirtualPath.Normalize(Path);
@@ -271,6 +286,7 @@ public sealed partial class FileManager
             Text[SelectionMode == Constants.SelectionModes.Multiple ? "status.files" : "status.aFile"],
             Accept);
 
+    /// <inheritdoc/>
     protected override void OnInitialized()
     {
         interop = new WebFilezInterop(JS);
@@ -280,6 +296,7 @@ public sealed partial class FileManager
         appliedLanguageParameter = string.IsNullOrWhiteSpace(Language) ? null : Language;
     }
 
+    /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
         ApplyHostLanguage();
@@ -359,6 +376,7 @@ public sealed partial class FileManager
 
     private bool IsWithinBase(string path) => VirtualPath.IsSameOrUnder(VirtualPath.Normalize(path), Floor);
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender)
@@ -1074,6 +1092,10 @@ public sealed partial class FileManager
 
     private sealed record Clipboard(string RootId, HashSet<string> Paths, bool IsCut);
 
+    /// <summary>
+    /// Releases the resources used by this instance.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async ValueTask DisposeAsync()
     {
         try

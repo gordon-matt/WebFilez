@@ -10,13 +10,26 @@ public sealed class WebFilezUrls(NavigationManager navigation, WebFilezApiAddres
     private readonly Uri pageUri = new(navigation.BaseUri);
     private readonly Uri baseUri = new(new Uri(navigation.BaseUri), address.BaseUrl);
 
+    /// <summary>
+    /// Gets a value indicating whether this instance is include credentials.
+    /// </summary>
     public bool IncludeCredentials => address.IncludeCredentials;
 
     /// <summary>When set, browser calls to the API stay inside the folder this token was issued for.</summary>
     public string? ScopeToken { get; set; }
 
+    /// <summary>
+    /// Gets the upload.
+    /// </summary>
     public string Upload => WithScope(Combine(ApiRoutes.Upload));
 
+    /// <summary>
+    /// Downloads the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="inline">The inline.</param>
+    /// <returns>The string.</returns>
     public string Download(string rootId, string path, bool inline = false) =>
         WithScope(Combine($"{ApiRoutes.Download}?root={Escape(rootId)}&path={Escape(path)}{(inline ? "&inline=true" : string.Empty)}"));
 
@@ -27,6 +40,11 @@ public sealed class WebFilezUrls(NavigationManager navigation, WebFilezApiAddres
     public string Thumbnail(string rootId, FileSystemItemDto item, int size) =>
         WithScope(Combine($"{ApiRoutes.Thumbnail}?root={Escape(rootId)}&path={Escape(item.Path)}&size={size}&v={item.ModifiedAt.Ticks}"));
 
+    /// <summary>
+    /// Gets the zip.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <returns>The zip.</returns>
     public string Zip(string token) => WithScope(Combine($"{ApiRoutes.Zip}/{Escape(token)}"));
 
     /// <summary>

@@ -31,6 +31,9 @@
     private string confirmLabel = "OK";
     private TaskCompletionSource<string?>? completion;
 
+    /// <summary>
+    /// Gets or sets the interop.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
@@ -55,6 +58,7 @@
         return completion.Task;
     }
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (focusPending && isVisible)

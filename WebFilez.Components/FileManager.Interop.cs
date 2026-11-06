@@ -12,6 +12,11 @@ public sealed partial class FileManager
             ? Task.CompletedTask
             : interop.PickFilesAsync(rootElement, directories, IsPicker ? Accept : null).AsTask();
 
+    /// <summary>
+    /// Handles the shortcut event.
+    /// </summary>
+    /// <param name="combo">The combo.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [JSInvokable]
     public async Task OnShortcut(string combo)
     {
@@ -99,6 +104,11 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Handles the files dropped event.
+    /// </summary>
+    /// <param name="files">The files.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [JSInvokable]
     public async Task OnFilesDropped(DroppedFile[] files)
     {
@@ -145,6 +155,13 @@ public sealed partial class FileManager
         await interop.UploadPendingAsync(rootElement, urls.Upload, rootId, CurrentPath, overwrite, urls.IncludeCredentials);
     }
 
+    /// <summary>
+    /// Handles the upload progress event.
+    /// </summary>
+    /// <param name="id">The identifier.</param>
+    /// <param name="fileName">The file name.</param>
+    /// <param name="sent">The sent.</param>
+    /// <param name="total">The total.</param>
     [JSInvokable]
     public void OnUploadProgress(long id, string fileName, long sent, long total)
     {
@@ -160,6 +177,13 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Handles the upload complete event.
+    /// </summary>
+    /// <param name="id">The identifier.</param>
+    /// <param name="fileName">The file name.</param>
+    /// <param name="succeeded">The succeeded.</param>
+    /// <param name="error">The error.</param>
     [JSInvokable]
     public void OnUploadComplete(long id, string fileName, bool succeeded, string? error)
     {
@@ -175,6 +199,10 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Handles the upload batch complete event.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [JSInvokable]
     public async Task OnUploadBatchComplete()
     {

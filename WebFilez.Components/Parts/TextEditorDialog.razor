@@ -46,10 +46,19 @@
     private bool focusPending;
     private ElementReference textArea;
 
+    /// <summary>
+    /// Gets or sets the service.
+    /// </summary>
     [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the interop.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the toasts.
+    /// </summary>
     [Parameter, EditorRequired] public ToastService Toasts { get; set; } = default!;
 
     /// <summary>Asks before discarding unsaved changes; resolves to true to discard.</summary>
@@ -60,10 +69,19 @@
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
+    /// <summary>
+    /// Gets a value indicating whether this instance is open.
+    /// </summary>
     public bool IsOpen => file is not null;
 
     private bool IsDirty => file is not null && !string.Equals(content, file.Content, StringComparison.Ordinal);
 
+    /// <summary>
+    /// Opens the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is true when the condition is met; otherwise, false.</returns>
     public async Task<bool> OpenAsync(string rootId, string path)
     {
         var result = await Service.ReadTextAsync(rootId, path);
@@ -83,6 +101,7 @@
         return true;
     }
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (focusPending && file is not null)

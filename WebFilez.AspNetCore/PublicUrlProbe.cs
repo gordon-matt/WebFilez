@@ -16,12 +16,22 @@ public sealed class PublicUrlProbe(
     IOptionsMonitor<WebFilezOptions> options,
     ILogger<PublicUrlProbe> logger)
 {
+    /// <summary>
+    /// The HTTP client name constant.
+    /// </summary>
     public const string HttpClientName = "WebFilez.PublicUrlProbe";
 
     /// <summary>Warning returned and logged when the insertable URL is not anonymously readable.</summary>
     public const string NotPubliclyReadable =
         "This URL is not publicly readable. Inserted files may not display for site visitors. See README: Storage setups.";
 
+    /// <summary>
+    /// Checks the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the public URL probe result.</returns>
     public async Task<PublicUrlProbeResult> CheckAsync(
         string? rootId,
         string? path,
@@ -178,6 +188,7 @@ public sealed class PublicUrlProbeHostedService(
     IOptionsMonitor<WebFilezOptions> options,
     ILogger<PublicUrlProbeHostedService> logger) : BackgroundService
 {
+    /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!options.CurrentValue.ProbePublicUrls)

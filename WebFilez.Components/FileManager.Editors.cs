@@ -59,6 +59,11 @@ public sealed partial class FileManager
         }
     }
 
+    /// <summary>
+    /// Handles the editor saved event.
+    /// </summary>
+    /// <param name="fileName">The file name.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [JSInvokable]
     public async Task OnEditorSaved(string fileName)
     {
@@ -67,6 +72,10 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Handles the editor failed event.
+    /// </summary>
+    /// <param name="message">The message.</param>
     [JSInvokable]
     public void OnEditorFailed(string? message)
     {
@@ -74,6 +83,10 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
+    /// <summary>
+    /// Handles the editor closed event.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     [JSInvokable]
     public async Task OnEditorClosed()
     {

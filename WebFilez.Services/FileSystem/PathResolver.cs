@@ -11,6 +11,9 @@ public sealed record ResolvedPath(
     FilePermission Permissions,
     IStorageProvider Storage)
 {
+    /// <summary>
+    /// Gets the location.
+    /// </summary>
     public StorageLocation Location => new(Root, VirtualPath, PhysicalPath, RootPhysicalPath);
 }
 
@@ -26,6 +29,12 @@ public sealed class PathResolver(
 {
     /// <summary>The folder this caller cannot leave. Empty unless a file manager set a base path.</summary>
     public FileScope Scope => scope;
+    /// <summary>
+    /// Finds the root.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the file root.</returns>
     public Task<FileRoot?> FindRootAsync(string? rootId, CancellationToken cancellationToken = default) =>
         string.IsNullOrWhiteSpace(rootId)
             ? Task.FromResult<FileRoot?>(null)
@@ -48,6 +57,14 @@ public sealed class PathResolver(
             : await RequireAsync(root, path, required, cancellationToken);
     }
 
+    /// <summary>
+    /// Gets the require.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="required">The required.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the resolved path.</returns>
     public async Task<Result<ResolvedPath>> RequireAsync(
         FileRoot root,
         string? path,

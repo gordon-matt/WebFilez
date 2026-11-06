@@ -49,10 +49,19 @@
 }
 
 @code {
+    /// <summary>
+    /// Gets or sets the uploads.
+    /// </summary>
     [Parameter, EditorRequired] public List<UploadProgress> Uploads { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the callback raised for the cancel event.
+    /// </summary>
     [Parameter] public EventCallback<long> OnCancel { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the dismiss event.
+    /// </summary>
     [Parameter] public EventCallback OnDismiss { get; set; }
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
@@ -70,20 +79,44 @@
         }
     }
 
+    /// <summary>
+    /// Represents the upload progress.
+    /// </summary>
     public sealed class UploadProgress
     {
+        /// <summary>
+        /// Gets or sets the identifier.
+        /// </summary>
         public long Id { get; init; }
 
+        /// <summary>
+        /// Gets or sets the file name.
+        /// </summary>
         public string FileName { get; init; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the bytes sent.
+        /// </summary>
         public long BytesSent { get; set; }
 
+        /// <summary>
+        /// Gets or sets the total bytes.
+        /// </summary>
         public long TotalBytes { get; set; }
 
+        /// <summary>
+        /// Gets or sets a value indicating whether this instance is complete.
+        /// </summary>
         public bool IsComplete { get; set; }
 
+        /// <summary>
+        /// Gets or sets the error.
+        /// </summary>
         public string? Error { get; set; }
 
+        /// <summary>
+        /// Gets the percent.
+        /// </summary>
         public int Percent => TotalBytes <= 0 ? (IsComplete ? 100 : 0) : (int)Math.Min(100, BytesSent * 100 / TotalBytes);
     }
 }

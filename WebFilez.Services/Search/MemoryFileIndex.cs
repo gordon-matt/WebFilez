@@ -11,6 +11,11 @@ public sealed class MemoryFileIndex : IFileIndex
     private readonly Dictionary<string, List<FileActivity>> pending = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, int> generations = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Determines whether this instance is current.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool IsCurrent(string rootId)
     {
         lock (gate)
@@ -19,6 +24,11 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Determines whether this instance is truncated.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool IsTruncated(string rootId)
     {
         lock (gate)
@@ -27,6 +37,11 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Begins the rebuild.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <returns>The rebuild.</returns>
     public int BeginRebuild(string rootId)
     {
         lock (gate)
@@ -43,6 +58,14 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Attempts to commit.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="generation">The generation.</param>
+    /// <param name="entries">The entries.</param>
+    /// <param name="truncated">The truncated.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool TryCommit(string rootId, int generation, IReadOnlyList<FileIndexEntry> entries, bool truncated)
     {
         lock (gate)
@@ -68,6 +91,10 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Invalidates the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
     public void Invalidate(string rootId)
     {
         lock (gate)
@@ -78,6 +105,10 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Applies the value.
+    /// </summary>
+    /// <param name="activity">The activity.</param>
     public void Apply(FileActivity activity)
     {
         lock (gate)
@@ -98,6 +129,11 @@ public sealed class MemoryFileIndex : IFileIndex
         }
     }
 
+    /// <summary>
+    /// Queries the value.
+    /// </summary>
+    /// <param name="query">The query.</param>
+    /// <returns>The file index entries.</returns>
     public IReadOnlyList<FileIndexEntry> Query(FileIndexQuery query)
     {
         lock (gate)

@@ -27,6 +27,13 @@ public interface IFileAccessPolicy
 /// <summary>Grants every caller whatever the root allows.</summary>
 public sealed class RootFileAccessPolicy : IFileAccessPolicy
 {
+    /// <summary>
+    /// Gets the permissions.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the file permission.</returns>
     public ValueTask<FilePermission> GetPermissionsAsync(
         FileRoot root,
         string path,

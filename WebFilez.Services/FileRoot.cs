@@ -76,6 +76,9 @@ public sealed class FileRoot
     /// </summary>
     public List<string> ExcludePatterns { get; set; } = [];
 
+    /// <summary>
+    /// Gets the display name.
+    /// </summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Id : Name;
 
     /// <summary>The permissions the root itself allows, after the read-only clamp.</summary>

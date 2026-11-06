@@ -7,12 +7,21 @@ namespace WebFilez.Services.FileSystem;
 /// </summary>
 public sealed class NaturalComparer : IComparer<string>
 {
+    /// <summary>
+    /// The instance.
+    /// </summary>
     public static readonly NaturalComparer Instance = new();
 
     private NaturalComparer()
     {
     }
 
+    /// <summary>
+    /// Compares the value.
+    /// </summary>
+    /// <param name="x">The x.</param>
+    /// <param name="y">The y.</param>
+    /// <returns>The int.</returns>
     public int Compare(string? x, string? y)
     {
         if (ReferenceEquals(x, y))

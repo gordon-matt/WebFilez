@@ -10,6 +10,13 @@ namespace WebFilez.Services.FileSystem;
 /// </summary>
 public sealed class FileNamePolicy(IOptionsMonitor<WebFilezOptions> options)
 {
+    /// <summary>
+    /// Applies the value.
+    /// </summary>
+    /// <param name="requestedName">The requested name.</param>
+    /// <param name="isDirectory">The is directory.</param>
+    /// <param name="fieldName">The field name.</param>
+    /// <returns>The outcome for the string.</returns>
     public Result<string> Apply(string? requestedName, bool isDirectory, string fieldName = "Name")
     {
         var settings = options.CurrentValue;

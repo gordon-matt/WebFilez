@@ -47,5 +47,10 @@ public interface IFileIndex
     /// <summary>Folds one completed activity into the index. Ignored until the root has been scanned.</summary>
     void Apply(FileActivity activity);
 
+    /// <summary>
+    /// Queries the value.
+    /// </summary>
+    /// <param name="query">The query.</param>
+    /// <returns>The file index entries.</returns>
     IReadOnlyList<FileIndexEntry> Query(FileIndexQuery query);
 }

@@ -3,6 +3,12 @@ namespace WebFilez.Services.Storage;
 /// <summary>Segment rules shared by every provider, so a name rejected on disk is rejected in a blob store too.</summary>
 public static class StorageNames
 {
+    /// <summary>
+    /// Determines whether this instance is rejected.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="segment">The segment.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public static bool IsRejected(FileRoot root, string segment)
     {
         char[] invalid = Path.GetInvalidFileNameChars();

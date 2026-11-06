@@ -7,6 +7,9 @@ namespace WebFilez;
 /// </summary>
 public static class FileKinds
 {
+    /// <summary>
+    /// The default mime type constant.
+    /// </summary>
     public const string DefaultMimeType = "application/octet-stream";
 
     private static readonly Dictionary<string, FileKind> KindByExtension = new(StringComparer.OrdinalIgnoreCase)
@@ -157,6 +160,12 @@ public static class FileKinds
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff",
     };
 
+    /// <summary>
+    /// Classifies the value.
+    /// </summary>
+    /// <param name="fileName">The file name.</param>
+    /// <param name="isDirectory">The is directory.</param>
+    /// <returns>The file kind.</returns>
     public static FileKind Classify(string fileName, bool isDirectory)
     {
         if (isDirectory)
@@ -170,6 +179,11 @@ public static class FileKinds
             : KindByExtension.GetValueOrDefault(extension, FileKind.Other);
     }
 
+    /// <summary>
+    /// Gets the mime type.
+    /// </summary>
+    /// <param name="fileName">The file name.</param>
+    /// <returns>The mime type.</returns>
     public static string GetMimeType(string fileName)
     {
         string extension = Path.GetExtension(fileName);
@@ -190,6 +204,11 @@ public static class FileKinds
     public static bool IsMedia(FileKind kind) => kind is
         FileKind.Image or FileKind.Video or FileKind.Audio or FileKind.Pdf;
 
+    /// <summary>
+    /// Gets the supports thumbnail.
+    /// </summary>
+    /// <param name="fileName">The file name.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public static bool SupportsThumbnail(string fileName) =>
         ThumbnailExtensions.Contains(Path.GetExtension(fileName));
 
@@ -209,6 +228,12 @@ public static class FileKinds
             || mimeType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase)
             || mimeType.Equals("text/plain", StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Gets the matches.
+    /// </summary>
+    /// <param name="kind">The kind.</param>
+    /// <param name="filter">The filter.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public static bool Matches(FileKind kind, KindFilter filter) => filter switch
     {
         KindFilter.Images => kind == FileKind.Image,

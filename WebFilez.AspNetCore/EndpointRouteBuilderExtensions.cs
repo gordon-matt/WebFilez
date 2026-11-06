@@ -9,6 +9,9 @@ using WebFilez.Services.Transfers;
 
 namespace WebFilez;
 
+/// <summary>
+/// Provides extension methods for endpoint route builders.
+/// </summary>
 public static class EndpointRouteBuilderExtensions
 {
     extension(IEndpointRouteBuilder endpoints)

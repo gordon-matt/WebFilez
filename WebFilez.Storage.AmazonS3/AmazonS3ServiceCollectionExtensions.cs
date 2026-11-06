@@ -3,6 +3,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez.Storage.AmazonS3;
 
+/// <summary>
+/// Provides extension methods for amazon s3service collections.
+/// </summary>
 public static class AmazonS3ServiceCollectionExtensions
 {
     extension(IServiceCollection services)

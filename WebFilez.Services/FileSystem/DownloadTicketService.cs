@@ -21,6 +21,13 @@ public sealed class DownloadTicketService(TimeProvider timeProvider)
 
     private readonly ConcurrentDictionary<string, DownloadTicket> tickets = new(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Creates the value.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="paths">The paths.</param>
+    /// <param name="fileName">The file name.</param>
+    /// <returns>The string.</returns>
     public string Create(string rootId, IReadOnlyList<string> paths, string fileName)
     {
         PruneExpired();
@@ -48,6 +55,13 @@ public sealed class DownloadTicketService(TimeProvider timeProvider)
     }
 }
 
+/// <summary>
+/// Represents the download ticket.
+/// </summary>
+/// <param name="RootId">The root identifier.</param>
+/// <param name="Paths">The paths.</param>
+/// <param name="FileName">The file name.</param>
+/// <param name="ExpiresAt">The expires at.</param>
 public sealed record DownloadTicket(
     string RootId,
     IReadOnlyList<string> Paths,

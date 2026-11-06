@@ -20,6 +20,11 @@ public sealed partial class FileManagerService(
     IFileUrlResolver urlResolver,
     IOptionsMonitor<WebFilezOptions> options) : IFileManagerService
 {
+    /// <summary>
+    /// Gets the roots.
+    /// </summary>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file roots.</returns>
     public async Task<Result<IReadOnlyList<FileRootDto>>> GetRootsAsync(CancellationToken cancellationToken = default)
     {
         var roots = await rootProvider.GetRootsAsync(cancellationToken);
@@ -55,6 +60,12 @@ public sealed partial class FileManagerService(
         return Result<IReadOnlyList<FileRootDto>>.Success(visible);
     }
 
+    /// <summary>
+    /// Lists the value.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the directory listing.</returns>
     public async Task<Result<DirectoryListingDto>> ListAsync(
         ListingRequest request,
         CancellationToken cancellationToken = default)
@@ -139,6 +150,13 @@ public sealed partial class FileManagerService(
             await ResolvePublicUrlAsync(target.Root, target.VirtualPath, isDirectory: true, cancellationToken)));
     }
 
+    /// <summary>
+    /// Gets the folders.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the folder nodes.</returns>
     public async Task<Result<IReadOnlyList<FolderNodeDto>>> GetFoldersAsync(
         string rootId,
         string? path,
@@ -191,6 +209,13 @@ public sealed partial class FileManagerService(
         return Result<IReadOnlyList<FolderNodeDto>>.Success(folders);
     }
 
+    /// <summary>
+    /// Gets the detail.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file detail.</returns>
     public async Task<Result<FileDetailDto>> GetDetailAsync(
         string rootId,
         string path,
@@ -234,6 +259,13 @@ public sealed partial class FileManagerService(
             await ResolvePublicUrlAsync(target.Root, target.VirtualPath, info.IsDirectory, cancellationToken)));
     }
 
+    /// <summary>
+    /// Gets the directory size.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the directory size.</returns>
     public async Task<Result<DirectorySizeDto>> GetDirectorySizeAsync(
         string rootId,
         string path,

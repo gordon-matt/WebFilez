@@ -4,6 +4,13 @@ namespace WebFilez.Services.FileSystem;
 
 public sealed partial class FileManagerService
 {
+    /// <summary>
+    /// Reads the text.
+    /// </summary>
+    /// <param name="rootId">The root identifier.</param>
+    /// <param name="path">The path.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the text file content.</returns>
     public async Task<Result<TextFileContentDto>> ReadTextAsync(
         string rootId,
         string path,
@@ -63,6 +70,12 @@ public sealed partial class FileManagerService
             target.Permissions.Has(FilePermission.Modify)));
     }
 
+    /// <summary>
+    /// Saves the text.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file system item.</returns>
     public async Task<Result<FileSystemItemDto>> SaveTextAsync(
         SaveTextFileRequest request,
         CancellationToken cancellationToken = default)
@@ -121,6 +134,12 @@ public sealed partial class FileManagerService
             cancellationToken));
     }
 
+    /// <summary>
+    /// Creates the download ticket.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the download ticket.</returns>
     public async Task<Result<DownloadTicketDto>> CreateDownloadTicketAsync(
         DownloadTicketRequest request,
         CancellationToken cancellationToken = default)

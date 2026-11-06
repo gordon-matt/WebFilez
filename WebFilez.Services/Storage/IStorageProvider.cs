@@ -20,20 +20,50 @@ public interface IStorageProvider
     /// </summary>
     bool TryMap(FileRoot root, string virtualPath, out StorageLocation location);
 
+    /// <summary>
+    /// Determines whether this instance is same.
+    /// </summary>
+    /// <param name="left">The left.</param>
+    /// <param name="right">The right.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     bool AreSame(StorageLocation left, StorageLocation right);
 
     /// <summary>Whether <paramref name="candidate"/> is <paramref name="container"/> or sits inside it.</summary>
     bool Contains(StorageLocation container, StorageLocation candidate);
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the storage entry.</returns>
     ValueTask<StorageEntry?> GetAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
     /// <summary>Immediate children. The caller filters hidden, excluded and linked names.</summary>
     IAsyncEnumerable<StorageEntry> ListAsync(StorageLocation directory, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Creates the directory.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task CreateDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Creates the empty file.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task CreateEmptyFileAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Opens the read.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the stream.</returns>
     Task<Stream> OpenReadAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
     /// <summary>Creates or replaces a file with the contents of <paramref name="content"/>.</summary>
@@ -45,11 +75,39 @@ public interface IStorageProvider
     /// </summary>
     Task CommitLocalFileAsync(StorageLocation location, string localFile, bool overwrite, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Deletes the file.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task DeleteFileAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Deletes the directory.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task DeleteDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Moves the value.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <param name="destination">The destination.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task MoveAsync(StorageLocation source, StorageLocation destination, bool overwrite, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Copies the value.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <param name="destination">The destination.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     Task CopyAsync(StorageLocation source, StorageLocation destination, bool overwrite, CancellationToken cancellationToken = default);
 }

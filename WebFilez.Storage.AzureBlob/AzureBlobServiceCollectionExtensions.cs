@@ -3,6 +3,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez.Storage.AzureBlob;
 
+/// <summary>
+/// Provides extension methods for azure blob service collections.
+/// </summary>
 public static class AzureBlobServiceCollectionExtensions
 {
     extension(IServiceCollection services)

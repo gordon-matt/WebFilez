@@ -15,10 +15,23 @@ public sealed class FileSystemStorageProvider : IStorageProvider
     public static bool IsFileSystem(string? provider) =>
         string.IsNullOrWhiteSpace(provider) || provider.Equals(ProviderKey, StringComparison.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// Gets the key.
+    /// </summary>
     public string Key => ProviderKey;
 
+    /// <summary>
+    /// Gets the name comparison.
+    /// </summary>
     public StringComparison NameComparison => PhysicalPaths.Comparison;
 
+    /// <summary>
+    /// Attempts to map.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <param name="virtualPath">The virtual path.</param>
+    /// <param name="location">When this method returns, contains the location.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool TryMap(FileRoot root, string virtualPath, out StorageLocation location)
     {
         if (!PathResolver.TryMapToDisk(root, virtualPath, out string physical, out string rootPhysical))
@@ -31,12 +44,30 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         return true;
     }
 
+    /// <summary>
+    /// Determines whether this instance is same.
+    /// </summary>
+    /// <param name="left">The left.</param>
+    /// <param name="right">The right.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool AreSame(StorageLocation left, StorageLocation right) =>
         PhysicalPaths.AreEqual(left.NativePath, right.NativePath);
 
+    /// <summary>
+    /// Determines whether the collection contains the specified value.
+    /// </summary>
+    /// <param name="container">The container.</param>
+    /// <param name="candidate">The candidate.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool Contains(StorageLocation container, StorageLocation candidate) =>
         PhysicalPaths.IsWithin(candidate.NativePath, container.NativePath);
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the storage entry.</returns>
     public ValueTask<StorageEntry?> GetAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -48,6 +79,12 @@ public sealed class FileSystemStorageProvider : IStorageProvider
             : ValueTask.FromResult<StorageEntry?>(null);
     }
 
+    /// <summary>
+    /// Lists the value.
+    /// </summary>
+    /// <param name="directory">The directory.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>The storage entry i async enumerable.</returns>
     public async IAsyncEnumerable<StorageEntry> ListAsync(
         StorageLocation directory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -61,6 +98,12 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Creates the directory.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task CreateDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -68,6 +111,12 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Creates the empty file.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task CreateEmptyFileAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(location.NativePath)!);
@@ -75,12 +124,26 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         await stream.FlushAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Opens the read.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the stream.</returns>
     public Task<Stream> OpenReadAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult<Stream>(FileItems.OpenSequentialRead(location.NativePath));
     }
 
+    /// <summary>
+    /// Writes the value.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="content">The content.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task WriteAsync(
         StorageLocation location,
         Stream content,
@@ -107,6 +170,14 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         }
     }
 
+    /// <summary>
+    /// Commits the local file.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="localFile">The local file.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task CommitLocalFileAsync(
         StorageLocation location,
         string localFile,
@@ -129,6 +200,12 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Deletes the file.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteFileAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -136,6 +213,12 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Deletes the directory.
+    /// </summary>
+    /// <param name="location">The location.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DeleteDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -146,6 +229,14 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Moves the value.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <param name="destination">The destination.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task MoveAsync(
         StorageLocation source,
         StorageLocation destination,
@@ -186,6 +277,14 @@ public sealed class FileSystemStorageProvider : IStorageProvider
         }
     }
 
+    /// <summary>
+    /// Copies the value.
+    /// </summary>
+    /// <param name="source">The source.</param>
+    /// <param name="destination">The destination.</param>
+    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task CopyAsync(
         StorageLocation source,
         StorageLocation destination,

@@ -3,6 +3,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez.Storage.AzureFiles;
 
+/// <summary>
+/// Provides extension methods for azure file service collections.
+/// </summary>
 public static class AzureFileServiceCollectionExtensions
 {
     extension(IServiceCollection services)

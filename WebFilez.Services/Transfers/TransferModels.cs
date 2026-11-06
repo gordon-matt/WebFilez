@@ -21,4 +21,10 @@ public sealed record FileDownloadDto(
     DateTime ModifiedAt,
     string ETag);
 
+/// <summary>
+/// Represents the thumbnail DTO.
+/// </summary>
+/// <param name="Bytes">The bytes.</param>
+/// <param name="MimeType">The mime type.</param>
+/// <param name="ETag">The e tag.</param>
 public sealed record ThumbnailDto(byte[] Bytes, string MimeType, string ETag);

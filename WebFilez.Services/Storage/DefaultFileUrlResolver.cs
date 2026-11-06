@@ -17,6 +17,12 @@ public sealed class DefaultFileUrlResolver(
 
     private int expiringOptInWarned;
 
+    /// <summary>
+    /// Resolves the value.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the string.</returns>
     public ValueTask<string?> ResolveAsync(FileUrlContext context, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();

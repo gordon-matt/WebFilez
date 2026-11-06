@@ -103,29 +103,57 @@
     private bool isCalculating;
     private string? sizeFor;
 
+    /// <summary>
+    /// Gets or sets the detail.
+    /// </summary>
     [Parameter] public FileDetailDto? Detail { get; set; }
 
     /// <summary>The listed item, when the details are for one, so a thumbnail can be shown.</summary>
     [Parameter] public FileSystemItemDto? Item { get; set; }
 
+    /// <summary>
+    /// Gets or sets the selection count.
+    /// </summary>
     [Parameter] public int SelectionCount { get; set; }
 
+    /// <summary>
+    /// Gets or sets the selected bytes.
+    /// </summary>
     [Parameter] public long SelectedBytes { get; set; }
 
+    /// <summary>
+    /// Gets or sets the root identifier.
+    /// </summary>
     [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the urls.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the service.
+    /// </summary>
     [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the interop.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the toasts.
+    /// </summary>
     [Parameter] public ToastService? Toasts { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the close event.
+    /// </summary>
     [Parameter] public EventCallback OnClose { get; set; }
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
+    /// <inheritdoc/>
     protected override void OnParametersSet()
     {
         string? key = Detail is null ? null : $"{RootId}|{Detail.Path}";

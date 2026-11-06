@@ -5,6 +5,9 @@ using WebFilez.Components.Localization;
 
 namespace WebFilez;
 
+/// <summary>
+/// Provides extension methods for components service collections.
+/// </summary>
 public static class ComponentsServiceCollectionExtensions
 {
     extension(IServiceCollection services)

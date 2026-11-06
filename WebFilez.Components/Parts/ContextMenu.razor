@@ -30,16 +30,34 @@
     private ElementReference element;
     private bool positionPending;
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is visible.
+    /// </summary>
     [Parameter] public bool IsVisible { get; set; }
 
+    /// <summary>
+    /// Gets or sets the x.
+    /// </summary>
     [Parameter] public double X { get; set; }
 
+    /// <summary>
+    /// Gets or sets the y.
+    /// </summary>
     [Parameter] public double Y { get; set; }
 
+    /// <summary>
+    /// Gets or sets the entries.
+    /// </summary>
     [Parameter] public IReadOnlyList<MenuEntry> Entries { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the interop.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the callback raised for the close event.
+    /// </summary>
     [Parameter] public EventCallback OnClose { get; set; }
 
     /// <summary>
@@ -48,8 +66,10 @@
     /// </summary>
     [Parameter] public EventCallback<MenuEntry> OnSelect { get; set; }
 
+    /// <inheritdoc/>
     protected override void OnParametersSet() => positionPending = IsVisible;
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (positionPending && IsVisible && Entries.Count > 0)

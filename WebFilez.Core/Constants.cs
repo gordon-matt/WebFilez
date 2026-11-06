@@ -1,5 +1,8 @@
 namespace WebFilez;
 
+/// <summary>
+/// Provides constants.
+/// </summary>
 public static class Constants
 {
     /// <summary>
@@ -23,6 +26,9 @@ public static class Constants
     /// </summary>
     public const string RequestHeaderName = "X-WebFilez";
 
+    /// <summary>
+    /// The request header value constant.
+    /// </summary>
     public const string RequestHeaderValue = "1";
 
     /// <summary>
@@ -32,6 +38,9 @@ public static class Constants
     /// </summary>
     public const string ScopeHeaderName = "X-WebFilez-Scope";
 
+    /// <summary>
+    /// The scope query name constant.
+    /// </summary>
     public const string ScopeQueryName = "scope";
 
     /// <summary>Largest file the built-in editor opens.</summary>
@@ -40,20 +49,44 @@ public static class Constants
     /// <summary>Largest single upload accepted unless configured otherwise.</summary>
     public const long DefaultMaxUploadBytes = 100L * 1024 * 1024;
 
+    /// <summary>
+    /// Provides themes.
+    /// </summary>
     public static class Themes
     {
+        /// <summary>
+        /// The light constant.
+        /// </summary>
         public const string Light = "light";
+        /// <summary>
+        /// The dark constant.
+        /// </summary>
         public const string Dark = "dark";
+        /// <summary>
+        /// The auto constant.
+        /// </summary>
         public const string Auto = "auto";
 
         /// <summary>Takes its colours from the host page's Bootstrap 5.3 variables.</summary>
         public const string Bootstrap = "bootstrap";
     }
 
+    /// <summary>
+    /// Provides selection modes.
+    /// </summary>
     public static class SelectionModes
     {
+        /// <summary>
+        /// The none constant.
+        /// </summary>
         public const string None = "none";
+        /// <summary>
+        /// The single constant.
+        /// </summary>
         public const string Single = "single";
+        /// <summary>
+        /// The multiple constant.
+        /// </summary>
         public const string Multiple = "multiple";
     }
 

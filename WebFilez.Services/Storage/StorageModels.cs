@@ -18,6 +18,11 @@ public sealed record StorageEntry(
 /// <summary>A storage operation failed. Thrown as an <see cref="IOException"/> so callers can treat every provider alike.</summary>
 public sealed class StorageException : IOException
 {
+    /// <summary>
+    /// Initializes a new instance of the StorageException class.
+    /// </summary>
+    /// <param name="message">The message.</param>
+    /// <param name="inner">The inner.</param>
     public StorageException(string message, Exception? inner = null)
         : base(message, inner)
     {

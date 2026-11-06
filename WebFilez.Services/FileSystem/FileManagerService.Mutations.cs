@@ -4,6 +4,12 @@ namespace WebFilez.Services.FileSystem;
 
 public sealed partial class FileManagerService
 {
+    /// <summary>
+    /// Creates the directory.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file system item.</returns>
     public async Task<Result<FileSystemItemDto>> CreateDirectoryAsync(
         CreateDirectoryRequest request,
         CancellationToken cancellationToken = default)
@@ -49,6 +55,12 @@ public sealed partial class FileManagerService
             cancellationToken));
     }
 
+    /// <summary>
+    /// Creates the file.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file system item.</returns>
     public async Task<Result<FileSystemItemDto>> CreateFileAsync(
         CreateFileRequest request,
         CancellationToken cancellationToken = default)
@@ -92,6 +104,12 @@ public sealed partial class FileManagerService
             cancellationToken));
     }
 
+    /// <summary>
+    /// Renames the value.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file system item.</returns>
     public async Task<Result<FileSystemItemDto>> RenameAsync(
         RenameRequest request,
         CancellationToken cancellationToken = default)
@@ -159,6 +177,12 @@ public sealed partial class FileManagerService
         return Result<FileSystemItemDto>.Success(await ToItemAsync(renamed, target.Root, newVirtualPath, permissions, cancellationToken));
     }
 
+    /// <summary>
+    /// Deletes the value.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the bulk operation result.</returns>
     public async Task<Result<BulkOperationResultDto>> DeleteAsync(
         DeleteRequest request,
         CancellationToken cancellationToken = default)
@@ -223,6 +247,12 @@ public sealed partial class FileManagerService
         return Result<BulkOperationResultDto>.Success(BulkOperationResultDto.From(results));
     }
 
+    /// <summary>
+    /// Gets the transfer.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the bulk operation result.</returns>
     public async Task<Result<BulkOperationResultDto>> TransferAsync(
         TransferRequest request,
         CancellationToken cancellationToken = default)

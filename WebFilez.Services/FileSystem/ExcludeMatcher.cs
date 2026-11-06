@@ -21,8 +21,18 @@ public sealed class ExcludeMatcher
         this.patterns = patterns;
     }
 
+    /// <summary>
+    /// Gets the for.
+    /// </summary>
+    /// <param name="root">The root.</param>
+    /// <returns>The for.</returns>
     public static ExcludeMatcher For(FileRoot root) => For(root.ExcludePatterns);
 
+    /// <summary>
+    /// Gets the for.
+    /// </summary>
+    /// <param name="patterns">The patterns.</param>
+    /// <returns>The for.</returns>
     public static ExcludeMatcher For(IReadOnlyCollection<string>? patterns)
     {
         if (patterns is null || patterns.Count == 0)
@@ -34,6 +44,11 @@ public sealed class ExcludeMatcher
         return Cache.GetOrAdd(key, static (_, list) => Build(list), patterns);
     }
 
+    /// <summary>
+    /// Determines whether this instance is excluded.
+    /// </summary>
+    /// <param name="name">The name.</param>
+    /// <returns>true when the condition is met; otherwise, false.</returns>
     public bool IsExcluded(string name) =>
         patterns.Length != 0 && patterns.Any(p => p.IsMatch(name));
 

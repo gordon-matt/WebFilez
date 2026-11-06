@@ -5,6 +5,9 @@ namespace WebFilez.Services;
 /// <summary>Configuration for WebFilez, bound from the <c>WebFilez</c> section.</summary>
 public sealed class WebFilezOptions
 {
+    /// <summary>
+    /// The section name constant.
+    /// </summary>
     public const string SectionName = "WebFilez";
 
     /// <summary>Where <c>MapWebFilezApi()</c> mounts the HTTP API.</summary>
@@ -44,10 +47,19 @@ public sealed class WebFilezOptions
         ".xht", ".xhtml",
     ];
 
+    /// <summary>
+    /// Gets or sets the file names.
+    /// </summary>
     public FileNameOptions FileNames { get; set; } = new();
 
+    /// <summary>
+    /// Gets or sets the image resize.
+    /// </summary>
     public ImageResizeOptions ImageResize { get; set; } = new();
 
+    /// <summary>
+    /// Gets or sets the thumbnails.
+    /// </summary>
     public ThumbnailOptions Thumbnails { get; set; } = new();
 
     /// <summary>Largest file the text editor opens.</summary>
@@ -99,8 +111,14 @@ public sealed class FileNameOptions
     /// <summary>Replace spaces with <see cref="SpaceReplacement"/>. Useful when files are served by URL.</summary>
     public bool ReplaceSpaces { get; set; }
 
+    /// <summary>
+    /// Gets or sets the space replacement.
+    /// </summary>
     public string SpaceReplacement { get; set; } = "_";
 
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is lower case.
+    /// </summary>
     public bool LowerCase { get; set; }
 
     /// <summary>Strip accents, so <c>Café.jpg</c> becomes <c>Cafe.jpg</c>.</summary>
@@ -110,6 +128,9 @@ public sealed class FileNameOptions
 /// <summary>Shrinks uploaded images that exceed a maximum size, preserving the aspect ratio.</summary>
 public sealed class ImageResizeOptions
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is enabled.
+    /// </summary>
     public bool Enabled { get; set; }
 
     /// <summary>Zero means no limit on this axis.</summary>
@@ -119,8 +140,14 @@ public sealed class ImageResizeOptions
     public int MaxHeight { get; set; } = 2560;
 }
 
+/// <summary>
+/// Represents the thumbnail options.
+/// </summary>
 public sealed class ThumbnailOptions
 {
+    /// <summary>
+    /// Gets or sets a value indicating whether this instance is enabled.
+    /// </summary>
     public bool Enabled { get; set; } = true;
 
     /// <summary>Defaults to a <c>webfilez-thumbnails</c> folder under the system temp directory.</summary>

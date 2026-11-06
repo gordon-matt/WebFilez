@@ -7,6 +7,9 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez;
 
+/// <summary>
+/// Provides extension methods for asp net core service collections.
+/// </summary>
 public static class AspNetCoreServiceCollectionExtensions
 {
     extension(IServiceCollection services)

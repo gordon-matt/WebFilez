@@ -19,23 +19,42 @@
     private readonly HashSet<string> expanded = [];
     private readonly HashSet<string> loading = [];
 
+    /// <summary>
+    /// Gets or sets the service.
+    /// </summary>
     [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the roots.
+    /// </summary>
     [Parameter, EditorRequired] public IReadOnlyList<FileRootDto> Roots { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the root identifier.
+    /// </summary>
     [Parameter] public string? RootId { get; set; }
 
+    /// <summary>
+    /// Gets or sets the current path.
+    /// </summary>
     [Parameter] public string CurrentPath { get; set; } = Constants.RootPath;
 
     /// <summary>The highest folder shown. The root itself when the manager is not confined.</summary>
     [Parameter] public string StartPath { get; set; } = Constants.RootPath;
 
+    /// <summary>
+    /// Gets or sets the callback raised for the navigate event.
+    /// </summary>
     [Parameter] public EventCallback<(string RootId, string Path)> OnNavigate { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the drop onto event.
+    /// </summary>
     [Parameter] public EventCallback<(string RootId, string Path, DragEventArgs Args)> OnDropOnto { get; set; }
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
+    /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
         // Open the path to the current folder, so the tree always shows where the listing is.

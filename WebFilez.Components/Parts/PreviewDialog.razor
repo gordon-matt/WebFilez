@@ -84,23 +84,47 @@
     private string? textError;
     private bool focusPending;
 
+    /// <summary>
+    /// Gets or sets the current.
+    /// </summary>
     [Parameter] public FileSystemItemDto? Current { get; set; }
 
     /// <summary>The items arrow keys move between.</summary>
     [Parameter] public IReadOnlyList<FileSystemItemDto> Items { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the root identifier.
+    /// </summary>
     [Parameter, EditorRequired] public string RootId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the urls.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezUrls Urls { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the service.
+    /// </summary>
     [Parameter, EditorRequired] public IFileManagerService Service { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the interop.
+    /// </summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
+    /// <summary>
+    /// Gets or sets the callback raised for the navigate event.
+    /// </summary>
     [Parameter] public EventCallback<FileSystemItemDto> OnNavigate { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the download event.
+    /// </summary>
     [Parameter] public EventCallback<FileSystemItemDto> OnDownload { get; set; }
 
+    /// <summary>
+    /// Gets or sets the callback raised for the close event.
+    /// </summary>
     [Parameter] public EventCallback OnClose { get; set; }
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
@@ -109,6 +133,7 @@
 
     private string InlineUrl => Current is null ? string.Empty : Urls.Download(RootId, Current.Path, inline: true);
 
+    /// <inheritdoc/>
     protected override async Task OnParametersSetAsync()
     {
         string? key = Current is null ? null : $"{RootId}|{Current.Path}|{Current.ModifiedAt.Ticks}";
@@ -140,6 +165,7 @@
         }
     }
 
+    /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (focusPending && Current is not null)

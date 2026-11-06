@@ -10,8 +10,16 @@ namespace WebFilez.Storage.GoogleCloud;
 /// </summary>
 public sealed class GoogleCloudPublicUrl : IStoragePublicUrl
 {
+    /// <summary>
+    /// Gets the provider key.
+    /// </summary>
     public string ProviderKey => GoogleCloudStorageProvider.ProviderKey;
 
+    /// <summary>
+    /// Gets the URL.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>The URL.</returns>
     public string? GetUrl(FileUrlContext context)
     {
         string? bucket = Setting(context.Root, GoogleCloudPaths.BucketKey);

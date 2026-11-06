@@ -4,6 +4,12 @@ namespace WebFilez.Services.FileSystem;
 
 public sealed partial class FileManagerService
 {
+    /// <summary>
+    /// Searches the value.
+    /// </summary>
+    /// <param name="request">The request.</param>
+    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the search result.</returns>
     public async Task<Result<SearchResultDto>> SearchAsync(SearchRequest request, CancellationToken cancellationToken = default)
     {
         string query = request.Query?.Trim() ?? string.Empty;
