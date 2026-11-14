@@ -17,8 +17,10 @@ public static class AspNetCoreServiceCollectionExtensions
         /// <summary>
         /// Registers WebFilez and what its HTTP API needs. Relative root paths are resolved
         /// against the content root. Follow with <c>app.MapWebFilezApi()</c>.
+        /// The returned builder is what optional packages chain from, for example
+        /// <c>.AddComponents()</c> or <c>.AddAzureBlob()</c>.
         /// </summary>
-        public IServiceCollection AddWebFilez(
+        public WebFilezBuilder AddWebFilez(
             IConfiguration? configuration = null,
             Action<WebFilezOptions>? configure = null)
         {
@@ -51,7 +53,7 @@ public static class AspNetCoreServiceCollectionExtensions
             services.AddScoped<PublicUrlProbe>();
             services.AddHostedService<PublicUrlProbeHostedService>();
 
-            return services;
+            return new WebFilezBuilder(services);
         }
     }
 }

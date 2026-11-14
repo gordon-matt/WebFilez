@@ -7,6 +7,7 @@ using WebFilez.Demo;
 using WebFilez.Storage.AmazonS3;
 using WebFilez.Storage.AzureBlob;
 using WebFilez.Storage.AzureFiles;
+using WebFilez.Plugins.Video;
 using WebFilez.Storage.GoogleCloud;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,12 +30,14 @@ builder.Services.AddControllersWithViews();
 // The file manager is a Blazor component, rendered into the MVC views over a Blazor Server circuit.
 builder.Services.AddServerSideBlazor();
 
-builder.Services.AddWebFilez(builder.Configuration);
-builder.Services.AddWebFilezComponents();
-builder.Services.AddWebFilezAzureBlob();
-builder.Services.AddWebFilezAzureFiles();
-builder.Services.AddWebFilezAmazonS3();
-builder.Services.AddWebFilezGoogleCloud();
+builder.Services
+    .AddWebFilez(builder.Configuration)
+    .AddVideo(video => video.DownloadIfMissing = true)
+    .AddComponents()
+    .AddAzureBlob()
+    .AddAzureFiles()
+    .AddAmazonS3()
+    .AddGoogleCloud();
 
 var app = builder.Build();
 

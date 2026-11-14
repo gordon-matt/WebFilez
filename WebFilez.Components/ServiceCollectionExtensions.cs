@@ -40,28 +40,31 @@ public static class ComponentsServiceCollectionExtensions
             services.TryAddScoped<FileScopeToken>();
             services.TryAddScoped<IFileManagerService, HttpFileManagerService>();
             services.TryAddSingleton(new WebFilezApiAddress(normalized, includeCredentials));
-            services.AddWebFilezComponents();
+            new WebFilezBuilder(services).AddComponents();
 
             return services;
         }
+    }
 
+    extension(WebFilezBuilder builder)
+    {
         /// <summary>
         /// Registers the language catalogs. Built-in languages ship with the component. Point
         /// <see cref="WebFilezLocalizationOptions.Directory"/> at a folder of <c>{tag}.json</c>
         /// files to add or override a language. Safe to call before <c>AddWebFilezHttpClient</c>.
         /// </summary>
-        public IServiceCollection AddWebFilezComponents(Action<WebFilezLocalizationOptions>? configure = null)
+        public WebFilezBuilder AddComponents(Action<WebFilezLocalizationOptions>? configure = null)
         {
-            if (services.Any(descriptor => descriptor.ServiceType == typeof(IWebFilezLocalizer)))
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IWebFilezLocalizer)))
             {
-                return services;
+                return builder;
             }
 
             var options = new WebFilezLocalizationOptions();
             configure?.Invoke(options);
-            services.AddSingleton(options);
-            services.AddSingleton<IWebFilezLocalizer, WebFilezLocaleCatalog>();
-            return services;
+            builder.Services.AddSingleton(options);
+            builder.Services.AddSingleton<IWebFilezLocalizer, WebFilezLocaleCatalog>();
+            return builder;
         }
     }
 }

@@ -50,16 +50,16 @@ public class AmazonS3LocalStackTests : IAsyncLifetime
         await s3.PutBucketAsync(new PutBucketRequest { BucketName = uploadsBucket }, Token);
         await s3.PutBucketAsync(new PutBucketRequest { BucketName = archiveBucket }, Token);
 
-        provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
             .AddWebFilezServices(configure: options =>
             {
                 options.Roots.Add(S3Root("uploads", "Uploads", uploadsBucket, "campaigns"));
                 options.Roots.Add(S3Root("archive", "Archive", archiveBucket, path: ""));
                 options.Thumbnails.CacheDirectory = Path.Combine(Path.GetTempPath(), "webfilez-s3-thumbs");
-            })
-            .AddWebFilezAmazonS3()
-            .BuildServiceProvider(validateScopes: true);
+            });
+        new WebFilezBuilder(services).AddAmazonS3();
+        provider = services.BuildServiceProvider(validateScopes: true);
 
         scope = provider.CreateAsyncScope();
     }

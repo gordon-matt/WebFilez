@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using WebFilez.Services.Images;
 using WebFilez.Services.Search;
 using WebFilez.Services.Storage;
 
@@ -18,8 +19,11 @@ public sealed partial class FileManagerService(
     IFileIndex index,
     DownloadTicketService downloadTickets,
     IFileUrlResolver urlResolver,
-    IOptionsMonitor<WebFilezOptions> options) : IFileManagerService
+    IOptionsMonitor<WebFilezOptions> options,
+    IEnumerable<IThumbnailSource> thumbnailSources) : IFileManagerService
 {
+    private readonly ThumbnailSupport thumbnails = new(thumbnailSources);
+
     /// <summary>
     /// Gets the roots.
     /// </summary>
@@ -393,6 +397,7 @@ public sealed partial class FileManagerService(
             permissions,
             urlResolver,
             options.CurrentValue.AllowExpiringUrls,
+            thumbnails,
             cancellationToken);
 
     private ValueTask<string?> ResolvePublicUrlAsync(

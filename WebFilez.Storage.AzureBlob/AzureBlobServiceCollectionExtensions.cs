@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using WebFilez.Services.Storage;
+using WebFilez;
 
 namespace WebFilez.Storage.AzureBlob;
 
@@ -8,7 +9,7 @@ namespace WebFilez.Storage.AzureBlob;
 /// </summary>
 public static class AzureBlobServiceCollectionExtensions
 {
-    extension(IServiceCollection services)
+    extension(WebFilezBuilder builder)
     {
         /// <summary>
         /// Registers the Azure Blob Storage provider. A root selects it with
@@ -16,11 +17,11 @@ public static class AzureBlobServiceCollectionExtensions
         /// <c>Container</c> in <c>Settings</c>. <c>Path</c>, or <c>Settings.Prefix</c>, is the
         /// folder inside the container.
         /// </summary>
-        public IServiceCollection AddWebFilezAzureBlob()
+        public WebFilezBuilder AddAzureBlob()
         {
-            services.AddSingleton<IStorageProvider, AzureBlobStorageProvider>();
-            services.AddSingleton<IStoragePublicUrl, AzureBlobPublicUrl>();
-            return services;
+            builder.Services.AddSingleton<IStorageProvider, AzureBlobStorageProvider>();
+            builder.Services.AddSingleton<IStoragePublicUrl, AzureBlobPublicUrl>();
+            return builder;
         }
     }
 }

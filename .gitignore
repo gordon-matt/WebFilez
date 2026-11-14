@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# FFmpeg binaries downloaded for optional video thumbnails
+ffmpeg/
+
 # User-specific files
 *.rsuser
 *.suo

@@ -22,7 +22,8 @@ public static class ServiceCollectionExtensions
         /// Every extension point is registered with <c>TryAdd</c>, so register your own
         /// <see cref="IFileRootProvider"/>, <see cref="IFileAccessPolicy"/>,
         /// <see cref="IFileActivitySink"/> or <see cref="IFileUrlResolver"/> before or after
-        /// calling this and yours wins.
+        /// calling this and yours wins. <see cref="WebFilez.Services.Images.IThumbnailSource"/> is additive:
+        /// register one to thumbnail files Skia cannot decode. None are registered here.
         /// </remarks>
         public IServiceCollection AddWebFilezServices(
             IConfiguration? configuration = null,

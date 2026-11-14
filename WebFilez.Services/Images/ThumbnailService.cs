@@ -20,8 +20,10 @@ public interface IThumbnailService
 public sealed class ThumbnailService(
     ILogger<ThumbnailService> logger,
     PathResolver resolver,
+    IEnumerable<IThumbnailSource> thumbnailSources,
     IOptionsMonitor<WebFilezOptions> options) : IThumbnailService
 {
+    private readonly ThumbnailSupport thumbnails = new(thumbnailSources);
     private const string WebpMimeType = "image/webp";
 
     /// <summary>
@@ -63,7 +65,7 @@ public sealed class ThumbnailService(
 
         var target = resolved.Value;
         var info = await target.Storage.GetAsync(target.Location, cancellationToken);
-        if (info is not { IsDirectory: false } || !FileKinds.SupportsThumbnail(info.Name))
+        if (info is not { IsDirectory: false } || !thumbnails.Supports(info.Name))
         {
             return Result<ThumbnailDto>.NotFound();
         }
@@ -106,6 +108,22 @@ public sealed class ThumbnailService(
 
     private async Task<byte[]> GenerateAsync(ResolvedPath target, int size, int quality, CancellationToken cancellationToken)
     {
+        string fileName = Path.GetFileName(target.VirtualPath);
+        byte[] source = FileKinds.SupportsThumbnail(fileName)
+            ? await ReadImageAsync(target, cancellationToken)
+            : await ReadContributedFrameAsync(target, fileName, cancellationToken);
+
+        return ImageProcessor.ResizeToFit(
+            source,
+            size,
+            size,
+            SKEncodedImageFormat.Webp,
+            Math.Clamp(quality, 1, 100),
+            ImageResizer.MaxPixels);
+    }
+
+    private static async Task<byte[]> ReadImageAsync(ResolvedPath target, CancellationToken cancellationToken)
+    {
         await using var content = await target.Storage.OpenReadAsync(target.Location, cancellationToken);
 
         // One buffer for identify and resize, so this does not depend on the stream being seekable.
@@ -122,13 +140,19 @@ public sealed class ThumbnailService(
             throw new InvalidOperationException($"{width}x{height} exceeds the decode limit.");
         }
 
-        return ImageProcessor.ResizeToFit(
-            source,
-            size,
-            size,
-            SKEncodedImageFormat.Webp,
-            Math.Clamp(quality, 1, 100),
-            ImageResizer.MaxPixels);
+        return source;
+    }
+
+    private async Task<byte[]> ReadContributedFrameAsync(ResolvedPath target, string fileName, CancellationToken cancellationToken)
+    {
+        IThumbnailSource? source = thumbnails.Find(fileName);
+        byte[]? frame = source is null ? null : await source.TryReadImageAsync(target, cancellationToken);
+        if (frame is null || frame.Length == 0 || ImageProcessor.TryIdentify(frame) is null)
+        {
+            throw new InvalidOperationException("No thumbnail could be produced.");
+        }
+
+        return frame;
     }
 
     private async Task WriteCacheAsync(string cachePath, byte[] bytes, CancellationToken cancellationToken)

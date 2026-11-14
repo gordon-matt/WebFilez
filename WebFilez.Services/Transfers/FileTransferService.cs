@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.Extensions.Options;
+using WebFilez.Services.Images;
 using WebFilez.Services.Search;
 using WebFilez.Services.Storage;
 
@@ -17,8 +18,11 @@ public sealed class FileTransferService(
     IFileIndex index,
     DownloadTicketService downloadTickets,
     IFileUrlResolver urlResolver,
-    IOptionsMonitor<WebFilezOptions> options) : IFileTransferService
+    IOptionsMonitor<WebFilezOptions> options,
+    IEnumerable<IThumbnailSource> thumbnailSources) : IFileTransferService
 {
+    private readonly ThumbnailSupport thumbnails = new(thumbnailSources);
+
     /// <summary>
     /// Opens the read.
     /// </summary>
@@ -251,6 +255,7 @@ public sealed class FileTransferService(
                 permissions,
                 urlResolver,
                 options.CurrentValue.AllowExpiringUrls,
+                thumbnails,
                 cancellationToken),
             resized));
     }

@@ -31,9 +31,14 @@ public abstract class ServiceTest : IAsyncLifetime
     {
     }
 
+    /// <summary>Adds services after WebFilez, such as an <c>IThumbnailSource</c>.</summary>
+    protected virtual void Register(IServiceCollection services)
+    {
+    }
+
     public virtual ValueTask InitializeAsync()
     {
-        provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
             .AddWebFilezServices(configure: options =>
             {
@@ -41,8 +46,9 @@ public abstract class ServiceTest : IAsyncLifetime
                 options.Roots.Add(new FileRoot { Id = "docs", Name = "Docs", Path = Docs.Path, IsReadOnly = true });
                 options.Thumbnails.CacheDirectory = System.IO.Path.Combine(Files.Path, ".thumbs");
                 Configure(options);
-            })
-            .BuildServiceProvider(validateScopes: true);
+            });
+        Register(services);
+        provider = services.BuildServiceProvider(validateScopes: true);
 
         scope = provider.CreateAsyncScope();
         return ValueTask.CompletedTask;

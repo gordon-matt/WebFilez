@@ -239,11 +239,11 @@ public class FileUrlResolverTests
     [Fact]
     public async Task ProviderPackage_SuppliesThePlainUrl_ThroughTheDefaultResolver()
     {
-        await using var provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
-            .AddWebFilezServices()
-            .AddWebFilezAmazonS3()
-            .BuildServiceProvider();
+            .AddWebFilezServices();
+        new WebFilezBuilder(services).AddAmazonS3();
+        await using var provider = services.BuildServiceProvider();
 
         var resolver = provider.GetRequiredService<IFileUrlResolver>();
         string? url = await resolver.ResolveAsync(

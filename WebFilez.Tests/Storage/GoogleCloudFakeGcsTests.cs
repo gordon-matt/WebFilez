@@ -49,16 +49,16 @@ public class GoogleCloudFakeGcsTests : IAsyncLifetime
         await storage.CreateBucketAsync("webfilez", uploadsBucket, cancellationToken: Token);
         await storage.CreateBucketAsync("webfilez", archiveBucket, cancellationToken: Token);
 
-        provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
             .AddWebFilezServices(configure: options =>
             {
                 options.Roots.Add(CloudRoot("uploads", "Uploads", uploadsBucket, "campaigns"));
                 options.Roots.Add(CloudRoot("archive", "Archive", archiveBucket, path: ""));
                 options.Thumbnails.CacheDirectory = Path.Combine(Path.GetTempPath(), "webfilez-gcs-thumbs");
-            })
-            .AddWebFilezGoogleCloud()
-            .BuildServiceProvider(validateScopes: true);
+            });
+        new WebFilezBuilder(services).AddGoogleCloud();
+        provider = services.BuildServiceProvider(validateScopes: true);
 
         scope = provider.CreateAsyncScope();
     }

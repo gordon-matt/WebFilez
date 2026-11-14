@@ -8,6 +8,7 @@ using WebFilez.Demo.Blazor.Components;
 using WebFilez.Storage.AmazonS3;
 using WebFilez.Storage.AzureBlob;
 using WebFilez.Storage.AzureFiles;
+using WebFilez.Plugins.Video;
 using WebFilez.Storage.GoogleCloud;
 
 const string EmbedCorsPolicy = "WebFilezEmbeds";
@@ -29,12 +30,14 @@ DemoFiles.Seed(builder.Environment.ContentRootPath);
 
 builder.Services.AddRazorComponents().AddInteractiveServerComponents();
 
-builder.Services.AddWebFilez(builder.Configuration);
-builder.Services.AddWebFilezComponents();
-builder.Services.AddWebFilezAzureBlob();
-builder.Services.AddWebFilezAzureFiles();
-builder.Services.AddWebFilezAmazonS3();
-builder.Services.AddWebFilezGoogleCloud();
+builder.Services
+    .AddWebFilez(builder.Configuration)
+    .AddVideo(video => video.DownloadIfMissing = true)
+    .AddComponents()
+    .AddAzureBlob()
+    .AddAzureFiles()
+    .AddAmazonS3()
+    .AddGoogleCloud();
 
 // Lets the React demo and the custom element, served from other origins, call the API.
 // The upload endpoint requires the X-WebFilez header, so it has to be allowed here.

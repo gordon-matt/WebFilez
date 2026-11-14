@@ -43,16 +43,16 @@ public class AzureBlobAzuriteTests : IAsyncLifetime
         await blobs.GetBlobContainerClient(uploadsContainer).CreateAsync(cancellationToken: Token);
         await blobs.GetBlobContainerClient(archiveContainer).CreateAsync(cancellationToken: Token);
 
-        provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddLogging()
             .AddWebFilezServices(configure: options =>
             {
                 options.Roots.Add(BlobRoot("uploads", "Uploads", uploadsContainer, "campaigns"));
                 options.Roots.Add(BlobRoot("archive", "Archive", archiveContainer, path: ""));
                 options.Thumbnails.CacheDirectory = Path.Combine(Path.GetTempPath(), "webfilez-azurite-thumbs");
-            })
-            .AddWebFilezAzureBlob()
-            .BuildServiceProvider(validateScopes: true);
+            });
+        new WebFilezBuilder(services).AddAzureBlob();
+        provider = services.BuildServiceProvider(validateScopes: true);
 
         scope = provider.CreateAsyncScope();
     }

@@ -4,7 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<Description>Google Cloud Storage provider for WebFilez. Register it with AddWebFilezGoogleCloud().</Description>
+		<Description>Google Cloud Storage provider for WebFilez. Chain it with AddGoogleCloud().</Description>
 		<PackageTags>file-manager;storage-provider;google-cloud;google-cloud-storage;gcs;webfilez</PackageTags>
 	</PropertyGroup>
 

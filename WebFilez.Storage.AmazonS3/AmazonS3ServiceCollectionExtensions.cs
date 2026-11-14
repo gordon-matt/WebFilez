@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using WebFilez.Services.Storage;
+using WebFilez;
 
 namespace WebFilez.Storage.AmazonS3;
 
@@ -8,7 +9,7 @@ namespace WebFilez.Storage.AmazonS3;
 /// </summary>
 public static class AmazonS3ServiceCollectionExtensions
 {
-    extension(IServiceCollection services)
+    extension(WebFilezBuilder builder)
     {
         /// <summary>
         /// Registers the Amazon S3 provider. A root selects it with <c>"Provider": "amazon-s3"</c>
@@ -17,11 +18,11 @@ public static class AmazonS3ServiceCollectionExtensions
         /// another S3-compatible endpoint. <c>Path</c>, or <c>Settings.Prefix</c>, is the folder
         /// inside the bucket. The bucket is not created for you.
         /// </summary>
-        public IServiceCollection AddWebFilezAmazonS3()
+        public WebFilezBuilder AddAmazonS3()
         {
-            services.AddSingleton<IStorageProvider, AmazonS3StorageProvider>();
-            services.AddSingleton<IStoragePublicUrl, AmazonS3PublicUrl>();
-            return services;
+            builder.Services.AddSingleton<IStorageProvider, AmazonS3StorageProvider>();
+            builder.Services.AddSingleton<IStoragePublicUrl, AmazonS3PublicUrl>();
+            return builder;
         }
     }
 }

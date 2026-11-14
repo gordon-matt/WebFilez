@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using WebFilez.Services.Images;
 using WebFilez.Services.Storage;
 
 namespace WebFilez.Services.FileSystem;
@@ -13,6 +14,7 @@ internal static class FileItems
         FilePermission permissions,
         IFileUrlResolver urls,
         bool allowExpiringUrls,
+        ThumbnailSupport thumbnails,
         CancellationToken cancellationToken = default)
     {
         var kind = FileKinds.Classify(entry.Name, entry.IsDirectory);
@@ -27,7 +29,7 @@ internal static class FileItems
             entry.IsDirectory ? null : Path.GetExtension(entry.Name),
             entry.IsHidden,
             permissions,
-            HasThumbnail: !entry.IsDirectory && FileKinds.SupportsThumbnail(entry.Name) && permissions.Has(FilePermission.Read),
+            HasThumbnail: !entry.IsDirectory && thumbnails.Supports(entry.Name) && permissions.Has(FilePermission.Read),
             PublicUrl: await urls.ResolveAsync(
                 FileUrlContext.For(root, virtualPath, entry.IsDirectory, allowExpiringUrls),
                 cancellationToken));

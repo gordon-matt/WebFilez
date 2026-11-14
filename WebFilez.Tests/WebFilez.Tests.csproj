@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.AspNetCore\WebFilez.AspNetCore.csproj" />
+		<ProjectReference Include="..\WebFilez.Plugins.Video\WebFilez.Plugins.Video.csproj" />
 		<ProjectReference Include="..\WebFilez.Components\WebFilez.Components.csproj" />
 		<ProjectReference Include="..\WebFilez.Storage.AmazonS3\WebFilez.Storage.AmazonS3.csproj" />
 		<ProjectReference Include="..\WebFilez.Storage.AzureBlob\WebFilez.Storage.AzureBlob.csproj" />

@@ -32,6 +32,7 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 | WebFilez.Plugins.FileRobot | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.FileRobot?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.FileRobot) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.FileRobot?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.FileRobot) |
 | WebFilez.Plugins.FortuneSheet | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.FortuneSheet?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.FortuneSheet) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.FortuneSheet?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.FortuneSheet) |
 | WebFilez.Plugins.SuperDoc | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.SuperDoc?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.SuperDoc) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.SuperDoc?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.SuperDoc) |
+| WebFilez.Plugins.Video | [![NuGet](https://img.shields.io/nuget/v/WebFilez.Plugins.Video?style=flat-square&logo=nuget&label=Version)](https://www.nuget.org/packages/WebFilez.Plugins.Video) | [![NuGet](https://img.shields.io/nuget/dt/WebFilez.Plugins.Video?style=flat-square&logo=nuget&label=Downloads)](https://www.nuget.org/packages/WebFilez.Plugins.Video) |
 
 ## Features
 
@@ -51,17 +52,18 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 
 | Project | Purpose |
 | --- | --- |
-| `WebFilez.Core` | DTOs, enums, `IFileManagerService`, `VirtualPath`, `ApiRoutes`. No dependencies beyond Ardalis.Result. |
+| `WebFilez.Core` | DTOs, enums, `IFileManagerService`, `VirtualPath`, `ApiRoutes`, and `WebFilezBuilder` for chained registration. |
 | `WebFilez.Services` | The file manager, the file system provider, options, access extension points, archives, thumbnails and transfers. |
-| `WebFilez.Storage.AzureBlob` | The Azure Blob Storage provider. Register it with `AddWebFilezAzureBlob()`. |
-| `WebFilez.Storage.AzureFiles` | The Azure Files provider. Register it with `AddWebFilezAzureFiles()`. |
-| `WebFilez.Storage.AmazonS3` | The Amazon S3 provider. Register it with `AddWebFilezAmazonS3()`. |
-| `WebFilez.Storage.GoogleCloud` | The Google Cloud Storage provider. Register it with `AddWebFilezGoogleCloud()`. |
+| `WebFilez.Storage.AzureBlob` | The Azure Blob Storage provider. Chain `.AddAzureBlob()`. |
+| `WebFilez.Storage.AzureFiles` | The Azure Files provider. Chain `.AddAzureFiles()`. |
+| `WebFilez.Storage.AmazonS3` | The Amazon S3 provider. Chain `.AddAmazonS3()`. |
+| `WebFilez.Storage.GoogleCloud` | The Google Cloud Storage provider. Chain `.AddGoogleCloud()`. |
 | `WebFilez.AspNetCore` | `AddWebFilez()` and `MapWebFilezApi()`: the HTTP API, returning ProblemDetails on failure. |
 | `WebFilez.Components` | The `FileManager` Razor component, its JavaScript and CSS, and an HTTP client for WebAssembly. Editors are registered by the host page; this project does not reference one. |
 | `WebFilez.Plugins.FileRobot` | Optional FileRobot image editor. Load its script and name it in `Editors`. The component does not reference this package. |
 | `WebFilez.Plugins.SuperDoc` | Optional SuperDoc editor for `.docx`. Load its script and name it in `Editors`. SuperDoc itself is not included; a commercial license key is supplied by the host. |
 | `WebFilez.Plugins.FortuneSheet` | Optional Fortune Sheet editor for `.xlsx` and `.csv`. Load its script and name it in `Editors`. Fortune Sheet itself is not included. |
+| `WebFilez.Plugins.Video` | Optional video thumbnails. Chain `.AddVideo()`. WebFilez does not reference this package. |
 | `WebFilez.CustomElements` | A Blazor WebAssembly app that registers `<wf-file-manager>` for React and plain HTML. |
 | `WebFilez.Tests` | xUnit tests for the path safety rules, the services, and an HTTP round trip. |
 | `WebFilez.Demo.*` | Blazor, MVC and React demos. |
@@ -351,6 +353,18 @@ GIF animation is flattened to one frame. SVG is never rendered inline, and brows
 <FileManager Editors="fortunesheet:.xlsx,.csv" />
 ```
 
+### Video thumbnails
+
+`WebFilez.Plugins.Video` is optional. Leave it out and only images are thumbnailed. With it registered, `.mp4`, `.webm`, `.mkv`, `.mov`, `.m4v`, `.avi`, `.wmv`, `.mpg` and `.mpeg` get a still from the middle of the file. That still is scaled to WebP and cached with the image thumbnails.
+
+```csharp
+builder.Services
+    .AddWebFilez(builder.Configuration)
+    .AddVideo(video => video.DownloadIfMissing = true);
+```
+
+ffmpeg and ffprobe are searched on the machine (PATH, Program Files, Homebrew, `/usr/bin`). `DownloadIfMissing` fetches the official build into an `ffmpeg` folder under the content root. That build is GPL-licensed, so the download stays off until you set the flag. If ffmpeg cannot be found or the download fails, the app still starts and those videos keep their normal icon. A file stored in a cloud root is copied to a temporary file first, because ffmpeg reads a local path.
+
 ## Layout
 
 The component fills its container's width and the `Height` you give it, and adapts its layout to the container rather than the window. Menus and dialogs are fixed-position overlays, so don't place the component inside an element with a CSS `transform`, `filter` or `perspective`. Those create a new containing block and misplace the overlays. To centre a modal around the picker, use flexbox or `<dialog>`, not `translate(-50%, -50%)`.
@@ -366,14 +380,16 @@ The component fills its container's width and the `Height` you give it, and adap
 
 ## Storage providers
 
-`Provider` selects where a root is stored. Leave it out, or set `filesystem`, and the root is a directory on disk. `azure-blob` stores it in an Azure Blob container. `azure-file` stores it in an Azure file share, which has real directories. `amazon-s3` stores it in an S3 bucket. `google-cloud` stores it in a Cloud Storage bucket. Register the providers beside `AddWebFilez`:
+`Provider` selects where a root is stored. Leave it out, or set `filesystem`, and the root is a directory on disk. `azure-blob` stores it in an Azure Blob container. `azure-file` stores it in an Azure file share, which has real directories. `amazon-s3` stores it in an S3 bucket. `google-cloud` stores it in a Cloud Storage bucket. Register the providers by chaining them from `AddWebFilez`:
 
 ```csharp
-builder.Services.AddWebFilez(builder.Configuration);
-builder.Services.AddWebFilezAzureBlob();
-builder.Services.AddWebFilezAzureFiles();
-builder.Services.AddWebFilezAmazonS3();
-builder.Services.AddWebFilezGoogleCloud();
+builder.Services
+    .AddWebFilez(builder.Configuration)
+    .AddComponents()
+    .AddAzureBlob()
+    .AddAzureFiles()
+    .AddAmazonS3()
+    .AddGoogleCloud();
 ```
 
 ```json
