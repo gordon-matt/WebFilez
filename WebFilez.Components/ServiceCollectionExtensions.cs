@@ -46,14 +46,14 @@ public static class ComponentsServiceCollectionExtensions
         }
     }
 
-    extension(WebFilezBuilder builder)
+    extension<TBuilder>(TBuilder builder) where TBuilder : IWebFilezBuilder
     {
         /// <summary>
         /// Registers the language catalogs. Built-in languages ship with the component. Point
         /// <see cref="WebFilezLocalizationOptions.Directory"/> at a folder of <c>{tag}.json</c>
         /// files to add or override a language. Safe to call before <c>AddWebFilezHttpClient</c>.
         /// </summary>
-        public WebFilezBuilder AddComponents(Action<WebFilezLocalizationOptions>? configure = null)
+        public TBuilder AddComponents(Action<WebFilezLocalizationOptions>? configure = null)
         {
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IWebFilezLocalizer)))
             {

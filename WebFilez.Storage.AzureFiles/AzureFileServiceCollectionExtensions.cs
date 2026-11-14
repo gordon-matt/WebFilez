@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using WebFilez.Services.Storage;
-using WebFilez;
 
 namespace WebFilez.Storage.AzureFiles;
 
@@ -9,14 +8,14 @@ namespace WebFilez.Storage.AzureFiles;
 /// </summary>
 public static class AzureFileServiceCollectionExtensions
 {
-    extension(WebFilezBuilder builder)
+    extension<TBuilder>(TBuilder builder) where TBuilder : IWebFilezBuilder
     {
         /// <summary>
         /// Registers the Azure Files provider. A root selects it with <c>"Provider": "azure-file"</c>
         /// and supplies <c>ConnectionString</c> and <c>Share</c> in <c>Settings</c>. <c>Path</c>, or
         /// <c>Settings.Prefix</c>, is the directory inside the share. The share is not created.
         /// </summary>
-        public WebFilezBuilder AddAzureFiles()
+        public TBuilder AddAzureFiles()
         {
             builder.Services.AddSingleton<IStorageProvider, AzureFileStorageProvider>();
             builder.Services.AddSingleton<IStoragePublicUrl, AzureFilePublicUrl>();

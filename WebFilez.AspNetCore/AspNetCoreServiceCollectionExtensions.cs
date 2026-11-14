@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -20,7 +19,7 @@ public static class AspNetCoreServiceCollectionExtensions
         /// The returned builder is what optional packages chain from, for example
         /// <c>.AddComponents()</c> or <c>.AddAzureBlob()</c>.
         /// </summary>
-        public WebFilezBuilder AddWebFilez(
+        public IWebFilezBuilder AddWebFilez(
             IConfiguration? configuration = null,
             Action<WebFilezOptions>? configure = null)
         {

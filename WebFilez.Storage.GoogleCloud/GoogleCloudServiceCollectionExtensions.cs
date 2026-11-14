@@ -1,6 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
 using WebFilez.Services.Storage;
-using WebFilez;
 
 namespace WebFilez.Storage.GoogleCloud;
 
@@ -9,7 +8,7 @@ namespace WebFilez.Storage.GoogleCloud;
 /// </summary>
 public static class GoogleCloudServiceCollectionExtensions
 {
-    extension(WebFilezBuilder builder)
+    extension<TBuilder>(TBuilder builder) where TBuilder : IWebFilezBuilder
     {
         /// <summary>
         /// Registers the Google Cloud Storage provider. A root selects it with
@@ -19,7 +18,7 @@ public static class GoogleCloudServiceCollectionExtensions
         /// endpoint, and skips credentials when none are set. <c>Path</c>, or
         /// <c>Settings.Prefix</c>, is the folder inside the bucket. The bucket is not created for you.
         /// </summary>
-        public WebFilezBuilder AddGoogleCloud()
+        public TBuilder AddGoogleCloud()
         {
             builder.Services.AddSingleton<IStorageProvider, GoogleCloudStorageProvider>();
             builder.Services.AddSingleton<IStoragePublicUrl, GoogleCloudPublicUrl>();

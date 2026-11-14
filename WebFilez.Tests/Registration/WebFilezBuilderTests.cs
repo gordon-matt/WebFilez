@@ -16,7 +16,7 @@ public class WebFilezBuilderTests
     {
         var services = new ServiceCollection();
 
-        WebFilezBuilder builder = services
+        var builder = services
             .AddWebFilez()
             .AddVideo()
             .AddComponents()
@@ -27,7 +27,7 @@ public class WebFilezBuilderTests
 
         Assert.Same(services, builder.Services);
 
-        using ServiceProvider provider = services.BuildServiceProvider();
+        using var provider = services.BuildServiceProvider();
         Assert.Contains(provider.GetServices<IStorageProvider>(), provider => provider.Key == AzureBlobStorageProvider.ProviderKey);
         Assert.Contains(provider.GetServices<IStorageProvider>(), provider => provider.Key == AzureFileStorageProvider.ProviderKey);
         Assert.Contains(provider.GetServices<IStorageProvider>(), provider => provider.Key == AmazonS3StorageProvider.ProviderKey);
