@@ -220,7 +220,20 @@ public sealed partial class FileManager
 
     private bool ShowingSearch => searchScope != SearchScope.Folder && !string.IsNullOrWhiteSpace(filter);
 
-    private IReadOnlyList<ListingEntry> SelectedRows() => Rows().Where(row => selection.Contains(row.Key)).ToList();
+    private ListingEntry? menuAnchor;
+
+    private IReadOnlyList<ListingEntry> SelectedRows()
+    {
+        var rows = Rows().Where(row => selection.Contains(row.Key)).ToList();
+
+        // A folder chosen from the tree is not in the open listing, so the menu still has to see it.
+        if (menuAnchor is not null && selection.Contains(menuAnchor.Key) && rows.All(row => row.Key != menuAnchor.Key))
+        {
+            rows.Add(menuAnchor);
+        }
+
+        return rows;
+    }
 
     private IReadOnlyList<FileSystemItemDto> SelectedItems
     {
@@ -402,6 +415,8 @@ public sealed partial class FileManager
                 text = Locales.Resolve(storedLanguage);
                 StateHasChanged();
             }
+
+            await LoadPlacesAsync();
         }
 
         await RefreshMatchedEditorsAsync();
@@ -459,6 +474,11 @@ public sealed partial class FileManager
         pageSize = 500;
 
         await LoadAsync(path);
+
+        if (listing is not null && rootId is not null)
+        {
+            await RememberRecentAsync(rootId, listing.Path);
+        }
 
         if (notify && listing is not null)
         {

@@ -1,0 +1,87 @@
+@using WebFilez.Components.Places
+
+<div class="wf-places">
+    <button type="button" class="wf-places-toggle" aria-expanded="@(Expanded ? "true" : "false")"
+            aria-label="@(Expanded ? Text.Format("tree.collapse", Text["places.label"]) : Text.Format("tree.expand", Text["places.label"]))"
+            @onclick="ToggleAsync">
+        <Icon Name="@(Expanded ? "chevron-down" : "chevron-up")" />
+        <span>@Text["places.label"]</span>
+    </button>
+    @if (Expanded)
+    {
+    <div class="wf-places-tabs" role="tablist" aria-label="@Text["places.label"]">
+        <button type="button" role="tab" class="@(showingFavorites ? "wf-active" : null)"
+                aria-selected="@(showingFavorites ? "true" : "false")" @onclick="() => showingFavorites = true">
+            <Icon Name="star" />
+            <span>@Text["places.favorites"]</span>
+        </button>
+        <button type="button" role="tab" class="@(showingFavorites ? null : "wf-active")"
+                aria-selected="@(!showingFavorites ? "true" : "false")" @onclick="() => showingFavorites = false">
+            <Icon Name="clock" />
+            <span>@Text["places.recent"]</span>
+        </button>
+    </div>
+
+    @if ((showingFavorites ? Favorites : Recent).Count == 0)
+    {
+        <p class="wf-places-empty">@Text[showingFavorites ? "places.favoritesEmpty" : "places.recentEmpty"]</p>
+    }
+    else
+    {
+        <div class="wf-places-list" role="tabpanel">
+            @foreach (var place in showingFavorites ? Favorites : Recent)
+            {
+                bool current = string.Equals(place.RootId, RootId, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(place.Path, CurrentPath, StringComparison.OrdinalIgnoreCase);
+                <div class="wf-tree-row @(current ? "wf-tree-current" : null)"
+                     @oncontextmenu="e => OnContextMenu.InvokeAsync((place.RootId, place.Path, place.Name, e))"
+                     @oncontextmenu:preventDefault="true"
+                     @oncontextmenu:stopPropagation="true">
+                    <button type="button" class="wf-tree-label" title="@place.Name"
+                            @onclick="() => OnOpen.InvokeAsync(place)">
+                        <Icon Name="folder" Class="wf-kind-folder" />
+                        <span>@place.Name</span>
+                    </button>
+                    @if (showingFavorites)
+                    {
+                        <button type="button" class="wf-tree-toggle" title="@Text["menu.removeFavorite"]"
+                                aria-label="@Text["menu.removeFavorite"]"
+                                @onclick="() => OnRemoveFavorite.InvokeAsync(place)">
+                            <Icon Name="x" />
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+    }
+</div>
+
+@code {
+    private bool showingFavorites = true;
+
+    /// <summary>When false, only the header is shown so the folder tree keeps the pane.</summary>
+    [Parameter] public bool Expanded { get; set; } = true;
+
+    [Parameter] public EventCallback<bool> ExpandedChanged { get; set; }
+
+    [Parameter] public EventCallback<(string RootId, string Path, string Name, MouseEventArgs Args)> OnContextMenu { get; set; }
+
+    private Task ToggleAsync() => ExpandedChanged.InvokeAsync(!Expanded);
+
+    /// <summary>Pinned folders, newest first.</summary>
+    [Parameter] public IReadOnlyList<SavedPlace> Favorites { get; set; } = [];
+
+    /// <summary>Folders opened in this browser, newest first.</summary>
+    [Parameter] public IReadOnlyList<SavedPlace> Recent { get; set; } = [];
+
+    [Parameter] public string? RootId { get; set; }
+
+    [Parameter] public string CurrentPath { get; set; } = Constants.RootPath;
+
+    [Parameter] public EventCallback<SavedPlace> OnOpen { get; set; }
+
+    [Parameter] public EventCallback<SavedPlace> OnRemoveFavorite { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
+}

@@ -7,9 +7,40 @@ public sealed partial class FileManager
 {
     // ---------------------------------------------------------------- context menus
 
+    private async Task ShowTreeMenuAsync((string RootId, string Path, string Name, MouseEventArgs Args) e)
+    {
+        openMenu = null;
+        var detail = await Service.GetDetailAsync(e.RootId, e.Path);
+        var item = detail.IsSuccess
+            ? new FileSystemItemDto(
+                detail.Value.Name,
+                detail.Value.Path,
+                true,
+                detail.Value.SizeBytes,
+                detail.Value.ModifiedAt,
+                FileKind.Folder,
+                null,
+                false,
+                detail.Value.Permissions,
+                false,
+                detail.Value.PublicUrl)
+            : new FileSystemItemDto(e.Name, e.Path, true, 0, default, FileKind.Folder, null, false, FilePermission.None, false, null);
+
+        var entry = new ListingEntry(KeyFor(e.RootId, e.Path), e.RootId, item);
+        selection.Clear();
+        selection.Add(entry.Key);
+        menuAnchor = entry;
+        activeKey = entry.Key;
+        rangeAnchor = entry.Key;
+        menuX = e.Args.ClientX;
+        menuY = e.Args.ClientY;
+        contextMenu = await BuildSelectionMenu(entry);
+    }
+
     private async Task ShowItemMenuAsync((ListingEntry Entry, MouseEventArgs Args) e)
     {
         openMenu = null;
+        menuAnchor = null;
 
         // Right-clicking outside the selection replaces it: the menu must act on what the user
         // just pointed at.
@@ -30,6 +61,7 @@ public sealed partial class FileManager
     private void ShowBackgroundMenu(MouseEventArgs args)
     {
         openMenu = null;
+        menuAnchor = null;
         selection.Clear();
         detail = null;
         menuX = args.ClientX;
@@ -46,6 +78,7 @@ public sealed partial class FileManager
         if (single && item.IsDirectory)
         {
             entries.Add(new(Text["menu.open"], "folder-open", () => NavigateAsync(entry.RootId, item.Path)));
+            entries.Add(FavoriteEntry(entry.RootId, item.Path, item.Name));
         }
         else if (single)
         {
@@ -158,11 +191,21 @@ public sealed partial class FileManager
             entries.Add(new(Text["menu.selectAll"], "check-circle", () => SelectAllAsync(true), Shortcut: "Ctrl+A"));
         }
 
+        if (rootId is not null)
+        {
+            entries.Add(FavoriteEntry(rootId, CurrentPath, PlaceName(rootId, CurrentPath)));
+        }
+
         entries.Add(new(Text["menu.refresh"], "refresh", RefreshAfterChangeAsync));
         entries.Add(new(Text["menu.folderDetails"], "info", ShowDetailsAsync));
 
         return entries;
     }
+
+    private MenuEntry FavoriteEntry(string itemRoot, string path, string name) =>
+        IsFavorite(itemRoot, path)
+            ? new(Text["menu.removeFavorite"], "star", () => ToggleFavoriteAsync(itemRoot, path, name))
+            : new(Text["menu.addFavorite"], "star", () => ToggleFavoriteAsync(itemRoot, path, name));
 
     private async Task OnContextActionAsync(MenuEntry entry)
     {

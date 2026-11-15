@@ -103,6 +103,14 @@
                     {
                         <span class="wf-toolbar-divider"></span>
                     }
+                    @if (CanToggleFavorite)
+                    {
+                        <button type="button" class="wf-icon-button"
+                                title="@Text[SelectedFolderIsFavorite ? "menu.removeFavorite" : "menu.addFavorite"]"
+                                @onclick="ToggleSelectedFavoriteAsync">
+                            <Icon Name="star" />
+                        </button>
+                    }
                     @if (CanPreviewSelection)
                     {
                         <button type="button" class="wf-icon-button" title="@Text["menu.preview"]" @onclick="PreviewSelectionAsync"><Icon Name="eye" /></button>
@@ -225,7 +233,12 @@
                 <div class="wf-tree-pane">
                     <FolderTree @ref="tree" Service="Service" Roots="roots" RootId="@rootId" CurrentPath="@CurrentPath" StartPath="@Floor"
                                 OnNavigate="e => NavigateAsync(e.RootId, e.Path)"
-                                OnDropOnto="e => DropOntoAsync(e.RootId, e.Path, e.Args)" />
+                                OnDropOnto="e => DropOntoAsync(e.RootId, e.Path, e.Args)"
+                                OnContextMenu="ShowTreeMenuAsync" />
+                    <PlacesPane Favorites="VisibleFavorites" Recent="VisibleRecent" RootId="@rootId" CurrentPath="@CurrentPath"
+                                Expanded="placesExpanded" ExpandedChanged="SetPlacesExpandedAsync"
+                                OnOpen="place => NavigateAsync(place.RootId, place.Path)" OnRemoveFavorite="RemoveFavoriteAsync"
+                                OnContextMenu="ShowTreeMenuAsync" />
                 </div>
             }
 

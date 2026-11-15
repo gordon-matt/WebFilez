@@ -38,4 +38,5 @@ public sealed record EditorFile(
 [JsonSerializable(typeof(FileLocation))]
 [JsonSerializable(typeof(EditorFile))]
 [JsonSerializable(typeof(FileEditor[]))]
+[JsonSerializable(typeof(Places.SavedPlace[]))]
 internal sealed partial class FileManagerEventJsonContext : JsonSerializerContext;
