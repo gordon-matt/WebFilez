@@ -558,12 +558,7 @@ function onKeyDown(e, state) {
         return;
     }
 
-    if (target instanceof HTMLElement && (target.isContentEditable || target.closest('button, a, input, textarea, select, [role="dialog"], [role="alertdialog"]'))) {
-        return;
-    }
-
-    // Shortcuts apply to the file list. A focused toolbar button keeps its own keys.
-    if (!(target instanceof Element) || !target.closest('.wf-listing')) {
+    if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select, [role="dialog"], [role="alertdialog"]'))) {
         return;
     }
 
@@ -578,11 +573,26 @@ function onKeyDown(e, state) {
         parts.push('ctrl');
     }
 
+    if (e.altKey) {
+        parts.push('alt');
+    }
+
     parts.push(key);
     const combo = parts.join('+');
 
+    // Back, forward, undo and redo also work from the toolbar, so Alt+Left does not leave the
+    // page while the file manager is focused. Other shortcuts stay on the file list, and a
+    // focused button keeps keys such as Enter.
+    const historyKey = combo === 'alt+ArrowLeft' || combo === 'alt+ArrowRight'
+        || combo === 'ctrl+z' || combo === 'ctrl+y' || combo === 'shift+ctrl+z';
+    if (!historyKey && (!(target instanceof Element) || !target.closest('.wf-listing') || target.closest('button, a'))) {
+        return;
+    }
+
     const handled = [
-        'ctrl+a', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'Delete', 'F2', 'Escape', 'Enter', 'Backspace',
+        'ctrl+a', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'ctrl+z', 'ctrl+y', 'shift+ctrl+z',
+        'alt+ArrowLeft', 'alt+ArrowRight',
+        'Delete', 'F2', 'Escape', 'Enter', 'Backspace',
         'Space', 'shift+Space',
         'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Home', 'End',
         'shift+ArrowUp', 'shift+ArrowDown', 'shift+ArrowLeft', 'shift+ArrowRight', 'shift+Home', 'shift+End',

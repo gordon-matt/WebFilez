@@ -27,4 +27,8 @@
 		<EmbeddedResource Include="Locales\*.json" LogicalName="WebFilez.Components.Locales.%(Filename)%(Extension)" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="WebFilez.Tests" />
+	</ItemGroup>
+
 </Project>

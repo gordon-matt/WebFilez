@@ -16,16 +16,16 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.14" />
 		<PackageReference Include="SharpCompress" Version="0.50.9" />
-		<PackageReference Include="SkiaSharp" Version="4.156.0" />
+		<PackageReference Include="SkiaSharp" Version="4.156.1" />
 		<!-- The default Linux asset expects libfontconfig and libfreetype on the host. Containers
 		     usually do not have them; this build bundles those libraries. The direct reference
 		     with ExcludeAssets drops the dependency SkiaSharp would otherwise pull in. -->
-		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.156.0">
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.156.1">
 			<ExcludeAssets>all</ExcludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>none</IncludeAssets>
 		</PackageReference>
-		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.156.0" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.156.1" />
 	</ItemGroup>
 
 	<ItemGroup>

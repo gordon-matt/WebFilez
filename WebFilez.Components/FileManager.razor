@@ -15,6 +15,14 @@
                         <Icon Name="panel-left" />
                     </button>
                 }
+                <button type="button" class="wf-icon-button" title="@Text["toolbar.back"]"
+                        disabled="@(!CanGoBack)" @onclick="GoBackAsync">
+                    <Icon Name="@(Text.IsRightToLeft ? "arrow-right" : "arrow-left")" />
+                </button>
+                <button type="button" class="wf-icon-button" title="@Text["toolbar.forward"]"
+                        disabled="@(!CanGoForward)" @onclick="GoForwardAsync">
+                    <Icon Name="@(Text.IsRightToLeft ? "arrow-left" : "arrow-right")" />
+                </button>
                 <button type="button" class="wf-icon-button" title="@Text["toolbar.up"]"
                         disabled="@IsAtFloor" @onclick="GoUpAsync">
                     <Icon Name="arrow-up" />
@@ -44,6 +52,18 @@
             </div>
 
             <div class="wf-toolbar-row">
+                <button type="button" class="wf-icon-button" title="@Text["toolbar.undo"]"
+                        disabled="@(!CanUndo)" @onclick="UndoAsync">
+                    <Icon Name="undo" />
+                </button>
+                <button type="button" class="wf-icon-button" title="@Text["toolbar.redo"]"
+                        disabled="@(!CanRedo)" @onclick="RedoAsync">
+                    <Icon Name="redo" />
+                </button>
+                @if (Can(FilePermission.Create) || selection.Count > 0 || clipboard is not null)
+                {
+                    <span class="wf-toolbar-divider"></span>
+                }
                 @if (Can(FilePermission.Create))
                 {
                     <div class="wf-dropdown">
@@ -354,7 +374,7 @@
                       Interop="interop"
                       Toasts="toasts"
                       ConfirmDiscard="ConfirmDiscardAsync"
-                      OnSaved="_ => RefreshAfterChangeAsync()" />
+                      OnEdited="OnTextSavedAsync" />
 
     <UploadTray Uploads="uploads" OnCancel="CancelUploadAsync" OnDismiss="() => uploads.Clear()" />
 

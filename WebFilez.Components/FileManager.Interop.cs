@@ -99,6 +99,23 @@ public sealed partial class FileManager
             case "Backspace":
                 await GoUpAsync();
                 break;
+
+            case "alt+ArrowLeft":
+                await GoBackAsync();
+                break;
+
+            case "alt+ArrowRight":
+                await GoForwardAsync();
+                break;
+
+            case "ctrl+z":
+                await UndoAsync();
+                break;
+
+            case "ctrl+y":
+            case "shift+ctrl+z":
+                await RedoAsync();
+                break;
         }
 
         StateHasChanged();

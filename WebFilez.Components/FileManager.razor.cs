@@ -345,6 +345,10 @@ public sealed partial class FileManager
 
         ApplyScope();
         await OpenAsync(rootId, VirtualPath.Normalize(Path), notify: false);
+        if (rootId is not null && listing is not null)
+        {
+            navigation.Reset(new History.BrowsePlace(rootId, listing.Path));
+        }
     }
 
     /// <summary>
@@ -435,7 +439,9 @@ public sealed partial class FileManager
             await LeaveSearchAsync();
         }
 
+        History.BrowsePlace? leaving = rootId is null ? null : new History.BrowsePlace(rootId, CurrentPath);
         await OpenAsync(targetRoot, path, notify: true);
+        RememberVisit(leaving);
     }
 
     private async Task OpenAsync(string targetRoot, string path, bool notify)

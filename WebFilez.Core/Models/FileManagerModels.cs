@@ -169,10 +169,14 @@ public sealed record TransferRequest(
 /// <summary>
 /// Represents the file operation result DTO.
 /// </summary>
-/// <param name="Path">The path.</param>
+/// <param name="Path">The path the operation was asked to change.</param>
 /// <param name="Succeeded">The succeeded.</param>
 /// <param name="Error">The error.</param>
-public sealed record FileOperationResultDto(string Path, bool Succeeded, string? Error);
+/// <param name="ResultPath">
+/// Where a successful copy or move landed. The same as <paramref name="Path"/> when a move
+/// changed nothing. Absent when the operation did not write.
+/// </param>
+public sealed record FileOperationResultDto(string Path, bool Succeeded, string? Error, string? ResultPath = null);
 
 /// <summary>
 /// Outcome of an operation over several items. Partial success is normal: one locked file

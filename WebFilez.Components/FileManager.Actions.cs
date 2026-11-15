@@ -199,6 +199,7 @@ public sealed partial class FileManager
         }
 
         toasts.Success(Text.Format("toast.created", result.Value.Name));
+        RememberCreate(rootId, result.Value, isDirectory: true);
         await RefreshAfterChangeAsync();
         selection.Clear();
         string createdKey = SelectionKey(rootId, result.Value.Path);
@@ -226,6 +227,7 @@ public sealed partial class FileManager
             return;
         }
 
+        RememberCreate(rootId, result.Value, isDirectory: false);
         await LoadAsync();
 
         // Straight into the editor: an empty file is never the actual goal.
@@ -319,6 +321,12 @@ public sealed partial class FileManager
         }
 
         ShowBulk(result.Value, current.IsCut ? "moved" : "copied");
+        RememberTransfer(new TransferRequest(
+            current.RootId,
+            [.. current.Paths],
+            targetRoot,
+            destination ?? CurrentPath,
+            IsCopy: !current.IsCut), result.Value);
 
         // A cut is consumed by the paste; a copy stays so it can be pasted into several folders.
         if (current.IsCut)
@@ -355,6 +363,7 @@ public sealed partial class FileManager
         }
 
         ShowBulk(result.Value, "duplicated");
+        RememberTransfer(new TransferRequest(ActionRootId, [.. rows.Select(row => row.Item.Path)], ActionRootId, destination, IsCopy: true), result.Value);
         await RefreshAfterChangeAsync();
     }
 
@@ -416,6 +425,7 @@ public sealed partial class FileManager
         }
 
         ShowBulk(result.Value, isCopy ? "copied" : "moved");
+        RememberTransfer(new TransferRequest(sourceRoot, paths, targetRoot, targetPath, isCopy), result.Value);
         await RefreshAfterChangeAsync();
     }
 
@@ -443,6 +453,7 @@ public sealed partial class FileManager
         }
 
         toasts.Success(Text.Format("toast.renamed", result.Value.Name));
+        RememberRename(itemRoot, item, result.Value);
         await RefreshAfterChangeAsync();
         selection.Clear();
         string renamedKey = SelectionKey(itemRoot, result.Value.Path);

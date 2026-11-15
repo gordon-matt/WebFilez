@@ -152,11 +152,13 @@ public class FileManagerServiceTests : ServiceTest
         var across = (await Service.TransferAsync(
             new TransferRequest("docs", ["/guide.md"], "files", "/inbox", IsCopy: true), Token)).ShouldSucceed();
         Assert.True(across.IsCompleteSuccess);
+        Assert.Equal("/inbox/guide.md", across.Results[0].ResultPath);
         Assert.True(Files.Exists("inbox/guide.md"));
 
         var duplicate = (await Service.TransferAsync(
             new TransferRequest("files", ["/report.pdf"], "files", "/", IsCopy: true), Token)).ShouldSucceed();
         Assert.True(duplicate.IsCompleteSuccess);
+        Assert.Equal("/report (2).pdf", duplicate.Results[0].ResultPath);
         Assert.True(Files.Exists("report (2).pdf"));
     }
 
@@ -173,6 +175,7 @@ public class FileManagerServiceTests : ServiceTest
         var move = (await Service.TransferAsync(
             new TransferRequest("files", ["/b.txt"], "files", "/dir", IsCopy: false), Token)).ShouldSucceed();
         Assert.True(move.IsCompleteSuccess);
+        Assert.Equal("/dir/b.txt", move.Results[0].ResultPath);
         Assert.True(Files.Exists("dir/b.txt"));
         Assert.False(Files.Exists("b.txt"));
     }

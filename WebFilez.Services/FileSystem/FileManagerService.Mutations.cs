@@ -343,7 +343,7 @@ public sealed partial class FileManagerService
         bool isSameLocation = sameRoot && origin.Storage.AreSame(origin.Location, target);
         if (isSameLocation && !request.IsCopy)
         {
-            return new FileOperationResultDto(origin.VirtualPath, true, null);
+            return new FileOperationResultDto(origin.VirtualPath, true, null, origin.VirtualPath);
         }
 
         // Copying onto itself duplicates under a free name, the way a desktop file manager does.
@@ -380,7 +380,7 @@ public sealed partial class FileManagerService
                 destination.Root.Id),
             cancellationToken);
 
-        return new FileOperationResultDto(origin.VirtualPath, true, null);
+        return new FileOperationResultDto(origin.VirtualPath, true, null, destinationVirtual);
     }
 
     /// <summary>

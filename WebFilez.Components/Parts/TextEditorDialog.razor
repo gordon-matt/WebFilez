@@ -67,6 +67,9 @@
     /// <summary>Raised after a successful save, so the listing can refresh sizes and dates.</summary>
     [Parameter] public EventCallback<FileSystemItemDto> OnSaved { get; set; }
 
+    /// <summary>The text that was replaced and the text that was written, so the save can be undone.</summary>
+    [Parameter] public EventCallback<TextEdit> OnEdited { get; set; }
+
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     /// <summary>
@@ -131,6 +134,7 @@
         }
 
         isSaving = true;
+        string previous = file.Content;
         var result = await Service.SaveTextAsync(new SaveTextFileRequest(rootId, file.Path, content, openedModifiedAt));
         isSaving = false;
 
@@ -144,6 +148,7 @@
         openedModifiedAt = result.Value.ModifiedAt;
         Toasts.Success(Text.Format("toast.saved", file.Name));
 
+        await OnEdited.InvokeAsync(new TextEdit(rootId, file.Path, previous, content));
         await OnSaved.InvokeAsync(result.Value);
     }
 
