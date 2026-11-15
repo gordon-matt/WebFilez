@@ -3,9 +3,24 @@
 An embeddable web file manager for .NET 10, in the spirit of elFinder and Responsive File Manager. It is written in Blazor and also runs in ASP.NET Core MVC, React, or any HTML page through a custom element.
 
 ## Screenshots
+
+### Dark or Light Themes
+
 <img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/Light.png" alt="Light Theme" width="100%" />
 
 <img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/Dark.png" alt="Dark Theme" width="100%" />
+
+### Edit images with the FileRobot Plugin
+
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/FileRobot.png" alt="FileRobot Plugin" width="100%" />
+
+### Edit documents with the SuperDoc Plugin
+
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/SuperDoc.png" alt="SuperDoc Plugin" width="100%" />
+
+### Edit spreadsheets and CSV files with the FortuneSheet Plugin
+
+<img src="https://github.com/gordon-matt/WebFilez/blob/master/_Misc/Screenshots/FortuneSheet.png" alt="FortuneSheet Plugin" width="100%" />
 
 ## Core NuGet Packages
 
