@@ -166,6 +166,38 @@ public sealed class WebFilezText
 
                 break;
 
+            case "pl":
+                if (count == 1)
+                {
+                    yield return "one";
+                }
+                else if (count % 10 is >= 2 and <= 4 && count % 100 is not (>= 12 and <= 14))
+                {
+                    yield return "few";
+                }
+                else
+                {
+                    yield return "many";
+                }
+
+                break;
+
+            case "ru":
+                if (count % 10 == 1 && count % 100 != 11)
+                {
+                    yield return "one";
+                }
+                else if (count % 10 is >= 2 and <= 4 && count % 100 is not (>= 12 and <= 14))
+                {
+                    yield return "few";
+                }
+                else
+                {
+                    yield return "many";
+                }
+
+                break;
+
             case "zh":
             case "ja":
             case "ko":

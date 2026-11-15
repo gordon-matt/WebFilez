@@ -427,6 +427,7 @@ public sealed partial class FileManager
             }
 
             await LoadPlacesAsync();
+            await RestoreRememberedAsync();
         }
 
         await RefreshMatchedEditorsAsync();
@@ -513,6 +514,104 @@ public sealed partial class FileManager
         {
             await LoadDetailAsync();
         }
+
+        await RememberPlaceAsync();
+    }
+
+    /// <summary>The host named a root or a folder, so this instance stays where it was put.</summary>
+    private bool HostPlaced => !string.IsNullOrWhiteSpace(Root) || !string.IsNullOrWhiteSpace(Path);
+
+    private bool placeLoaded;
+
+    private async Task RestoreRememberedAsync()
+    {
+        if (HostPlaced)
+        {
+            placeLoaded = true;
+            return;
+        }
+
+        await ApplyRememberedSortAsync();
+        (string RootId, string Path)? remembered = await ReadRememberedPlaceAsync();
+        placeLoaded = true;
+
+        if (remembered is { } place
+            && rootId is not null
+            && (!place.RootId.Equals(rootId, StringComparison.OrdinalIgnoreCase)
+                || !place.Path.Equals(CurrentPath, StringComparison.OrdinalIgnoreCase)))
+        {
+            await OpenAsync(place.RootId, place.Path, notify: false);
+            if (rootId is not null && listing is not null)
+            {
+                navigation.Reset(new History.BrowsePlace(rootId, listing.Path));
+            }
+
+            return;
+        }
+
+        if (sortBy != ListingSortField.Name || descending)
+        {
+            await RefreshViewAsync();
+        }
+    }
+
+    private async Task ApplyRememberedSortAsync()
+    {
+        if (HostPlaced || await interop.GetStoredAsync("sort") is not { Length: > 0 } stored)
+        {
+            return;
+        }
+
+        if (TryReadSort(stored, out ListingSortField field, out bool storedDescending))
+        {
+            sortBy = field;
+            descending = storedDescending;
+        }
+    }
+
+    private async Task<(string RootId, string Path)?> ReadRememberedPlaceAsync()
+    {
+        if (HostPlaced || await interop.GetStoredAsync("place") is not { Length: > 0 } stored)
+        {
+            return null;
+        }
+
+        int split = stored.IndexOf('\n');
+        if (split <= 0 || split == stored.Length - 1)
+        {
+            return null;
+        }
+
+        string id = stored[..split];
+        string? known = roots.FirstOrDefault(root => root.Id.Equals(id, StringComparison.OrdinalIgnoreCase))?.Id;
+        if (known is null)
+        {
+            return null;
+        }
+
+        return (known, VirtualPath.Normalize(stored[(split + 1)..]));
+    }
+
+    private async Task RememberPlaceAsync()
+    {
+        if (!placeLoaded || HostPlaced || rootId is null || listing is null)
+        {
+            return;
+        }
+
+        await interop.SetStoredAsync("place", rootId + "\n" + listing.Path);
+    }
+
+    private static bool TryReadSort(string stored, out ListingSortField field, out bool storedDescending)
+    {
+        storedDescending = stored.EndsWith(":desc", StringComparison.OrdinalIgnoreCase);
+        string name = stored;
+        if (storedDescending || stored.EndsWith(":asc", StringComparison.OrdinalIgnoreCase))
+        {
+            name = stored[..stored.LastIndexOf(':')];
+        }
+
+        return Enum.TryParse(name, ignoreCase: true, out field);
     }
 
     private Task LoadAsync() => LoadAsync(CurrentPath);
@@ -689,6 +788,11 @@ public sealed partial class FileManager
         // Choosing the active field again flips direction, which is what a column header implies.
         descending = sortBy == field && !descending;
         sortBy = field;
+        if (!HostPlaced)
+        {
+            await interop.SetStoredAsync("sort", descending ? $"{sortBy}:desc" : sortBy.ToString());
+        }
+
         await RefreshViewAsync();
     }
 
@@ -832,9 +936,48 @@ public sealed partial class FileManager
         await LoadDetailAsync();
     }
 
-    private void ClearSelection()
+    private async Task InvertSelectionAsync()
     {
-        // Only clicks that reach the background get here; item clicks stop propagation.
+        if (SelectionMode == Constants.SelectionModes.Single)
+        {
+            return;
+        }
+
+        if (!ShowingSearch && listing is { } current && current.TotalCount > current.Items.Count)
+        {
+            pageSize = Math.Min(current.TotalCount, 10_000);
+            await LoadAsync();
+        }
+
+        var next = new HashSet<string>(StringComparer.Ordinal);
+        foreach (ListingEntry row in Rows())
+        {
+            if ((!IsPicker || IsSelectable(row.Item)) && !selection.Contains(row.Key))
+            {
+                next.Add(row.Key);
+            }
+        }
+
+        selection.Clear();
+        selection.UnionWith(next);
+        if (Rows() is { Count: > 0 } rows)
+        {
+            rangeAnchor ??= rows[0].Key;
+            activeKey ??= rows[0].Key;
+        }
+
+        await LoadDetailAsync();
+    }
+
+    private void ClearSelection(MouseEventArgs args)
+    {
+        // A right-click opens the background menu, which can invert the selection. Only a primary
+        // click on the empty listing drops what is selected. Item clicks stop propagation.
+        if (args.Button != 0)
+        {
+            return;
+        }
+
         selection.Clear();
         rangeAnchor = null;
         activeKey = null;

@@ -68,6 +68,10 @@ public sealed partial class FileManager
                 await SelectAllAsync(true);
                 break;
 
+            case "shift+ctrl+i" when SelectionMode != Constants.SelectionModes.Single:
+                await InvertSelectionAsync();
+                break;
+
             case "Delete" when CanOnSelection(FilePermission.Delete):
                 await DeleteAsync();
                 break;

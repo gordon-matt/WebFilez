@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Cargar carpeta…",
   "menu.paste": "Pegar {0}",
   "menu.selectAll": "Seleccionar todo",
+  "menu.selectInvert": "Invertir selección",
   "menu.refresh": "Actualizar",
   "menu.folderDetails": "Detalles de la carpeta",
   "dialog.cancel": "Cancelar",

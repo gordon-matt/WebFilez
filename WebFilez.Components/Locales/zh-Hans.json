@@ -94,6 +94,7 @@
   "menu.uploadFolder": "上传文件夹…",
   "menu.paste": "粘贴 {0}",
   "menu.selectAll": "全选",
+  "menu.selectInvert": "反选",
   "menu.refresh": "刷新",
   "menu.folderDetails": "文件夹详细信息",
   "dialog.cancel": "取消",

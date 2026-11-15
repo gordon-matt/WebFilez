@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Enviar pasta…",
   "menu.paste": "Colar {0}",
   "menu.selectAll": "Selecionar tudo",
+  "menu.selectInvert": "Inverter seleção",
   "menu.refresh": "Atualizar",
   "menu.folderDetails": "Detalhes da pasta",
   "dialog.cancel": "Cancelar",

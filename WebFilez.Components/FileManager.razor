@@ -100,6 +100,14 @@
                     </button>
                 }
 
+                @if (SelectionMode != Constants.SelectionModes.Single)
+                {
+                    <button type="button" class="wf-icon-button" title="@($"{Text["menu.selectInvert"]} (Ctrl+Shift+I)")"
+                            disabled="@(!Rows().Any())" @onclick="InvertSelectionAsync">
+                        <Icon Name="invert" />
+                    </button>
+                }
+
                 @if (selection.Count > 0)
                 {
                     @if (Can(FilePermission.Create))

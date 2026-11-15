@@ -94,6 +94,7 @@
   "menu.uploadFolder": "رفع مجلد…",
   "menu.paste": "لصق {0}",
   "menu.selectAll": "تحديد الكل",
+  "menu.selectInvert": "عكس التحديد",
   "menu.refresh": "تحديث",
   "menu.folderDetails": "تفاصيل المجلد",
   "dialog.cancel": "إلغاء",

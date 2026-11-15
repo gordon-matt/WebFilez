@@ -94,6 +94,7 @@
   "menu.uploadFolder": "फ़ोल्डर अपलोड करें…",
   "menu.paste": "{0} चिपकाएँ",
   "menu.selectAll": "सभी चुनें",
+  "menu.selectInvert": "चयन उलटें",
   "menu.refresh": "ताज़ा करें",
   "menu.folderDetails": "फ़ोल्डर विवरण",
   "dialog.cancel": "रद्द करें",

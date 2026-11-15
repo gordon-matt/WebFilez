@@ -94,6 +94,7 @@
   "menu.uploadFolder": "폴더 업로드…",
   "menu.paste": "{0} 붙여넣기",
   "menu.selectAll": "모두 선택",
+  "menu.selectInvert": "선택 반전",
   "menu.refresh": "새로 고침",
   "menu.folderDetails": "폴더 세부 정보",
   "dialog.cancel": "취소",

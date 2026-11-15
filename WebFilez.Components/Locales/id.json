@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Unggah folder…",
   "menu.paste": "Tempel {0}",
   "menu.selectAll": "Pilih semua",
+  "menu.selectInvert": "Balikkan pilihan",
   "menu.refresh": "Segarkan",
   "menu.folderDetails": "Detail folder",
   "dialog.cancel": "Batal",

@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Tải thư mục lên…",
   "menu.paste": "Dán {0}",
   "menu.selectAll": "Chọn tất cả",
+  "menu.selectInvert": "Đảo lựa chọn",
   "menu.refresh": "Làm mới",
   "menu.folderDetails": "Chi tiết thư mục",
   "dialog.cancel": "Hủy",

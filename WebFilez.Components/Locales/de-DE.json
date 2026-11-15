@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Ordner hochladen…",
   "menu.paste": "{0} einfügen",
   "menu.selectAll": "Alle auswählen",
+  "menu.selectInvert": "Auswahl umkehren",
   "menu.refresh": "Aktualisieren",
   "menu.folderDetails": "Ordnerdetails",
   "dialog.cancel": "Abbrechen",

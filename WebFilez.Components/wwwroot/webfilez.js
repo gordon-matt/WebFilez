@@ -612,7 +612,7 @@ function onKeyDown(e, state) {
     }
 
     const handled = [
-        'ctrl+a', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'ctrl+z', 'ctrl+y', 'shift+ctrl+z',
+        'ctrl+a', 'shift+ctrl+i', 'ctrl+c', 'ctrl+x', 'ctrl+v', 'ctrl+z', 'ctrl+y', 'shift+ctrl+z',
         'alt+ArrowLeft', 'alt+ArrowRight',
         'Delete', 'F2', 'Escape', 'Enter', 'Backspace',
         'Space', 'shift+Space',

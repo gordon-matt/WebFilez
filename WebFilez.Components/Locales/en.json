@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Upload folder…",
   "menu.paste": "Paste {0}",
   "menu.selectAll": "Select all",
+  "menu.selectInvert": "Invert selection",
   "menu.refresh": "Refresh",
   "menu.folderDetails": "Folder details",
   "dialog.cancel": "Cancel",

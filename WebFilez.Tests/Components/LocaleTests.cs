@@ -9,6 +9,7 @@ public class LocaleTests
     [
         "en", "zh-Hans", "zh-Hant", "es-MX", "es-ES", "hi", "pt-BR", "pt-PT", "ja",
         "fr-FR", "fr-CA", "de-DE", "de-AT", "ko", "vi", "id", "ar", "he",
+        "it", "nl", "pl", "ru", "tr", "sv",
     ];
 
     [Fact]
@@ -74,6 +75,13 @@ public class LocaleTests
         Assert.Contains("éléments", french.Plural("count.items", 2));
         Assert.NotEqual(english.Plural("count.items", 1), english.Plural("count.items", 2));
         Assert.Equal("New", english["toolbar.new"]);
+
+        var russian = WebFilezLocaleCatalog.Shared.Resolve("ru");
+        var polish = WebFilezLocaleCatalog.Shared.Resolve("pl");
+        Assert.NotEqual(russian.Plural("count.files", 1), russian.Plural("count.files", 2));
+        Assert.NotEqual(russian.Plural("count.files", 2), russian.Plural("count.files", 5));
+        Assert.NotEqual(polish.Plural("count.files", 1), polish.Plural("count.files", 2));
+        Assert.NotEqual(polish.Plural("count.files", 2), polish.Plural("count.files", 5));
     }
 
     private static Dictionary<string, string> Read(string tag)

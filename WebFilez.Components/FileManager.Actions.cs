@@ -62,8 +62,6 @@ public sealed partial class FileManager
     {
         openMenu = null;
         menuAnchor = null;
-        selection.Clear();
-        detail = null;
         menuX = args.ClientX;
         menuY = args.ClientY;
         contextMenu = BuildBackgroundMenu();
@@ -157,6 +155,11 @@ public sealed partial class FileManager
 
         entries.Add(new(Text["menu.details"], "info", ShowDetailsAsync));
 
+        if (SelectionMode != Constants.SelectionModes.Single)
+        {
+            entries.Add(new(Text["menu.selectInvert"], "invert", InvertSelectionAsync, Shortcut: "Ctrl+Shift+I"));
+        }
+
         if (CanOnSelection(FilePermission.Delete))
         {
             entries.Add(MenuEntry.Separator);
@@ -189,6 +192,7 @@ public sealed partial class FileManager
         if (SelectionMode != Constants.SelectionModes.Single)
         {
             entries.Add(new(Text["menu.selectAll"], "check-circle", () => SelectAllAsync(true), Shortcut: "Ctrl+A"));
+            entries.Add(new(Text["menu.selectInvert"], "invert", InvertSelectionAsync, Shortcut: "Ctrl+Shift+I"));
         }
 
         if (rootId is not null)

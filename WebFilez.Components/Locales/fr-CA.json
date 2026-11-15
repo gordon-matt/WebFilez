@@ -94,6 +94,7 @@
   "menu.uploadFolder": "Téléverser un dossier…",
   "menu.paste": "Coller {0}",
   "menu.selectAll": "Tout sélectionner",
+  "menu.selectInvert": "Inverser la sélection",
   "menu.refresh": "Actualiser",
   "menu.folderDetails": "Détails du dossier",
   "dialog.cancel": "Annuler",

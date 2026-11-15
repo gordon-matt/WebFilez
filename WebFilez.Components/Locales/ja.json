@@ -94,6 +94,7 @@
   "menu.uploadFolder": "フォルダーをアップロード…",
   "menu.paste": "{0} を貼り付け",
   "menu.selectAll": "すべて選択",
+  "menu.selectInvert": "選択を反転",
   "menu.refresh": "最新の情報に更新",
   "menu.folderDetails": "フォルダーの詳細",
   "dialog.cancel": "キャンセル",

@@ -94,6 +94,7 @@
   "menu.uploadFolder": "העלאת תיקייה…",
   "menu.paste": "הדבקת {0}",
   "menu.selectAll": "בחירת הכול",
+  "menu.selectInvert": "היפוך הבחירה",
   "menu.refresh": "רענון",
   "menu.folderDetails": "פרטי התיקייה",
   "dialog.cancel": "ביטול",
