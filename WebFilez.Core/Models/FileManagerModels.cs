@@ -166,7 +166,8 @@ public sealed record TransferRequest(
     string DestinationRootId,
     string DestinationPath,
     bool IsCopy,
-    bool Overwrite = false);
+    bool Overwrite = false,
+    bool RenameOnConflict = false);
 
 /// <summary>
 /// Represents the file operation result DTO.
@@ -178,7 +179,13 @@ public sealed record TransferRequest(
 /// Where a successful copy or move landed. The same as <paramref name="Path"/> when a move
 /// changed nothing. Absent when the operation did not write.
 /// </param>
-public sealed record FileOperationResultDto(string Path, bool Succeeded, string? Error, string? ResultPath = null);
+/// <param name="NameConflict">True when the destination already has this name and nothing was written.</param>
+public sealed record FileOperationResultDto(
+    string Path,
+    bool Succeeded,
+    string? Error,
+    string? ResultPath = null,
+    bool NameConflict = false);
 
 /// <summary>
 /// Outcome of an operation over several items. Partial success is normal: one locked file

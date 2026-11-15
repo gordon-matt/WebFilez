@@ -351,34 +351,20 @@ public sealed partial class FileManager
 
         var current = clipboard;
         string targetRoot = destinationRoot ?? rootId;
-        var result = await Service.TransferAsync(new TransferRequest(
-            current.RootId,
-            [.. current.Paths],
-            targetRoot,
-            destination ?? CurrentPath,
-            IsCopy: !current.IsCut));
+        await TransferResolvedAsync(
+            new TransferRequest(
+                current.RootId,
+                [.. current.Paths],
+                targetRoot,
+                destination ?? CurrentPath,
+                IsCopy: !current.IsCut),
+            current.IsCut ? "moved" : "copied");
 
-        if (!result.IsSuccess)
-        {
-            toasts.ShowFailure(result);
-            return;
-        }
-
-        ShowBulk(result.Value, current.IsCut ? "moved" : "copied");
-        RememberTransfer(new TransferRequest(
-            current.RootId,
-            [.. current.Paths],
-            targetRoot,
-            destination ?? CurrentPath,
-            IsCopy: !current.IsCut), result.Value);
-
-        // A cut is consumed by the paste; a copy stays so it can be pasted into several folders.
-        if (current.IsCut)
+        // A cut is consumed once anything was moved. A copy stays so it can be pasted again.
+        if (current.IsCut && clipboard == current)
         {
             clipboard = null;
         }
-
-        await RefreshAfterChangeAsync();
     }
 
     private async Task DuplicateAsync()
@@ -461,16 +447,9 @@ public sealed partial class FileManager
             return;
         }
 
-        var result = await Service.TransferAsync(new TransferRequest(sourceRoot, paths, targetRoot, targetPath, isCopy));
-        if (!result.IsSuccess)
-        {
-            toasts.ShowFailure(result);
-            return;
-        }
-
-        ShowBulk(result.Value, isCopy ? "copied" : "moved");
-        RememberTransfer(new TransferRequest(sourceRoot, paths, targetRoot, targetPath, isCopy), result.Value);
-        await RefreshAfterChangeAsync();
+        await TransferResolvedAsync(
+            new TransferRequest(sourceRoot, paths, targetRoot, targetPath, isCopy),
+            isCopy ? "copied" : "moved");
     }
 
     // ---------------------------------------------------------------------- changing

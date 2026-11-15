@@ -116,7 +116,8 @@ public sealed class PathResolver(
             return FilePermission.None;
         }
 
-        return await accessPolicy.GetPermissionsAsync(root, virtualPath, cancellationToken) & root.EffectivePermissions;
+        FilePermission ruled = PathAccess.Clamp(root, virtualPath);
+        return await accessPolicy.GetPermissionsAsync(root, virtualPath, cancellationToken) & ruled;
     }
 
     /// <summary>

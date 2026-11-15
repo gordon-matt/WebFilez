@@ -190,6 +190,19 @@ public sealed class FileTransferService(
         }
 
         var occupying = await folder.Storage.GetAsync(finalLocation, cancellationToken);
+        if (occupying is not null && request.RenameOnConflict && !request.Overwrite)
+        {
+            string free = await FreeNames.FindAsync(
+                folder.Storage, folder.Root, folder.VirtualPath, name.Value, isDirectory: false, cancellationToken);
+            finalVirtual = VirtualPath.Combine(folder.VirtualPath, free);
+            if (!folder.Storage.TryMap(folder.Root, finalVirtual, out finalLocation))
+            {
+                return Result<UploadResultDto>.Invalid(new ValidationError(nameof(request.FileName), "That name can't be used here."));
+            }
+
+            occupying = null;
+        }
+
         if (occupying is { IsDirectory: true })
         {
             return Result<UploadResultDto>.Conflict($"A folder named '{name.Value}' already exists here.");

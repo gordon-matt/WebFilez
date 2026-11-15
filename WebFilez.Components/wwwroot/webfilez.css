@@ -1240,10 +1240,19 @@ th.wf-col-size {
 
 .wf-dialog-actions {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 12px 16px;
+}
+
+.wf-conflict-apply {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 0;
+    font-size: 13px;
 }
 
 .wf-root .wf-editor {

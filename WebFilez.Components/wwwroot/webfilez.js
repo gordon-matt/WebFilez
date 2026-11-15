@@ -128,7 +128,7 @@ export function pickFiles(root, directories, accept) {
 }
 
 /** Uploads what the last drop or pick reported, one file at a time. */
-export async function uploadPending(root, url, rootId, path, overwrite, includeCredentials) {
+export async function uploadPending(root, url, rootId, path, instructions, includeCredentials) {
     const state = instances.get(root);
     if (!state) {
         return;
@@ -136,15 +136,37 @@ export async function uploadPending(root, url, rootId, path, overwrite, includeC
 
     const entries = state.pending;
     state.pending = [];
+    const plans = new Map((instructions ?? []).map(item => [item.path, item]));
+    const usePlans = instructions != null;
 
     for (const entry of entries) {
+        const key = entry.path || entry.file.name;
+        const plan = usePlans ? plans.get(key) : null;
+        if (usePlans && (!plan || plan.action === 'skip')) {
+            continue;
+        }
+
+        const action = plan?.action ?? 'upload';
+        const relative = plan?.newPath || key;
+        const uploadName = relative.includes('/') ? entry.file.name : relative.split('/').pop();
         const uploadId = nextUploadId++;
 
         try {
-            await send(url, rootId, path, entry, overwrite, includeCredentials, uploadId, state.dotNetRef);
-            await state.dotNetRef.invokeMethodAsync('OnUploadComplete', uploadId, entry.file.name, true, null);
+            await send(
+                url,
+                rootId,
+                path,
+                entry,
+                action === 'replace',
+                action === 'rename',
+                relative,
+                uploadName,
+                includeCredentials,
+                uploadId,
+                state.dotNetRef);
+            await state.dotNetRef.invokeMethodAsync('OnUploadComplete', uploadId, uploadName, true, null);
         } catch (error) {
-            await state.dotNetRef.invokeMethodAsync('OnUploadComplete', uploadId, entry.file.name, false, String(error?.message ?? error));
+            await state.dotNetRef.invokeMethodAsync('OnUploadComplete', uploadId, uploadName, false, String(error?.message ?? error));
         }
     }
 
@@ -624,13 +646,14 @@ function report(state, entries) {
     })));
 }
 
-function send(url, rootId, path, entry, overwrite, includeCredentials, uploadId, dotNetRef) {
+function send(url, rootId, path, entry, overwrite, renameOnConflict, relativePath, uploadName, includeCredentials, uploadId, dotNetRef) {
     const form = new FormData();
     form.append('root', rootId);
     form.append('path', path);
-    form.append('relativePath', entry.path || entry.file.name);
+    form.append('relativePath', relativePath || entry.path || entry.file.name);
     form.append('overwrite', overwrite ? 'true' : 'false');
-    form.append('file', entry.file, entry.file.name);
+    form.append('renameOnConflict', renameOnConflict ? 'true' : 'false');
+    form.append('file', entry.file, uploadName || entry.file.name);
 
     return new Promise((resolve, reject) => {
         const request = new XMLHttpRequest();
@@ -651,7 +674,7 @@ function send(url, rootId, path, entry, overwrite, includeCredentials, uploadId,
             }
 
             lastReport = now;
-            dotNetRef.invokeMethodAsync('OnUploadProgress', uploadId, entry.file.name, e.loaded, e.total);
+            dotNetRef.invokeMethodAsync('OnUploadProgress', uploadId, uploadName || entry.file.name, e.loaded, e.total);
         };
 
         request.onload = () => {

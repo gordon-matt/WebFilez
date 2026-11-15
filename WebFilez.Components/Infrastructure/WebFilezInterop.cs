@@ -44,11 +44,17 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
     /// <param name="url">The URL.</param>
     /// <param name="rootId">The root identifier.</param>
     /// <param name="path">The path.</param>
-    /// <param name="overwrite">The overwrite.</param>
+    /// <param name="instructions">Per-file upload, replace, rename, or skip. Null uploads everything.</param>
     /// <param name="includeCredentials">The include credentials.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public async ValueTask UploadPendingAsync(ElementReference root, string url, string rootId, string path, bool overwrite, bool includeCredentials) =>
-        await (await Module).InvokeVoidAsync("uploadPending", root, url, rootId, path, overwrite, includeCredentials);
+    public async ValueTask UploadPendingAsync(
+        ElementReference root,
+        string url,
+        string rootId,
+        string path,
+        IReadOnlyList<UploadInstruction>? instructions,
+        bool includeCredentials) =>
+        await (await Module).InvokeVoidAsync("uploadPending", root, url, rootId, path, instructions, includeCredentials);
 
     /// <summary>
     /// Cancels the upload.

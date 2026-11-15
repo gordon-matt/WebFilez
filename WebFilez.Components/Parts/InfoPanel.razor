@@ -15,7 +15,24 @@
             <p class="wf-info-name">@Text.Format("info.selected", Text.Plural("count.items", SelectionCount))</p>
             <dl class="wf-info-list">
                 <dt>@Text["info.totalSize"]</dt>
-                <dd>@Format.Size(SelectedBytes) <span class="wf-muted">@Text["info.filesOnly"]</span></dd>
+                <dd>
+                    @if (SelectionSize is long size)
+                    {
+                        @Format.Size(size)
+                        @if (SelectionSizePending)
+                        {
+                            <span class="wf-muted"> · @Text["info.calculating"]</span>
+                        }
+                        else if (SelectionIncludesFolders)
+                        {
+                            <span class="wf-muted"> · @Text.Plural("count.files", SelectionFileCount)</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="wf-muted">@Text["info.calculating"]</span>
+                    }
+                </dd>
             </dl>
         </div>
     }
@@ -116,10 +133,17 @@
     /// </summary>
     [Parameter] public int SelectionCount { get; set; }
 
-    /// <summary>
-    /// Gets or sets the selected bytes.
-    /// </summary>
-    [Parameter] public long SelectedBytes { get; set; }
+    /// <summary>Bytes in the selection, including folders once they have been measured.</summary>
+    [Parameter] public long? SelectionSize { get; set; }
+
+    /// <summary>True while selected folders are still being measured.</summary>
+    [Parameter] public bool SelectionSizePending { get; set; }
+
+    /// <summary>True when the selection contains a folder, so the total includes what is inside it.</summary>
+    [Parameter] public bool SelectionIncludesFolders { get; set; }
+
+    /// <summary>Files in the selection, plus files inside selected folders once measured.</summary>
+    [Parameter] public int SelectionFileCount { get; set; }
 
     /// <summary>
     /// Gets or sets the root identifier.

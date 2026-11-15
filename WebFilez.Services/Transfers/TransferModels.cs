@@ -10,7 +10,8 @@ public sealed record UploadRequest(
     string FileName,
     Stream Content,
     string? RelativeDirectory = null,
-    bool Overwrite = false);
+    bool Overwrite = false,
+    bool RenameOnConflict = false);
 
 /// <summary>An open file ready to stream. The caller owns and disposes <see cref="Content"/>.</summary>
 public sealed record FileDownloadDto(

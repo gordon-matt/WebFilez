@@ -263,7 +263,11 @@ public sealed partial class FileManager
 
     private string DetailRootId => SelectedRows() is [var only] ? only.RootId : rootId ?? string.Empty;
 
-    private long SelectedBytes => SelectedRows().Where(row => !row.Item.IsDirectory).Sum(row => row.Item.SizeBytes);
+    private long? selectionSize;
+    private bool selectionSizePending;
+    private bool selectionIncludesFolders;
+    private int selectionFileCount;
+    private int selectionSizeVersion;
 
     private FileSystemItemDto? DetailItem => SelectedRows() is [var only] ? only.Item : null;
 
@@ -844,8 +848,23 @@ public sealed partial class FileManager
         if (!isInfoOpen || rows.Count > 1)
         {
             detail = null;
+            if (isInfoOpen && rows.Count > 1)
+            {
+                await MeasureSelectionAsync(rows);
+            }
+            else
+            {
+                selectionSize = null;
+                selectionSizePending = false;
+                selectionIncludesFolders = false;
+            }
+
             return;
         }
+
+        selectionSize = null;
+        selectionSizePending = false;
+        selectionIncludesFolders = false;
 
         if (rows.Count == 1)
         {
@@ -863,6 +882,50 @@ public sealed partial class FileManager
         string path = listing.Path;
         var folder = await Service.GetDetailAsync(rootId, path);
         detail = folder.IsSuccess ? folder.Value : null;
+    }
+
+    /// <summary>
+    /// Adds up the selection. File sizes are already known. Each selected folder is measured,
+    /// including the files inside it, so a mixed selection is not just the loose files.
+    /// </summary>
+    private async Task MeasureSelectionAsync(IReadOnlyList<ListingEntry> rows)
+    {
+        int version = ++selectionSizeVersion;
+        selectionIncludesFolders = rows.Any(row => row.Item.IsDirectory);
+        selectionFileCount = rows.Count(row => !row.Item.IsDirectory);
+        selectionSize = rows.Where(row => !row.Item.IsDirectory).Sum(row => row.Item.SizeBytes);
+        selectionSizePending = selectionIncludesFolders;
+        if (!selectionIncludesFolders)
+        {
+            return;
+        }
+
+        StateHasChanged();
+        long bytes = selectionSize.Value;
+
+        foreach (ListingEntry folder in rows.Where(row => row.Item.IsDirectory))
+        {
+            var size = await Service.GetDirectorySizeAsync(folder.RootId, folder.Item.Path);
+            if (version != selectionSizeVersion)
+            {
+                return;
+            }
+
+            if (!size.IsSuccess)
+            {
+                continue;
+            }
+
+            bytes += size.Value.SizeBytes;
+            selectionFileCount += size.Value.FileCount;
+            selectionSize = bytes;
+            StateHasChanged();
+        }
+
+        if (version == selectionSizeVersion)
+        {
+            selectionSizePending = false;
+        }
     }
 
     // -------------------------------------------------------------------- permissions

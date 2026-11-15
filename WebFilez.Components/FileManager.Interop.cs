@@ -141,35 +141,11 @@ public sealed partial class FileManager
             return;
         }
 
-        // Overwrite is asked once for the whole batch; asking per file would be unusable for
-        // the folder drops this is built to handle. Only top-level names can clash with what is
-        // listed; files inside a dropped folder land in a folder that may not exist yet.
-        var existing = listing?.Items.Where(i => !i.IsDirectory).Select(i => i.Name).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? [];
-        var collisions = files.Where(f => !(f.RelativePath?.Contains('/') ?? false) && existing.Contains(f.Name)).ToList();
-        bool overwrite = false;
-
-        if (collisions.Count > 0 && confirm is not null)
-        {
-            if (!Can(FilePermission.Modify))
-            {
-                toasts.Info(collisions.Count == 1
-                    ? Text.Format("confirm.uploadSkipOne", collisions[0].Name)
-                    : Text.Format("confirm.uploadSkipMany", collisions.Count));
-            }
-            else
-            {
-                overwrite = await confirm.ShowAsync(
-                    Text["confirm.replace.title"],
-                    collisions.Count == 1
-                        ? Text.Format("confirm.uploadReplaceOne", collisions[0].Name)
-                        : Text.Format("confirm.uploadReplaceMany", collisions.Count),
-                    Text["dialog.replace"],
-                    isDestructive: true,
-                    detail: Text["confirm.replace.uploadDetail"]);
-            }
-        }
-
-        await interop.UploadPendingAsync(rootElement, urls.Upload, rootId, CurrentPath, overwrite, urls.IncludeCredentials);
+        // Each top-level name that is already here is asked separately. Apply-to-rest covers a
+        // drop of many files. Files inside a new folder are not asked: that folder does not
+        // exist yet. Cancel skips the names not yet decided and still uploads the rest.
+        var plans = await PlanUploadsAsync(files);
+        await interop.UploadPendingAsync(rootElement, urls.Upload, rootId, CurrentPath, plans, urls.IncludeCredentials);
     }
 
     /// <summary>

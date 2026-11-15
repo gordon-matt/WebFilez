@@ -1,0 +1,93 @@
+@* One colliding name at a time. Apply-to-rest keeps a folder drop from asking a hundred times. *@
+@if (isVisible)
+{
+    <div class="wf-backdrop" @onclick="Cancel"></div>
+    <div class="wf-dialog wf-dialog-small" role="alertdialog" aria-modal="true" aria-labelledby="@titleId"
+         tabindex="-1" @ref="element" @onkeydown="OnKeyDown">
+        <div class="wf-dialog-body">
+            <h2 class="wf-dialog-title" id="@titleId">@Text.Format("confirm.conflict.title", name)</h2>
+            @if (remaining > 0)
+            {
+                <label class="wf-conflict-apply">
+                    <input type="checkbox" @bind="applyToRest" />
+                    <span>@Text.Format("confirm.conflict.apply", remaining)</span>
+                </label>
+            }
+        </div>
+        <div class="wf-dialog-actions">
+            <button type="button" class="wf-button" @onclick="Cancel">@Text["dialog.cancel"]</button>
+            <span class="wf-spacer"></span>
+            <button type="button" class="wf-button" @ref="skipButton" @onclick="() => Close(NameConflictChoice.Skip)">@Text["dialog.skip"]</button>
+            <button type="button" class="wf-button" @onclick="() => Close(NameConflictChoice.Rename)">@Text["dialog.keepBoth"]</button>
+            @if (allowReplace)
+            {
+                <button type="button" class="wf-button wf-button-danger" @onclick="() => Close(NameConflictChoice.Replace)">@Text["dialog.replace"]</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private readonly string titleId = $"wf-conflict-{Guid.NewGuid():N}";
+    private ElementReference element;
+    private ElementReference skipButton;
+    private bool isVisible;
+    private bool focusPending;
+    private bool applyToRest;
+    private bool allowReplace;
+    private int remaining;
+    private string name = string.Empty;
+    private TaskCompletionSource<NameConflictAnswer>? completion;
+
+    /// <summary>Focuses the safe action when the dialog opens.</summary>
+    [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
+
+    /// <summary>
+    /// Asks about one name. <paramref name="allowReplace"/> is false when the existing item is a
+    /// different kind, such as a folder where a file would land.
+    /// </summary>
+    public Task<NameConflictAnswer> ShowAsync(string name, int remaining, bool allowReplace)
+    {
+        completion?.TrySetResult(new NameConflictAnswer(NameConflictChoice.Cancel, false));
+
+        this.name = name;
+        this.remaining = remaining;
+        this.allowReplace = allowReplace;
+        applyToRest = false;
+        isVisible = true;
+        focusPending = true;
+        completion = new TaskCompletionSource<NameConflictAnswer>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        StateHasChanged();
+        return completion.Task;
+    }
+
+    /// <inheritdoc/>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusPending && isVisible)
+        {
+            focusPending = false;
+            await Interop.FocusAsync(skipButton);
+        }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            Cancel();
+        }
+    }
+
+    private void Cancel() => Close(NameConflictChoice.Cancel);
+
+    private void Close(NameConflictChoice choice)
+    {
+        isVisible = false;
+        completion?.TrySetResult(new NameConflictAnswer(choice, choice != NameConflictChoice.Cancel && applyToRest));
+        completion = null;
+    }
+}

@@ -329,7 +329,10 @@
                 <InfoPanel Detail="detail"
                            Item="DetailItem"
                            SelectionCount="selection.Count"
-                           SelectedBytes="SelectedBytes"
+                           SelectionSize="selectionSize"
+                           SelectionSizePending="selectionSizePending"
+                           SelectionIncludesFolders="selectionIncludesFolders"
+                           SelectionFileCount="selectionFileCount"
                            RootId="@DetailRootId"
                            Urls="urls"
                            Service="Service"
@@ -403,6 +406,7 @@
 
     <PromptDialog @ref="prompt" Interop="interop" />
     <ConfirmDialog @ref="confirm" Interop="interop" />
+    <NameConflictDialog @ref="nameConflicts" Interop="interop" />
     <Toaster Service="toasts" />
 </div>
 </CascadingValue>

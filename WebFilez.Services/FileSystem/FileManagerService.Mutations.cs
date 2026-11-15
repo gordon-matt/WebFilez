@@ -356,9 +356,25 @@ public sealed partial class FileManagerService
                 return new FileOperationResultDto(origin.VirtualPath, false, "That name can't be used in the destination.");
             }
         }
-        else if (await destination.Storage.GetAsync(target, cancellationToken) is not null && !request.Overwrite)
+        else if (await destination.Storage.GetAsync(target, cancellationToken) is not null)
         {
-            return new FileOperationResultDto(origin.VirtualPath, false, $"'{name}' already exists in the destination.");
+            if (request.RenameOnConflict && !request.Overwrite)
+            {
+                name = await FindFreeNameAsync(destination, name, existing.IsDirectory, cancellationToken);
+                destinationVirtual = VirtualPath.Combine(destination.VirtualPath, name);
+                if (!destination.Storage.TryMap(destination.Root, destinationVirtual, out target))
+                {
+                    return new FileOperationResultDto(origin.VirtualPath, false, "That name can't be used in the destination.");
+                }
+            }
+            else if (!request.Overwrite)
+            {
+                return new FileOperationResultDto(
+                    origin.VirtualPath,
+                    false,
+                    $"'{name}' already exists in the destination.",
+                    NameConflict: true);
+            }
         }
 
         try
@@ -473,37 +489,12 @@ public sealed partial class FileManagerService
         }
     }
 
-    private async Task<string> FindFreeNameAsync(
+    private Task<string> FindFreeNameAsync(
         ResolvedPath directory,
         string name,
         bool isDirectory,
-        CancellationToken cancellationToken)
-    {
-        if (!directory.Storage.TryMap(directory.Root, VirtualPath.Combine(directory.VirtualPath, name), out var first)
-            || await directory.Storage.GetAsync(first, cancellationToken) is null)
-        {
-            return name;
-        }
-
-        string stem = isDirectory ? name : Path.GetFileNameWithoutExtension(name);
-        string extension = isDirectory ? string.Empty : Path.GetExtension(name);
-
-        for (int i = 2; i < 10_000; i++)
-        {
-            string candidate = $"{stem} ({i}){extension}";
-            if (!directory.Storage.TryMap(directory.Root, VirtualPath.Combine(directory.VirtualPath, candidate), out var location))
-            {
-                continue;
-            }
-
-            if (await directory.Storage.GetAsync(location, cancellationToken) is null)
-            {
-                return candidate;
-            }
-        }
-
-        return $"{stem} ({Guid.NewGuid():N}){extension}";
-    }
+        CancellationToken cancellationToken) =>
+        FreeNames.FindAsync(directory.Storage, directory.Root, directory.VirtualPath, name, isDirectory, cancellationToken);
 
     /// <summary>
     /// Resolves a not-yet-existing child of <paramref name="parent"/>, refusing names that would

@@ -77,6 +77,13 @@ public sealed class FileRoot
     public List<string> ExcludePatterns { get; set; } = [];
 
     /// <summary>
+    /// Per-path restrictions, such as a locked file or a hidden folder. The longest matching
+    /// path wins, and it applies to everything underneath. A custom access policy can narrow
+    /// the result further but cannot grant what a rule removed.
+    /// </summary>
+    public List<PathAccessRule> Rules { get; set; } = [];
+
+    /// <summary>
     /// Gets the display name.
     /// </summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Id : Name;

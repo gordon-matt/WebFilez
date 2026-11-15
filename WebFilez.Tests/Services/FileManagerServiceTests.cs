@@ -162,6 +162,17 @@ public class FileManagerServiceTests : ServiceTest
         Assert.True(duplicate.IsCompleteSuccess);
         Assert.Equal("/report (2).pdf", duplicate.Results[0].ResultPath);
         Assert.True(Files.Exists("report (2).pdf"));
+
+        Files.Write("inbox/guide.md", "old");
+        var blocked = (await Service.TransferAsync(
+            new TransferRequest("docs", ["/guide.md"], "files", "/inbox", IsCopy: true), Token)).ShouldSucceed();
+        Assert.True(blocked.Results[0].NameConflict);
+        Assert.Equal("old", await File.ReadAllTextAsync(Path.Combine(Files.Path, "inbox", "guide.md"), Token));
+
+        var kept = (await Service.TransferAsync(
+            new TransferRequest("docs", ["/guide.md"], "files", "/inbox", IsCopy: true, RenameOnConflict: true), Token)).ShouldSucceed();
+        Assert.Equal("/inbox/guide (2).md", kept.Results[0].ResultPath);
+        Assert.Equal("# Guide", await File.ReadAllTextAsync(Path.Combine(Files.Path, "inbox", "guide (2).md"), Token));
     }
 
     [Fact]
@@ -260,6 +271,11 @@ public class FileManagerServiceTests : ServiceTest
         var conflict = await Transfers.UploadAsync(
             new UploadRequest("files", "/", "a.txt", Stream("again"), RelativeDirectory: "deep/er"), Token);
         Assert.Equal(ResultStatus.Conflict, conflict.Status);
+
+        var renamed = (await Transfers.UploadAsync(
+            new UploadRequest("files", "/", "a.txt", Stream("copy"), RelativeDirectory: "deep/er", RenameOnConflict: true), Token)).ShouldSucceed();
+        Assert.Equal("/deep/er/a (2).txt", renamed.Item.Path);
+        Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(Files.Path, "deep", "er", "a.txt"), Token));
 
         Assert.Empty(Directory.GetFiles(Files.Path, "*" + Constants.TempFileSuffix, SearchOption.AllDirectories));
     }

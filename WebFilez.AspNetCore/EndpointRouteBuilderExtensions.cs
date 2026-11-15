@@ -246,7 +246,7 @@ public static class EndpointRouteBuilderExtensions
     /// Streams a multipart upload straight to disk. The form is read by hand rather than bound,
     /// so a large file never sits in memory and the size limit is enforced as bytes arrive.
     /// Expects the fields <c>root</c>, <c>path</c>, optional <c>relativePath</c> and
-    /// <c>overwrite</c>, then a single file part.
+    /// <c>overwrite</c>, optional <c>renameOnConflict</c>, then a single file part.
     /// </summary>
     private static async Task<IResult> UploadAsync(
         HttpContext context,
@@ -312,7 +312,8 @@ public static class EndpointRouteBuilderExtensions
                     Path.GetFileName(fileName.Replace('\\', '/')),
                     section.Body,
                     RelativeDirectory(fields.GetValueOrDefault("relativePath")),
-                    bool.TryParse(fields.GetValueOrDefault("overwrite"), out bool overwrite) && overwrite);
+                    bool.TryParse(fields.GetValueOrDefault("overwrite"), out bool overwrite) && overwrite,
+                    bool.TryParse(fields.GetValueOrDefault("renameOnConflict"), out bool renameOnConflict) && renameOnConflict);
 
                 return (await service.UploadAsync(request, ct)).ToHttpResult();
             }
