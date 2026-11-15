@@ -36,15 +36,21 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 
 ## Features
 
-- Browse several roots, each with its own path, permissions and optional public URL
-- Folder tree, breadcrumbs, tiles, list and compact views, sorting, filtering by name and kind, paging
-- Upload by picker or drag and drop, including whole folders, with progress, cancel and overwrite prompts
+- Browse several roots, each with its own path, permissions, optional public URL, and per-path rules
+- Folder tree, breadcrumbs, back and forward, tiles, list and compact views, sorting, and paging. A folder in the tree uses the same menu as a folder in the listing
+- Favorites and Recent under the tree. A chevron collapses the section. Both lists stay in this browser
+- Filter the open folder by name, or search one root or every root from an index. Kind filters cover images, documents, media, and archives
+- Upload by picker or drag and drop, including whole folders, with progress and cancel. A name that already exists asks, one file at a time, to replace it, keep both, or skip it, and that choice can apply to the rest. Paste and drag use the same choice
 - Optional resizing of large uploaded images
-- Create, rename, delete, copy, cut, paste, duplicate, and drag-and-drop moves (also across roots)
+- Create, rename, delete, copy, cut, paste, duplicate, and drag-and-drop moves, including across roots
+- Undo and redo on a disk root for rename, move, copy, create, and a text save under 256 KB (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z). The buttons stay off on S3, Azure, and Google Cloud. Delete asks for confirmation and stays deleted
 - Zip and tar compression, extraction with zip-slip and zip-bomb protection
 - Single-file download, or a zip of any selection streamed from a one-time link
 - Image, audio, video, PDF and text preview; a text editor that detects concurrent edits; other editors plugged in per file type
-- Thumbnails (WebP, cached on disk) and an info panel with dimensions and folder sizes
+- Thumbnails (WebP, cached on disk) and an info panel with type, size, dimensions, created and modified times, permissions, and the size of a selection, including folders
+- Select all (Ctrl+A), invert selection (toolbar, both context menus, and Ctrl+Shift+I), and Escape to clear. A right-click on empty space keeps the selection
+- The last folder, sort, view, and language stay in this browser. Setting `Root` or `Path` leaves that instance where the host put it, so a picker stays put
+- Twenty-four languages in a drawer, including right-to-left Arabic and Hebrew. A host adds another by dropping a JSON catalog next to the built-in ones
 - A picker mode (single or multiple, with an `accept` filter) for choosing files from a form
 - Keyboard shortcuts, context menus, light, dark, auto and Bootstrap-friendly themes, and a layout that adapts to its container's width
 
@@ -99,8 +105,16 @@ Relative paths on a file system root resolve against the content root. A path on
 - `ShowHiddenFiles`: allow dot files and hidden-attribute files to be shown and reached. Off by default.
 - `FollowSymlinks`: allow paths through links, which may lead outside the root. Off by default.
 - `ExcludePatterns`: glob patterns, such as `*.bak` or `node_modules`, that are hidden and unreachable.
+- `Rules`: per-path restrictions on that root. The longest matching path wins, and it covers everything underneath. `Read` false hides the path. `Write` false blocks creating or changing contents. `Locked` blocks rename, move, and delete. A custom `IFileAccessPolicy` can narrow the result further. Rules do not stop a public URL from being fetched.
 
-Global settings on `WebFilezOptions` include `AllowedExtensions` (if set, only these may be uploaded or created), `BlockedExtensions`, `FileNames` (replace spaces, lower-case, remove diacritics), `Thumbnails`, `MaxEditableFileBytes`, `MaxExtractedBytes` and `MaxExtractedEntries`. `PublicBaseUrl` applies to every root that does not set its own. `AllowExpiringUrls` and `ProbePublicUrls` stay off unless you turn them on; both are described under Storage setups and file URLs.
+```json
+"Rules": [
+  { "Path": "/readonly.txt", "Write": false, "Locked": true },
+  { "Path": "/Prohibited", "Read": false, "Write": false, "Locked": true }
+]
+```
+
+Global settings on `WebFilezOptions` include `AllowedExtensions` (if set, only these may be uploaded or created), `BlockedExtensions`, `FileNames` (replace spaces, lower-case, remove diacritics), `Thumbnails`, `MaxEditableFileBytes`, `MaxExtractedBytes`, `MaxExtractedEntries`, and `MaxSearchIndexEntries` (the in-memory search index stops at this many files and folders, and search reports that it was capped). `PublicBaseUrl` applies to every root that does not set its own. `AllowExpiringUrls` and `ProbePublicUrls` stay off unless you turn them on; both are described under Storage setups and file URLs.
 
 `BlockedExtensions` starts with a list of server-executable and script-capable types, such as `.php`, `.aspx`, `.html` and `.svg`. Every dotted suffix is checked, so `shell.php.jpg` is refused too. Configuration binding **adds to** a list rather than replacing it, so entries in `appsettings.json` extend the defaults. To remove a default, change the list in code:
 
@@ -140,7 +154,13 @@ Add the stylesheet to `App.razor`, and `@using WebFilez.Components` to `_Imports
 
 The component must render interactively. In Blazor WebAssembly, call `AddWebFilezHttpClient(apiBaseUrl)` instead of `AddWebFilez`, and host the API in a server project.
 
-Parameters: `Root`, `Path`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `Kind`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
+Parameters: `Root`, `Path`, `BasePath`, `ScopeToken`, `Theme` (`light`, `dark`, `auto`, `bootstrap`), `View` (`tiles`, `list`, `compact`), `Height`, `SelectionMode` (`none`, `single`, `multiple`), `Accept`, `Kind`, `SelectLabel`, `ShowTree`, `ReadOnly`, `Language`, `Editors`, `Class`, `OnSelected` and `OnNavigated`. Other attributes are passed to the outer element.
+
+`Language` is an IETF tag such as `fr-CA`. Leave it empty and the component uses the language saved in this browser, then the UI culture. Set it and that instance stays on the language you named. `BasePath` and `ScopeToken` confine one instance to a folder; they are described with the custom element. `Editors` is described under File editors.
+
+The last folder and the sort are stored in this browser, along with the view and the language. An instance whose `Root` or `Path` is set does not read or write those two keys.
+
+Built-in languages are English, Simplified and Traditional Chinese, Spanish (Spain and Mexico), Hindi, Portuguese (Brazil and Portugal), Japanese, French (France and Canada), German (Germany and Austria), Korean, Vietnamese, Indonesian, Arabic, Hebrew, Italian, Dutch, Polish, Russian, Turkish, and Swedish. Arabic and Hebrew lay out right to left. A host adds a language by dropping `{tag}.json` in the directory named by `WebFilezLocalizationOptions.Directory`, or in `WebFilez/Locales` beside the app. A missing key falls back through parent tags to English. The drawer closes when a language is chosen, and it does not stay open beside the details drawer.
 
 `Kind` fixes the listing to `images`, `documents`, `media`, `archives`, `folders`, or `all`, and hides the type buttons. `images` and `media` still show folders, so the user can open them. `folders` shows directories only. `Accept` still decides which of the listed files the Select button accepts. Double-clicking an accepted file selects it.
 
@@ -460,6 +480,8 @@ builder.Services.AddWebFilez(builder.Configuration);
 ```
 
 Copy, move and zip across two providers stream the bytes. Two roots on the same provider use that provider's own copy.
+
+Undo and redo are shown when the provider's `SupportsUndo` is true. The file system provider is the one that reports true. S3, Azure Blob, Azure Files, and Google Cloud report false, so the buttons stay hidden. On S3, Azure Blob, and Google Cloud a folder move copies every object and then deletes the originals. A change on a root that cannot undo is kept off the stack, so switching back to a disk root cannot undo it.
 
 ## Storage setups and file URLs
 
