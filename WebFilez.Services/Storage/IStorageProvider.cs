@@ -15,6 +15,13 @@ public interface IStorageProvider
     StringComparison NameComparison { get; }
 
     /// <summary>
+    /// Whether undo and redo can reverse a change here. A disk rename is one operation. Object
+    /// stores copy every object and then delete the originals, so a failed undo can leave the
+    /// folder under both names.
+    /// </summary>
+    bool SupportsUndo { get; }
+
+    /// <summary>
     /// Maps a normalized virtual path into the root, or returns false when a segment is illegal
     /// for this provider. Does not require the object to exist.
     /// </summary>

@@ -30,6 +30,9 @@ public sealed class AzureFileStorageProvider : IStorageProvider
     /// </summary>
     public StringComparison NameComparison => StringComparison.OrdinalIgnoreCase;
 
+    /// <summary>Left off for now, with the other cloud providers.</summary>
+    public bool SupportsUndo => false;
+
     /// <summary>
     /// Attempts to map.
     /// </summary>

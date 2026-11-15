@@ -289,6 +289,11 @@ public sealed partial class FileManager
 
     private bool CanShowHidden => roots.Any(r => r.Id == rootId && r.CanShowHiddenFiles);
 
+    private bool UndoSupported => UndoSupportedFor(rootId);
+
+    private bool UndoSupportedFor(string? id) =>
+        id is not null && roots.Any(root => string.Equals(root.Id, id, StringComparison.OrdinalIgnoreCase) && root.SupportsUndo);
+
     private bool CanConfirmSelection =>
         selection.Count > 0
         && (SelectionMode == Constants.SelectionModes.Multiple || selection.Count == 1)

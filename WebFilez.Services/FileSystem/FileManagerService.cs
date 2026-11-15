@@ -14,6 +14,7 @@ public sealed partial class FileManagerService(
     ILogger<FileManagerService> logger,
     IFileRootProvider rootProvider,
     PathResolver resolver,
+    IStorageProviderSelector storage,
     FileNamePolicy fileNamePolicy,
     IFileActivitySink activitySink,
     IFileIndex index,
@@ -58,7 +59,8 @@ public sealed partial class FileManagerService(
                 permissions,
                 root.IsReadOnly,
                 await ResolvePublicUrlAsync(root, Constants.RootPath, isDirectory: true, cancellationToken) is not null,
-                root.ShowHiddenFiles));
+                root.ShowHiddenFiles,
+                storage.Get(root).SupportsUndo));
         }
 
         return Result<IReadOnlyList<FileRootDto>>.Success(visible);

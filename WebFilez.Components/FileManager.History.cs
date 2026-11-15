@@ -66,7 +66,7 @@ public sealed partial class FileManager
 
     private async Task UndoAsync()
     {
-        if (edits.TryUndo() is not { } action)
+        if (!UndoSupported || edits.TryUndo() is not { } action)
         {
             return;
         }
@@ -85,7 +85,7 @@ public sealed partial class FileManager
 
     private async Task RedoAsync()
     {
-        if (edits.TryRedo() is not { } action)
+        if (!UndoSupported || edits.TryRedo() is not { } action)
         {
             return;
         }
@@ -107,15 +107,33 @@ public sealed partial class FileManager
 
     private void RememberCreate(string itemRoot, FileSystemItemDto created, bool isDirectory)
     {
+        if (!UndoSupportedFor(itemRoot))
+        {
+            return;
+        }
+
         string parent = VirtualPath.GetParent(created.Path) ?? Constants.RootPath;
         edits.Push(new CreateAction(itemRoot, parent, created.Name, isDirectory, created.Path));
     }
 
-    private void RememberRename(string itemRoot, FileSystemItemDto before, FileSystemItemDto after) =>
+    private void RememberRename(string itemRoot, FileSystemItemDto before, FileSystemItemDto after)
+    {
+        if (!UndoSupportedFor(itemRoot))
+        {
+            return;
+        }
+
         edits.Push(new RenameAction(itemRoot, before.Path, before.Name, after.Path, after.Name));
+    }
 
     private void RememberTransfer(TransferRequest request, BulkOperationResultDto result)
     {
+        // A move between a disk and a cloud root would undo on the cloud side.
+        if (!UndoSupportedFor(request.RootId) || !UndoSupportedFor(request.DestinationRootId))
+        {
+            return;
+        }
+
         var transferred = new List<TransferredItem>();
         foreach (var row in result.Results)
         {
@@ -147,7 +165,9 @@ public sealed partial class FileManager
 
     private async Task OnTextSavedAsync(TextEdit edit)
     {
-        if (edit.PreviousContent.Length <= MaxUndoTextChars && edit.Content.Length <= MaxUndoTextChars)
+        if (UndoSupportedFor(edit.RootId)
+            && edit.PreviousContent.Length <= MaxUndoTextChars
+            && edit.Content.Length <= MaxUndoTextChars)
         {
             edits.Push(new TextEditAction(edit.RootId, edit.Path, edit.PreviousContent, edit.Content));
         }

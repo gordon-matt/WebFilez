@@ -52,17 +52,20 @@
             </div>
 
             <div class="wf-toolbar-row">
-                <button type="button" class="wf-icon-button" title="@Text["toolbar.undo"]"
-                        disabled="@(!CanUndo)" @onclick="UndoAsync">
-                    <Icon Name="undo" />
-                </button>
-                <button type="button" class="wf-icon-button" title="@Text["toolbar.redo"]"
-                        disabled="@(!CanRedo)" @onclick="RedoAsync">
-                    <Icon Name="redo" />
-                </button>
-                @if (Can(FilePermission.Create) || selection.Count > 0 || clipboard is not null)
+                @if (UndoSupported)
                 {
-                    <span class="wf-toolbar-divider"></span>
+                    <button type="button" class="wf-icon-button" title="@Text["toolbar.undo"]"
+                            disabled="@(!CanUndo)" @onclick="UndoAsync">
+                        <Icon Name="undo" />
+                    </button>
+                    <button type="button" class="wf-icon-button" title="@Text["toolbar.redo"]"
+                            disabled="@(!CanRedo)" @onclick="RedoAsync">
+                        <Icon Name="redo" />
+                    </button>
+                    @if (Can(FilePermission.Create) || selection.Count > 0 || clipboard is not null)
+                    {
+                        <span class="wf-toolbar-divider"></span>
+                    }
                 }
                 @if (Can(FilePermission.Create))
                 {

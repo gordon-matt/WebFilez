@@ -25,6 +25,9 @@ public sealed class FileSystemStorageProvider : IStorageProvider
     /// </summary>
     public StringComparison NameComparison => PhysicalPaths.Comparison;
 
+    /// <summary>A rename on disk is a single operation, so a change can be reversed.</summary>
+    public bool SupportsUndo => true;
+
     /// <summary>
     /// Attempts to map.
     /// </summary>

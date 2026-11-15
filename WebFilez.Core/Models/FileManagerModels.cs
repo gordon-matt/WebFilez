@@ -2,13 +2,15 @@ namespace WebFilez.Models;
 
 /// <summary>A top-level folder the file manager exposes, such as "Uploads" or "Media".</summary>
 /// <param name="CanShowHiddenFiles">Whether hidden items exist for the caller to reveal at all.</param>
+/// <param name="SupportsUndo">Whether this root's storage can reverse a change. Cloud roots leave this off.</param>
 public sealed record FileRootDto(
     string Id,
     string Name,
     FilePermission Permissions,
     bool IsReadOnly,
     bool HasPublicUrl,
-    bool CanShowHiddenFiles);
+    bool CanShowHiddenFiles,
+    bool SupportsUndo);
 
 /// <param name="PublicUrl">
 /// Where the file or folder can be fetched without going through the file manager. Folder addresses

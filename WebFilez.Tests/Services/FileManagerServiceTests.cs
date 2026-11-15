@@ -14,6 +14,8 @@ public class FileManagerServiceTests : ServiceTest
 
         Assert.Equal(["files", "docs"], roots.Select(r => r.Id));
         Assert.False(roots[0].IsReadOnly);
+        Assert.True(roots[0].SupportsUndo);
+        Assert.True(roots[1].SupportsUndo);
         Assert.True(roots[1].IsReadOnly);
         Assert.False(roots[1].Permissions.HasFlag(FilePermission.Delete));
     }

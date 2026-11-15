@@ -108,12 +108,11 @@ public sealed partial class FileManager
                 await GoForwardAsync();
                 break;
 
-            case "ctrl+z":
+            case "ctrl+z" when UndoSupported:
                 await UndoAsync();
                 break;
 
-            case "ctrl+y":
-            case "shift+ctrl+z":
+            case "ctrl+y" or "shift+ctrl+z" when UndoSupported:
                 await RedoAsync();
                 break;
         }

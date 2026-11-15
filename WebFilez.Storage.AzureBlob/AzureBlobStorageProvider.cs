@@ -31,6 +31,9 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
     /// </summary>
     public StringComparison NameComparison => StringComparison.Ordinal;
 
+    /// <summary>A folder change copies every blob and then deletes the originals, so undo stays off.</summary>
+    public bool SupportsUndo => false;
+
     /// <summary>
     /// Attempts to map.
     /// </summary>
