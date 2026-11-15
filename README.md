@@ -314,7 +314,7 @@ registerEditor({
 <FileManager Editors="images:.jpg,.jpeg,.png,.webp|annotate:.gif,.bmp" />
 ```
 
-Entries are separated by `|`. An id with no accept list keeps the types from `registerEditor`. Leave `Editors` empty and every registered editor is offered for the types it named. Double-click opens the first match when the file can be modified. The context menu lists every match as "Edit with ...", and Preview stays there too. Types that no editor claims still open in the text editor or the preview, as before.
+Entries are separated by `|`. An id with no accept list keeps the types from `registerEditor`. Leave `Editors` empty and every registered editor is offered for the types it named. Double-click previews an image. For any other file that can be modified, it opens the first matching editor. The toolbar offers Preview and Edit for a single file that supports them, the context menu lists every match as "Edit with ...", and Preview stays there too. Types that no editor claims still open in the text editor or the preview, as before.
 
 An editor can also be queued before the module loads, which suits a plain script tag:
 

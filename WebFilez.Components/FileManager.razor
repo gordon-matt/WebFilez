@@ -103,6 +103,14 @@
                     {
                         <span class="wf-toolbar-divider"></span>
                     }
+                    @if (CanPreviewSelection)
+                    {
+                        <button type="button" class="wf-icon-button" title="@Text["menu.preview"]" @onclick="PreviewSelectionAsync"><Icon Name="eye" /></button>
+                    }
+                    @if (CanEditSelection)
+                    {
+                        <button type="button" class="wf-icon-button" title="@EditButtonTitle" @onclick="EditSelectionAsync"><Icon Name="@EditButtonIcon" /></button>
+                    }
                     @if (CanOnSelection(FilePermission.Download))
                     {
                         <button type="button" class="wf-icon-button" title="@Text["toolbar.download"]" @onclick="DownloadSelectionAsync"><Icon Name="download" /></button>

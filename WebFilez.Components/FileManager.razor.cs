@@ -86,6 +86,8 @@ public sealed partial class FileManager
     private Clipboard? clipboard;
     private FileSystemItemDto? previewItem;
     private string? previewRoot;
+    private string? editorsSelectionKey;
+    private IReadOnlyList<FileEditor> matchedEditors = [];
     private IReadOnlyList<string>? dragPaths;
 
     private FolderTree? tree;
@@ -383,26 +385,26 @@ public sealed partial class FileManager
     /// <inheritdoc/>
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (firstRender)
         {
-            return;
+            callbackReference = DotNetObjectReference.Create(this);
+            await interop.AttachAsync(rootElement, listingElement, callbackReference);
+            isAttached = true;
+
+            if (await interop.GetStoredAsync("view") is { } stored && Enum.TryParse(stored, out ListingViewMode storedMode) && storedMode != viewMode)
+            {
+                viewMode = storedMode;
+                StateHasChanged();
+            }
+
+            if (string.IsNullOrWhiteSpace(Language) && await interop.GetStoredAsync("lang") is { Length: > 0 } storedLanguage)
+            {
+                text = Locales.Resolve(storedLanguage);
+                StateHasChanged();
+            }
         }
 
-        callbackReference = DotNetObjectReference.Create(this);
-        await interop.AttachAsync(rootElement, listingElement, callbackReference);
-        isAttached = true;
-
-        if (await interop.GetStoredAsync("view") is { } stored && Enum.TryParse(stored, out ListingViewMode storedMode) && storedMode != viewMode)
-        {
-            viewMode = storedMode;
-            StateHasChanged();
-        }
-
-        if (string.IsNullOrWhiteSpace(Language) && await interop.GetStoredAsync("lang") is { Length: > 0 } storedLanguage)
-        {
-            text = Locales.Resolve(storedLanguage);
-            StateHasChanged();
-        }
+        await RefreshMatchedEditorsAsync();
     }
 
     private void ApplyHostLanguage()
@@ -866,6 +868,14 @@ public sealed partial class FileManager
 
     private async Task OpenFileAsync(string itemRoot, FileSystemItemDto item)
     {
+        // An image opens in the preview. A plugged-in editor such as FileRobot stays on the
+        // toolbar and the context menu, so opening a picture does not drop the user into it.
+        if (item.Kind == FileKind.Image && CanOn(item, FilePermission.Read))
+        {
+            ShowPreview(itemRoot, item);
+            return;
+        }
+
         if (CanOn(item, FilePermission.Modify))
         {
             var editors = await EditorsForAsync(item);
@@ -882,13 +892,110 @@ public sealed partial class FileManager
         }
         else if (FileKinds.CanPreview(item.Kind) && CanOn(item, FilePermission.Read))
         {
-            previewItem = item;
-            previewRoot = itemRoot;
+            ShowPreview(itemRoot, item);
         }
         else if (CanOn(item, FilePermission.Download))
         {
             await DownloadAsync(itemRoot, [item]);
         }
+    }
+
+    private bool CanPreviewSelection =>
+        SelectedRows() is [var only]
+        && !only.Item.IsDirectory
+        && FileKinds.CanPreview(only.Item.Kind)
+        && CanOn(only.Item, FilePermission.Read);
+
+    private bool CanEditSelection =>
+        SelectedRows() is [var only]
+        && !only.Item.IsDirectory
+        && (HasExternalEditor(only) || (FileKinds.IsEditable(only.Item.Kind) && CanOn(only.Item, FilePermission.Read)));
+
+    private bool HasExternalEditor(ListingEntry entry) =>
+        editorsSelectionKey == entry.Key && matchedEditors.Count > 0 && CanOn(entry.Item, FilePermission.Modify);
+
+    private string EditButtonTitle =>
+        SelectedRows() is [var only] && HasExternalEditor(only)
+            ? Text.Format("menu.editWith", matchedEditors[0].Name)
+            : SelectedRows() is [var file] && FileKinds.IsEditable(file.Item.Kind) && !CanOn(file.Item, FilePermission.Modify)
+                ? Text["menu.viewSource"]
+                : Text["menu.edit"];
+
+    private string EditButtonIcon =>
+        SelectedRows() is [var only] && FileKinds.IsEditable(only.Item.Kind) && !HasExternalEditor(only) && !CanOn(only.Item, FilePermission.Modify)
+            ? "file-code"
+            : "pencil";
+
+    private Task PreviewSelectionAsync()
+    {
+        if (SelectedRows() is not [var only])
+        {
+            return Task.CompletedTask;
+        }
+
+        ShowPreview(only.RootId, only.Item);
+        return Task.CompletedTask;
+    }
+
+    private async Task EditSelectionAsync()
+    {
+        if (SelectedRows() is not [var only])
+        {
+            return;
+        }
+
+        if (HasExternalEditor(only))
+        {
+            await OpenExternalEditorAsync(only.RootId, only.Item, matchedEditors[0]);
+            return;
+        }
+
+        if (FileKinds.IsEditable(only.Item.Kind))
+        {
+            await EditAsync(only.Item, only.RootId);
+        }
+    }
+
+    private void ShowPreview(string itemRoot, FileSystemItemDto item)
+    {
+        previewItem = item;
+        previewRoot = itemRoot;
+    }
+
+    /// <summary>
+    /// Remembers which plugged-in editors claim the selected file. The toolbar reads that on the
+    /// next render. The key is stored before the interop call, so a selection change during the
+    /// call does not apply the answer to a different file.
+    /// </summary>
+    private async Task RefreshMatchedEditorsAsync()
+    {
+        if (!isAttached)
+        {
+            return;
+        }
+
+        FileSystemItemDto? item = null;
+        string? key = null;
+        if (SelectedRows() is [var only] && !only.Item.IsDirectory)
+        {
+            item = only.Item;
+            key = only.Key;
+        }
+
+        if (key == editorsSelectionKey)
+        {
+            return;
+        }
+
+        editorsSelectionKey = key;
+        var editors = item is null ? [] : await EditorsForAsync(item);
+        if (editorsSelectionKey != key)
+        {
+            return;
+        }
+
+        matchedEditors = editors;
+        StateHasChanged();
     }
 
     private async Task EditAsync(FileSystemItemDto item, string? itemRoot = null)
