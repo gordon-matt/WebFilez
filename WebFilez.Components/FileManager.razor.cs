@@ -453,6 +453,10 @@ public sealed partial class FileManager
     {
         openMenu = null;
         isLanguageOpen = !isLanguageOpen;
+        if (isLanguageOpen)
+        {
+            isInfoOpen = false;
+        }
     }
 
     // ------------------------------------------------------------------ navigation
@@ -699,6 +703,11 @@ public sealed partial class FileManager
     private async Task ToggleInfoAsync()
     {
         isInfoOpen = !isInfoOpen;
+        if (isInfoOpen)
+        {
+            isLanguageOpen = false;
+        }
+
         await LoadDetailAsync();
     }
 

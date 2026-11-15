@@ -216,6 +216,7 @@ public sealed partial class FileManager
     private async Task ShowDetailsAsync()
     {
         isInfoOpen = true;
+        isLanguageOpen = false;
         await LoadDetailAsync();
     }
 
