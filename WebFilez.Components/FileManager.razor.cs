@@ -76,6 +76,7 @@ public sealed partial class FileManager
     private string? rangeAnchor;
     private bool isTreeOpen = true;
     private bool isInfoOpen;
+    private bool isLanguageOpen;
     private FileDetailDto? detail;
     private string? openMenu;
 
@@ -441,10 +442,17 @@ public sealed partial class FileManager
     private async Task SetLanguageAsync(string tag)
     {
         text = Locales.Resolve(tag);
+        isLanguageOpen = false;
         if (string.IsNullOrWhiteSpace(Language))
         {
             await interop.SetStoredAsync("lang", text.Language);
         }
+    }
+
+    private void ToggleLanguage()
+    {
+        openMenu = null;
+        isLanguageOpen = !isLanguageOpen;
     }
 
     // ------------------------------------------------------------------ navigation

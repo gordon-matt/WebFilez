@@ -1,0 +1,38 @@
+<aside class="wf-info" aria-label="@Text["toolbar.language"]">
+    <div class="wf-info-header">
+        <strong>@Text["toolbar.language"]</strong>
+        <span class="wf-spacer"></span>
+        <button type="button" class="wf-icon-button" aria-label="@Text["dialog.close"]" @onclick="OnClose">
+            <Icon Name="x" />
+        </button>
+    </div>
+
+    <div class="wf-language-list" role="listbox" aria-label="@Text["toolbar.language"]">
+        @foreach (var language in Languages)
+        {
+            bool current = string.Equals(CurrentTag, language.Tag, StringComparison.OrdinalIgnoreCase);
+            <button type="button" role="option" aria-selected="@(current ? "true" : "false")"
+                    class="wf-language-option @(current ? "wf-active" : null)"
+                    @onclick="() => OnSelect.InvokeAsync(language.Tag)">
+                <Icon Name="check" Class="@(current ? null : "wf-invisible")" />
+                <span dir="@(language.IsRightToLeft ? "rtl" : "ltr")">@language.NativeName</span>
+            </button>
+        }
+    </div>
+</aside>
+
+@code {
+    /// <summary>Languages the file manager can show, in menu order.</summary>
+    [Parameter] public IReadOnlyList<WebFilezLanguage> Languages { get; set; } = [];
+
+    /// <summary>The language tag currently in use.</summary>
+    [Parameter] public string? CurrentTag { get; set; }
+
+    /// <summary>Raised with the chosen language tag. The drawer closes after the choice.</summary>
+    [Parameter] public EventCallback<string> OnSelect { get; set; }
+
+    /// <summary>Raised from the header close button.</summary>
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
+}

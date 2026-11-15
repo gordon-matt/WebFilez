@@ -209,23 +209,16 @@
                                 <Icon Name="check" Class="@(isInfoOpen ? null : "wf-invisible")" /> <span>@Text["toolbar.detailsPanel"]</span>
                             </button>
                             <div class="wf-menu-separator" role="separator"></div>
-                            <div class="wf-menu-heading">@Text["toolbar.language"]</div>
-                            @foreach (var language in Locales.Languages)
-                            {
-                                bool currentLanguage = string.Equals(text.Language, language.Tag, StringComparison.OrdinalIgnoreCase);
-                                <button type="button" role="menuitemradio" aria-checked="@(currentLanguage ? "true" : "false")"
-                                        class="wf-menu-item" @onclick="() => RunMenuAsync(() => SetLanguageAsync(language.Tag))">
-                                    <Icon Name="check" Class="@(currentLanguage ? null : "wf-invisible")" />
-                                    <span dir="@(language.IsRightToLeft ? "rtl" : "ltr")">@language.NativeName</span>
-                                </button>
-                            }
-                            <div class="wf-menu-separator" role="separator"></div>
                             <button type="button" role="menuitem" class="wf-menu-item" @onclick="() => RunMenuAsync(RefreshAfterChangeAsync)">
                                 <Icon Name="refresh" /> <span>@Text["toolbar.refresh"]</span>
                             </button>
                         </div>
                     }
                 </div>
+                <button type="button" class="wf-icon-button @(isLanguageOpen ? "wf-active" : null)" title="@Text["toolbar.language"]"
+                        aria-pressed="@(isLanguageOpen ? "true" : "false")" @onclick="ToggleLanguage">
+                    <Icon Name="languages" />
+                </button>
             </div>
         </div>
 
@@ -343,6 +336,12 @@
                            Interop="interop"
                            Toasts="toasts"
                            OnClose="() => isInfoOpen = false" />
+            }
+
+            @if (isLanguageOpen)
+            {
+                <LanguagePanel Languages="Locales.Languages" CurrentTag="@text.Language"
+                               OnSelect="SetLanguageAsync" OnClose="() => isLanguageOpen = false" />
             }
         </div>
 

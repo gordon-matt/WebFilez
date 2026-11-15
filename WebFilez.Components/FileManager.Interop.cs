@@ -24,10 +24,11 @@ public sealed partial class FileManager
         // least surprising thing rather than several at once.
         if (combo == "Escape")
         {
-            if (contextMenu is not null || openMenu is not null)
+            if (contextMenu is not null || openMenu is not null || isLanguageOpen)
             {
                 contextMenu = null;
                 openMenu = null;
+                isLanguageOpen = false;
             }
             else
             {
