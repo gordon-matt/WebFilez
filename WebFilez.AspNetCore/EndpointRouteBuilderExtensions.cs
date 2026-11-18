@@ -1,4 +1,5 @@
 using System.Text;
+using Heroicsoft.NetForge.WebAssets;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
@@ -26,6 +27,7 @@ public static class EndpointRouteBuilderExtensions
         /// <param name="prefix">Defaults to <see cref="WebFilezOptions.ApiPrefix"/>.</param>
         public RouteGroupBuilder MapWebFilezApi(string? prefix = null)
         {
+            MapAssets(endpoints);
             prefix ??= endpoints.ServiceProvider.GetRequiredService<IOptions<WebFilezOptions>>().Value.ApiPrefix;
 
             var group = endpoints.MapGroup("/" + prefix.Trim('/')).WithTags("WebFilez");
@@ -41,6 +43,15 @@ public static class EndpointRouteBuilderExtensions
             MapTransfers(group);
 
             return group;
+        }
+    }
+
+    private static void MapAssets(IEndpointRouteBuilder endpoints)
+    {
+        var components = EmbeddedContent.Resolve("WebFilez.Components", typeof(EndpointRouteBuilderExtensions).Assembly);
+        if (components is not null)
+        {
+            endpoints.MapEmbeddedContent(components);
         }
     }
 

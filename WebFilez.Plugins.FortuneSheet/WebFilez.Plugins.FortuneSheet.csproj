@@ -9,4 +9,11 @@
 		<PackageTags>file-manager;spreadsheet;xlsx;csv;fortune-sheet;blazor;plugin;webfilez</PackageTags>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<PackageReference Include="Heroicsoft.NetForge.WebAssets" Version="1.2.6">
+			<IncludeAssets>build</IncludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+	</ItemGroup>
+
 </Project>

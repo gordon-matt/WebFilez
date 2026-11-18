@@ -8,7 +8,7 @@ namespace WebFilez.Components.Infrastructure;
 [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
 public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
 {
-    private const string ModulePath = "./_content/WebFilez.Components/webfilez.js";
+    private const string ModulePath = "/_content/WebFilez.Components/webfilez.js";
 
     private Task<IJSObjectReference>? module;
 
