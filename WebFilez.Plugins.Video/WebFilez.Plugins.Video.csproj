@@ -11,12 +11,12 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\WebFilez.Services\WebFilez.Services.csproj" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.14" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.14" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
-		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.14" />
-		<PackageReference Include="Xabe.FFmpeg" Version="6.1.1" />
-		<PackageReference Include="Xabe.FFmpeg.Downloader" Version="6.1.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Options" />
+		<PackageReference Include="Xabe.FFmpeg" />
+		<PackageReference Include="Xabe.FFmpeg.Downloader" />
 	</ItemGroup>
 
 	<ItemGroup>

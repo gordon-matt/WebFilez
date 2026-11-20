@@ -10,7 +10,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Heroicsoft.NetForge.WebAssets" Version="1.2.6">
+		<PackageReference Include="Heroicsoft.NetForge.WebAssets">
 			<IncludeAssets>build</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>

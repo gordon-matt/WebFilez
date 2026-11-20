@@ -10,7 +10,7 @@
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="Heroicsoft.NetForge.WebAssets" Version="1.2.6" />
+		<PackageReference Include="Heroicsoft.NetForge.WebAssets" />
 	</ItemGroup>
 
 	<ItemGroup>
