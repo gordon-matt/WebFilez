@@ -36,7 +36,6 @@ public static class DemoFiles
             Planning meeting, 3 March
 
             - Ship the file manager as a NuGet package.
-            - Replace the old file manager in ArcaFS with it.
             - Revisit sharing links after version 1.
             """);
         Write(root, "Documents/Budget 2026.csv", """

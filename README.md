@@ -93,7 +93,7 @@ An embeddable web file manager for .NET 10, in the spirit of elFinder and Respon
 
 The component talks to `IFileManagerService`. On Blazor Server (and therefore MVC) that is the real service, in-process. In WebAssembly it is an HTTP client that calls the API. Either way, bytes always travel over HTTP: uploads, downloads, thumbnails and zips go to the endpoints from `MapWebFilezApi()`, so every host needs the API mapped somewhere.
 
-There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, and optional packages add Azure Blob Storage, Azure Files, Amazon S3 and Google Cloud Storage. The extension points below are where a host such as ArcaFS plugs in its own roots, permissions, audit history, or a storage provider of its own.
+There is no database in this version. Roots come from configuration. Each root names a storage provider; the file system is the default, and optional packages add Azure Blob Storage, Azure Files, Amazon S3 and Google Cloud Storage. The extension points below are where a host plugs in its own roots, permissions, audit history, or a storage provider of its own.
 
 ## Getting started
 
