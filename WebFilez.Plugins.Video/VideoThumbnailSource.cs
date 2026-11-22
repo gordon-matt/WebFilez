@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.Logging;
 using WebFilez.Plugins.Video.Ffmpeg;
 using WebFilez.Services.FileSystem;
@@ -14,6 +15,14 @@ namespace WebFilez.Plugins.Video;
 internal sealed class VideoThumbnailSource(ILogger<VideoThumbnailSource> logger) : IThumbnailSource
 {
     private const int MaxConcurrentCaptures = 2;
+
+    /// <summary>
+    /// Largest size the thumbnail cache stores. Smaller requests are fitted from this frame,
+    /// so ffmpeg does not write a full-resolution image. Keep it in step with the sizes in
+    /// <c>ThumbnailService</c>.
+    /// </summary>
+    private const int CaptureSize = 512;
+
     private static readonly TimeSpan CaptureTimeout = TimeSpan.FromSeconds(15);
     private static readonly SemaphoreSlim Gate = new(MaxConcurrentCaptures, MaxConcurrentCaptures);
 
@@ -140,11 +149,7 @@ internal sealed class VideoThumbnailSource(ILogger<VideoThumbnailSource> logger)
         timeout.CancelAfter(CaptureTimeout);
         try
         {
-            IConversion conversion = await FFmpeg.Conversions.FromSnippet.Snapshot(videoPath, outputPath, at);
-            conversion.SetOverwriteOutput(true);
-            // A crafted file can otherwise make ffmpeg open http, concat, or subfile targets.
-            conversion.AddParameter("-nostdin -protocol_whitelist file", ParameterPosition.PreInput);
-            await conversion.Start(timeout.Token);
+            await FFmpeg.Conversions.New().Start(BuildCaptureArguments(videoPath, outputPath, at), timeout.Token);
             return File.Exists(outputPath) && new FileInfo(outputPath).Length > 0;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -156,6 +161,29 @@ internal sealed class VideoThumbnailSource(ILogger<VideoThumbnailSource> logger)
             return false;
         }
     }
+
+    /// <summary>
+    /// -ss before -i stops at the nearest keyframe. The scale filter caps the frame at
+    /// <see cref="CaptureSize"/>. Snapshot() would probe the file again and leave a full-size image.
+    /// The protocol whitelist stops a crafted file from making ffmpeg open another target.
+    /// </summary>
+    internal static string BuildCaptureArguments(string videoPath, string outputPath, TimeSpan at)
+    {
+        string seek = at.TotalSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        return string.Join(' ',
+            "-nostdin",
+            "-protocol_whitelist", "file",
+            "-ss", seek,
+            "-i", Quote(videoPath),
+            "-an",
+            "-frames:v", "1",
+            "-vf", $"scale={CaptureSize}:{CaptureSize}:force_original_aspect_ratio=decrease",
+            "-q:v", "5",
+            "-y",
+            Quote(outputPath));
+    }
+
+    private static string Quote(string path) => "\"" + path.Replace("\"", "\\\"") + "\"";
 
     private static void TryDelete(string path)
     {
