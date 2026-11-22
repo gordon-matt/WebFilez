@@ -6,7 +6,7 @@ using WebFilez.Components.Localization;
 namespace WebFilez;
 
 /// <summary>
-/// Provides extension methods for components service collections.
+/// Points the components at an HTTP API and registers the language catalogs.
 /// </summary>
 public static class ComponentsServiceCollectionExtensions
 {
@@ -23,6 +23,7 @@ public static class ComponentsServiceCollectionExtensions
         /// <paramref name="configureClient"/> for those.
         /// </param>
         /// <param name="configureClient">For example, to add an authentication handler.</param>
+        /// <returns>The same collection.</returns>
         public IServiceCollection AddWebFilezHttpClient(
             string apiBaseUrl,
             bool includeCredentials = false,
@@ -52,7 +53,10 @@ public static class ComponentsServiceCollectionExtensions
         /// Registers the language catalogs. Built-in languages ship with the component. Point
         /// <see cref="WebFilezLocalizationOptions.Directory"/> at a folder of <c>{tag}.json</c>
         /// files to add or override a language. Safe to call before <c>AddWebFilezHttpClient</c>.
+        /// A second call does nothing.
         /// </summary>
+        /// <param name="configure">Where extra catalogs live. <see langword="null"/> uses the built-in catalogs only.</param>
+        /// <returns>The same builder.</returns>
         public TBuilder AddComponents(Action<WebFilezLocalizationOptions>? configure = null)
         {
             if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IWebFilezLocalizer)))

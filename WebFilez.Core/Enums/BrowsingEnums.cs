@@ -3,68 +3,50 @@ namespace WebFilez.Enums;
 /// <summary>Broad file classification driving icon, preview mode and the type filter.</summary>
 public enum FileKind
 {
-    /// <summary>
-    /// The other value.
-    /// </summary>
+    /// <summary>An extension the kind table does not know.</summary>
     Other = 0,
-    /// <summary>
-    /// The folder value.
-    /// </summary>
+
+    /// <summary>A directory.</summary>
     Folder = 1,
-    /// <summary>
-    /// The image value.
-    /// </summary>
+
+    /// <summary>A picture, including SVG.</summary>
     Image = 2,
-    /// <summary>
-    /// The video value.
-    /// </summary>
+
+    /// <summary>A video.</summary>
     Video = 3,
-    /// <summary>
-    /// The audio value.
-    /// </summary>
+
+    /// <summary>An audio file.</summary>
     Audio = 4,
-    /// <summary>
-    /// The document value.
-    /// </summary>
+
+    /// <summary>An office or ebook file.</summary>
     Document = 5,
-    /// <summary>
-    /// The archive value.
-    /// </summary>
+
+    /// <summary>A zip, tar, or similar package.</summary>
     Archive = 6,
-    /// <summary>
-    /// The text value.
-    /// </summary>
+
+    /// <summary>Plain text, Markdown, a log, or CSV.</summary>
     Text = 7,
-    /// <summary>
-    /// The code value.
-    /// </summary>
+
+    /// <summary>Source or configuration the built-in editor can open.</summary>
     Code = 8,
-    /// <summary>
-    /// The pdf value.
-    /// </summary>
+
+    /// <summary>A PDF.</summary>
     Pdf = 9,
 }
 
-/// <summary>
-/// Specifies the listing sort field.
-/// </summary>
+/// <summary>The column a listing is sorted by.</summary>
 public enum ListingSortField
 {
-    /// <summary>
-    /// The name value.
-    /// </summary>
+    /// <summary>The file name, compared naturally.</summary>
     Name = 0,
-    /// <summary>
-    /// The size value.
-    /// </summary>
+
+    /// <summary>The size in bytes.</summary>
     Size = 1,
-    /// <summary>
-    /// The modified value.
-    /// </summary>
+
+    /// <summary>When the item was last changed.</summary>
     Modified = 2,
-    /// <summary>
-    /// The kind value.
-    /// </summary>
+
+    /// <summary>The file kind, then the name.</summary>
     Kind = 3,
 }
 
@@ -84,25 +66,19 @@ public enum ListingViewMode
 /// <summary>The type filter buttons above the listing.</summary>
 public enum KindFilter
 {
-    /// <summary>
-    /// The all value.
-    /// </summary>
+    /// <summary>Every file and folder.</summary>
     All = 0,
-    /// <summary>
-    /// The images value.
-    /// </summary>
+
+    /// <summary>Images. Folders stay so the user can open them.</summary>
     Images = 1,
-    /// <summary>
-    /// The documents value.
-    /// </summary>
+
+    /// <summary>Documents, PDF, text, and code.</summary>
     Documents = 2,
-    /// <summary>
-    /// The media value.
-    /// </summary>
+
+    /// <summary>Video and audio.</summary>
     Media = 3,
-    /// <summary>
-    /// The archives value.
-    /// </summary>
+
+    /// <summary>Archives.</summary>
     Archives = 4,
 
     /// <summary>Directories only. Files stay out of the listing.</summary>

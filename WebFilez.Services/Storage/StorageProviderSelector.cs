@@ -3,24 +3,17 @@ namespace WebFilez.Services.Storage;
 /// <summary>Picks the <see cref="IStorageProvider"/> named by a root.</summary>
 public interface IStorageProviderSelector
 {
-    /// <summary>
-    /// Gets the value.
-    /// </summary>
+    /// <summary>The provider for <paramref name="root"/>. An empty provider is the file system.</summary>
     /// <param name="root">The root.</param>
-    /// <returns>The i storage provider.</returns>
+    /// <returns>The matching provider.</returns>
+    /// <exception cref="InvalidOperationException">No registered provider has that key.</exception>
     IStorageProvider Get(FileRoot root);
 }
 
-/// <summary>
-/// Represents the storage provider selector.
-/// </summary>
+/// <summary>Selects a registered provider by the root's provider key, ignoring case.</summary>
 public sealed class StorageProviderSelector(IEnumerable<IStorageProvider> providers) : IStorageProviderSelector
 {
-    /// <summary>
-    /// Gets the value.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <returns>The i storage provider.</returns>
+    /// <inheritdoc />
     public IStorageProvider Get(FileRoot root)
     {
         string key = FileSystemStorageProvider.IsFileSystem(root.Provider)

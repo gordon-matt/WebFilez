@@ -10,14 +10,14 @@ namespace WebFilez.Services.Access;
 public interface IFileRootProvider
 {
     /// <summary>Roots available to the current caller.</summary>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <returns>The roots. An empty list is valid.</returns>
     Task<IReadOnlyList<FileRoot>> GetRootsAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Finds the value.
-    /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the file root.</returns>
+    /// <summary>One root, compared without case, or <see langword="null"/> when the caller has no such root.</summary>
+    /// <param name="rootId">The root id.</param>
+    /// <param name="cancellationToken">Cancels the query.</param>
+    /// <returns>The root, or <see langword="null"/>.</returns>
     async Task<FileRoot?> FindAsync(string rootId, CancellationToken cancellationToken = default)
     {
         var roots = await GetRootsAsync(cancellationToken);
@@ -25,16 +25,10 @@ public interface IFileRootProvider
     }
 }
 
-/// <summary>
-/// Represents the options file root provider.
-/// </summary>
+/// <inheritdoc cref="IFileRootProvider"/>
 public sealed class OptionsFileRootProvider(IOptionsMonitor<WebFilezOptions> options) : IFileRootProvider
 {
-    /// <summary>
-    /// Gets the roots.
-    /// </summary>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the file roots.</returns>
+    /// <inheritdoc />
     public Task<IReadOnlyList<FileRoot>> GetRootsAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<FileRoot>>(options.CurrentValue.Roots);
 }

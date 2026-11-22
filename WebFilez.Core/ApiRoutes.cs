@@ -6,86 +6,63 @@ namespace WebFilez;
 /// </summary>
 public static class ApiRoutes
 {
-    /// <summary>
-    /// The roots constant.
-    /// </summary>
+    /// <summary>The roots the caller can browse.</summary>
     public const string Roots = "roots";
-    /// <summary>
-    /// The list constant.
-    /// </summary>
+
+    /// <summary>One page of a folder.</summary>
     public const string List = "list";
-    /// <summary>
-    /// The search constant.
-    /// </summary>
+
+    /// <summary>A name search.</summary>
     public const string Search = "search";
-    /// <summary>
-    /// The folders constant.
-    /// </summary>
+
+    /// <summary>The immediate subfolders of a folder.</summary>
     public const string Folders = "folders";
-    /// <summary>
-    /// The detail constant.
-    /// </summary>
+
+    /// <summary>The info panel for one item.</summary>
     public const string Detail = "detail";
-    /// <summary>
-    /// The size constant.
-    /// </summary>
+
+    /// <summary>The recursive size of a folder.</summary>
     public const string Size = "size";
-    /// <summary>
-    /// The directories constant.
-    /// </summary>
+
+    /// <summary>Creates a folder.</summary>
     public const string Directories = "directories";
-    /// <summary>
-    /// The files constant.
-    /// </summary>
+
+    /// <summary>Creates an empty file.</summary>
     public const string Files = "files";
-    /// <summary>
-    /// The rename constant.
-    /// </summary>
+
+    /// <summary>Renames one item.</summary>
     public const string Rename = "rename";
-    /// <summary>
-    /// The delete constant.
-    /// </summary>
+
+    /// <summary>Deletes the listed items.</summary>
     public const string Delete = "delete";
-    /// <summary>
-    /// The transfer constant.
-    /// </summary>
+
+    /// <summary>Copies or moves items.</summary>
     public const string Transfer = "transfer";
-    /// <summary>
-    /// The text constant.
-    /// </summary>
+
+    /// <summary>Reads or saves a text file.</summary>
     public const string Text = "text";
-    /// <summary>
-    /// The compress constant.
-    /// </summary>
+
+    /// <summary>Writes a zip, tar, or gzipped tar.</summary>
     public const string Compress = "compress";
-    /// <summary>
-    /// The extract constant.
-    /// </summary>
+
+    /// <summary>Extracts an archive.</summary>
     public const string Extract = "extract";
-    /// <summary>
-    /// The tickets constant.
-    /// </summary>
+
+    /// <summary>Issues a one-time zip link.</summary>
     public const string Tickets = "tickets";
 
-    /// <summary>
-    /// The URL check constant.
-    /// </summary>
+    /// <summary>Checks whether one insertable URL can be read anonymously.</summary>
     public const string UrlCheck = "url-check";
 
-    /// <summary>
-    /// The download constant.
-    /// </summary>
+    /// <summary>Streams one file.</summary>
     public const string Download = "download";
-    /// <summary>
-    /// The thumbnail constant.
-    /// </summary>
+
+    /// <summary>A cached WebP thumbnail.</summary>
     public const string Thumbnail = "thumb";
-    /// <summary>
-    /// The upload constant.
-    /// </summary>
+
+    /// <summary>Stores an uploaded file. The request must send <c>X-WebFilez: 1</c>.</summary>
     public const string Upload = "upload";
-    /// <summary>
-    /// The zip constant.
-    /// </summary>
+
+    /// <summary>Streams the zip for a ticket. <c>{token}</c> is the ticket.</summary>
     public const string Zip = "zip";
 }

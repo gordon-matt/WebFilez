@@ -11,7 +11,7 @@ using WebFilez.Services.Transfers;
 namespace WebFilez;
 
 /// <summary>
-/// Provides extension methods for endpoint route builders.
+/// Maps the file manager HTTP API.
 /// </summary>
 public static class EndpointRouteBuilderExtensions
 {
@@ -25,6 +25,7 @@ public static class EndpointRouteBuilderExtensions
         /// </code>
         /// </summary>
         /// <param name="prefix">Defaults to <see cref="WebFilezOptions.ApiPrefix"/>.</param>
+        /// <returns>The route group, so the host can call <c>RequireAuthorization</c> on it.</returns>
         public RouteGroupBuilder MapWebFilezApi(string? prefix = null)
         {
             MapAssets(endpoints);

@@ -11,15 +11,13 @@ public sealed record ResolvedPath(
     FilePermission Permissions,
     IStorageProvider Storage)
 {
-    /// <summary>
-    /// Gets the location.
-    /// </summary>
+    /// <summary>The same path as a storage location.</summary>
     public StorageLocation Location => new(Root, VirtualPath, PhysicalPath, RootPhysicalPath);
 }
 
 /// <summary>
 /// The single gateway from an untrusted virtual path to a physical one. Every service method
-/// goes through <see cref="RequireAsync"/> before touching the disk.
+/// goes through <see cref="RequireAsync(string?, string?, FilePermission, CancellationToken)"/> before touching the disk.
 /// </summary>
 public sealed class PathResolver(
     IFileRootProvider rootProvider,
@@ -29,12 +27,10 @@ public sealed class PathResolver(
 {
     /// <summary>The folder this caller cannot leave. Empty unless a file manager set a base path.</summary>
     public FileScope Scope => scope;
-    /// <summary>
-    /// Finds the root.
-    /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the file root.</returns>
+    /// <summary>The root with this id, or <see langword="null"/> when the id is blank or unknown.</summary>
+    /// <param name="rootId">The root id.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>The root, or <see langword="null"/>.</returns>
     public Task<FileRoot?> FindRootAsync(string? rootId, CancellationToken cancellationToken = default) =>
         string.IsNullOrWhiteSpace(rootId)
             ? Task.FromResult<FileRoot?>(null)
@@ -58,13 +54,14 @@ public sealed class PathResolver(
     }
 
     /// <summary>
-    /// Gets the require.
+    /// Resolves <paramref name="path"/> inside <paramref name="root"/>. A path outside the caller's scope, or one they can neither browse nor read, is not found.
+    /// A path they can see but that lacks <paramref name="required"/> is forbidden.
     /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="required">The required.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the resolved path.</returns>
+    /// <param name="root">The root that contains the path.</param>
+    /// <param name="path">The virtual path. <see langword="null"/> is the root.</param>
+    /// <param name="required">The permission the operation needs. <see cref="FilePermission.None"/> only requires that the path be visible.</param>
+    /// <param name="cancellationToken">Cancels the check.</param>
+    /// <returns>The mapped path, or not found, forbidden, or an error when no provider is registered.</returns>
     public async Task<Result<ResolvedPath>> RequireAsync(
         FileRoot root,
         string? path,

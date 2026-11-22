@@ -21,13 +21,11 @@ public sealed class DownloadTicketService(TimeProvider timeProvider)
 
     private readonly ConcurrentDictionary<string, DownloadTicket> tickets = new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// Creates the value.
-    /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="paths">The paths.</param>
-    /// <param name="fileName">The file name.</param>
-    /// <returns>The string.</returns>
+    /// <summary>Issues a ticket that lasts five minutes. The token is 24 random bytes, hex encoded.</summary>
+    /// <param name="rootId">The root the items belong to.</param>
+    /// <param name="paths">The virtual paths to zip.</param>
+    /// <param name="fileName">The name the browser should save.</param>
+    /// <returns>The token.</returns>
     public string Create(string rootId, IReadOnlyList<string> paths, string fileName)
     {
         PruneExpired();
@@ -55,13 +53,11 @@ public sealed class DownloadTicketService(TimeProvider timeProvider)
     }
 }
 
-/// <summary>
-/// Represents the download ticket.
-/// </summary>
-/// <param name="RootId">The root identifier.</param>
-/// <param name="Paths">The paths.</param>
-/// <param name="FileName">The file name.</param>
-/// <param name="ExpiresAt">The expires at.</param>
+/// <summary>A selection waiting to be zipped.</summary>
+/// <param name="RootId">The root the items belong to.</param>
+/// <param name="Paths">The virtual paths.</param>
+/// <param name="FileName">The name the browser should save.</param>
+/// <param name="ExpiresAt">When the ticket stops working, in UTC.</param>
 public sealed record DownloadTicket(
     string RootId,
     IReadOnlyList<string> Paths,

@@ -31,14 +31,16 @@
     private string confirmLabel = "OK";
     private TaskCompletionSource<string?>? completion;
 
-    /// <summary>
-    /// Gets or sets the interop.
-    /// </summary>
+    /// <summary>The JavaScript module used to focus the field.</summary>
     [Parameter, EditorRequired] public WebFilezInterop Interop { get; set; } = default!;
 
     [CascadingParameter] private WebFilezText Text { get; set; } = WebFilezText.English;
 
     /// <summary>Completes with the entered text, or null if cancelled.</summary>
+    /// <param name="title">The dialog title.</param>
+    /// <param name="label">The field label.</param>
+    /// <param name="initialValue">The text the field starts with.</param>
+    /// <param name="confirmLabel">The confirm button's text. The default is OK.</param>
     /// <param name="selectStemOnly">Pre-select the name without its extension, as Explorer does on rename.</param>
     public Task<string?> ShowAsync(string title, string label, string initialValue, string confirmLabel = "OK", bool selectStemOnly = false)
     {

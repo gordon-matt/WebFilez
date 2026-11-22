@@ -7,9 +7,7 @@ namespace WebFilez;
 /// </summary>
 public static class FileKinds
 {
-    /// <summary>
-    /// The default mime type constant.
-    /// </summary>
+    /// <summary>The media type used when the extension is unknown.</summary>
     public const string DefaultMimeType = "application/octet-stream";
 
     private static readonly Dictionary<string, FileKind> KindByExtension = new(StringComparer.OrdinalIgnoreCase)
@@ -160,12 +158,10 @@ public static class FileKinds
         ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tif", ".tiff",
     };
 
-    /// <summary>
-    /// Classifies the value.
-    /// </summary>
-    /// <param name="fileName">The file name.</param>
-    /// <param name="isDirectory">The is directory.</param>
-    /// <returns>The file kind.</returns>
+    /// <summary>The kind of a file from its extension. A directory is always a folder. An unknown extension is other.</summary>
+    /// <param name="fileName">The file name, including its extension.</param>
+    /// <param name="isDirectory">Whether the item is a directory.</param>
+    /// <returns>The kind.</returns>
     public static FileKind Classify(string fileName, bool isDirectory)
     {
         if (isDirectory)
@@ -179,11 +175,9 @@ public static class FileKinds
             : KindByExtension.GetValueOrDefault(extension, FileKind.Other);
     }
 
-    /// <summary>
-    /// Gets the mime type.
-    /// </summary>
-    /// <param name="fileName">The file name.</param>
-    /// <returns>The mime type.</returns>
+    /// <summary>The media type for a file name. An unknown extension is <see cref="DefaultMimeType"/>.</summary>
+    /// <param name="fileName">The file name, including its extension.</param>
+    /// <returns>The media type.</returns>
     public static string GetMimeType(string fileName)
     {
         string extension = Path.GetExtension(fileName);
@@ -204,11 +198,9 @@ public static class FileKinds
     public static bool IsMedia(FileKind kind) => kind is
         FileKind.Image or FileKind.Video or FileKind.Audio or FileKind.Pdf;
 
-    /// <summary>
-    /// Gets the supports thumbnail.
-    /// </summary>
-    /// <param name="fileName">The file name.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <summary>Whether the built-in thumbnail set includes this extension. Video stills come from a thumbnail source, not from this list.</summary>
+    /// <param name="fileName">The file name, including its extension.</param>
+    /// <returns><see langword="true"/> for JPEG, PNG, GIF, BMP, WebP, and TIFF.</returns>
     public static bool SupportsThumbnail(string fileName) =>
         ThumbnailExtensions.Contains(Path.GetExtension(fileName));
 
@@ -229,11 +221,12 @@ public static class FileKinds
             || mimeType.Equals("text/plain", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
-    /// Gets the matches.
+    /// Whether a kind belongs in a type filter. Images are images. Documents include documents, PDF, text, and code.
+    /// Media is video and audio. Archives are archives. Folders are directories. All matches everything.
     /// </summary>
-    /// <param name="kind">The kind.</param>
-    /// <param name="filter">The filter.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <param name="kind">The item's kind.</param>
+    /// <param name="filter">The selected filter.</param>
+    /// <returns><see langword="true"/> when the item should stay in the list.</returns>
     public static bool Matches(FileKind kind, KindFilter filter) => filter switch
     {
         KindFilter.Images => kind == FileKind.Image,

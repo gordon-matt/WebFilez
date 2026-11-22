@@ -1,58 +1,49 @@
 namespace WebFilez.Services.Access;
 
-/// <summary>
-/// Specifies the file activity kind.
-/// </summary>
+/// <summary>What a successful file operation did.</summary>
 public enum FileActivityKind
 {
-    /// <summary>
-    /// The create folder value.
-    /// </summary>
+    /// <summary>A folder was created.</summary>
     CreateFolder = 0,
-    /// <summary>
-    /// The create file value.
-    /// </summary>
+
+    /// <summary>An empty file was created.</summary>
     CreateFile = 1,
-    /// <summary>
-    /// The upload value.
-    /// </summary>
+
+    /// <summary>A file was uploaded.</summary>
     Upload = 2,
-    /// <summary>
-    /// The modify value.
-    /// </summary>
+
+    /// <summary>A file's contents were replaced.</summary>
     Modify = 3,
-    /// <summary>
-    /// The rename value.
-    /// </summary>
+
+    /// <summary>An item was renamed.</summary>
     Rename = 4,
-    /// <summary>
-    /// The copy value.
-    /// </summary>
+
+    /// <summary>An item was copied.</summary>
     Copy = 5,
-    /// <summary>
-    /// The move value.
-    /// </summary>
+
+    /// <summary>An item was moved.</summary>
     Move = 6,
-    /// <summary>
-    /// The delete value.
-    /// </summary>
+
+    /// <summary>An item was deleted.</summary>
     Delete = 7,
-    /// <summary>
-    /// The download value.
-    /// </summary>
+
+    /// <summary>A file or a zip was downloaded.</summary>
     Download = 8,
-    /// <summary>
-    /// The compress value.
-    /// </summary>
+
+    /// <summary>An archive was written.</summary>
     Compress = 9,
-    /// <summary>
-    /// The extract value.
-    /// </summary>
+
+    /// <summary>An archive was extracted.</summary>
     Extract = 10,
 }
 
+/// <summary>One successful change or download.</summary>
+/// <param name="Kind">What happened.</param>
+/// <param name="RootId">The root the item was in.</param>
 /// <param name="Path">The item acted on.</param>
 /// <param name="TargetPath">Where it ended up, for renames, copies and moves.</param>
+/// <param name="TargetRootId">The destination root, when the item changed roots.</param>
+/// <param name="SizeBytes">The size, when the operation knows it.</param>
 public sealed record FileActivity(
     FileActivityKind Kind,
     string RootId,
@@ -69,26 +60,17 @@ public sealed record FileActivity(
 /// </summary>
 public interface IFileActivitySink
 {
-    /// <summary>
-    /// Performs the record operation.
-    /// </summary>
-    /// <param name="activity">The activity.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Records one successful change or download. An exception here is logged by the caller and does not undo the file operation.</summary>
+    /// <param name="activity">What happened.</param>
+    /// <param name="cancellationToken">Cancels the record. The file operation has already finished.</param>
+    /// <returns>A task that completes once the sink has accepted the activity.</returns>
     ValueTask RecordAsync(FileActivity activity, CancellationToken cancellationToken = default);
 }
 
-/// <summary>
-/// Represents the null file activity sink.
-/// </summary>
+/// <summary>The sink used when the host registers none. It records nothing.</summary>
 public sealed class NullFileActivitySink : IFileActivitySink
 {
-    /// <summary>
-    /// Performs the record operation.
-    /// </summary>
-    /// <param name="activity">The activity.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public ValueTask RecordAsync(FileActivity activity, CancellationToken cancellationToken = default) =>
         ValueTask.CompletedTask;
 }

@@ -7,12 +7,18 @@ using WebFilez.Services.Transfers;
 
 namespace WebFilez.Services.Images;
 
-/// <summary>
-/// Defines the contract for the thumbnail service.
-/// </summary>
+/// <summary>Builds a WebP thumbnail of a file the caller can read.</summary>
 public interface IThumbnailService
 {
-    /// <summary>A WebP thumbnail of an image, snapped to the nearest supported size.</summary>
+    /// <summary>
+    /// A WebP thumbnail, snapped to 128, 256, or 512. Thumbnails that are turned off, and files no source can read, are not found.
+    /// The caller needs read permission. A cached file is returned when the size and the file have not changed.
+    /// </summary>
+    /// <param name="rootId">The root.</param>
+    /// <param name="path">The file.</param>
+    /// <param name="size">The requested edge length. The nearest supported size is used. The default is 256.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The WebP bytes, or not found.</returns>
     Task<Result<ThumbnailDto>> GetAsync(string rootId, string path, int size = 256, CancellationToken cancellationToken = default);
 }
 
@@ -35,14 +41,7 @@ public sealed class ThumbnailService(
     /// <summary>Bounds concurrent decodes, so a grid of a hundred tiles can't pin every core.</summary>
     private static readonly SemaphoreSlim GenerationLock = new(Math.Max(1, Environment.ProcessorCount / 2));
 
-    /// <summary>
-    /// Gets the value.
-    /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="size">The size.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the thumbnail.</returns>
+    /// <inheritdoc />
     public async Task<Result<ThumbnailDto>> GetAsync(
         string rootId,
         string path,

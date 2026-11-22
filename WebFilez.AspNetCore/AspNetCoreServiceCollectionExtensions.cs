@@ -6,9 +6,7 @@ using WebFilez.Services.Storage;
 
 namespace WebFilez;
 
-/// <summary>
-/// Provides extension methods for asp net core service collections.
-/// </summary>
+/// <summary>Registers WebFilez in an ASP.NET Core host.</summary>
 public static class AspNetCoreServiceCollectionExtensions
 {
     extension(IServiceCollection services)
@@ -19,6 +17,9 @@ public static class AspNetCoreServiceCollectionExtensions
         /// The returned builder is what optional packages chain from, for example
         /// <c>.AddComponents()</c> or <c>.AddAzureBlob()</c>.
         /// </summary>
+        /// <param name="configuration">The application configuration. The <c>WebFilez</c> section is bound when this is set.</param>
+        /// <param name="configure">Further changes applied after the section is bound.</param>
+        /// <returns>A builder that storage and component packages extend.</returns>
         public IWebFilezBuilder AddWebFilez(
             IConfiguration? configuration = null,
             Action<WebFilezOptions>? configure = null)

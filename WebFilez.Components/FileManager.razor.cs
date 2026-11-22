@@ -154,22 +154,16 @@ public sealed partial class FileManager
     /// </summary>
     [Parameter] public string? Kind { get; set; }
 
-    /// <summary>
-    /// Gets or sets the select label.
-    /// </summary>
+    /// <summary>The Select button's text in picker mode. The default is Select.</summary>
     [Parameter] public string SelectLabel { get; set; } = "Select";
 
-    /// <summary>
-    /// Gets or sets a value indicating whether this instance is show tree.
-    /// </summary>
+    /// <summary>Whether the folder tree is shown. The default is on.</summary>
     [Parameter] public bool ShowTree { get; set; } = true;
 
     /// <summary>Hides every action that changes files. The server's permissions still apply either way.</summary>
     [Parameter] public bool ReadOnly { get; set; }
 
-    /// <summary>
-    /// Gets or sets the class.
-    /// </summary>
+    /// <summary>CSS classes added to the root element.</summary>
     [Parameter] public string? Class { get; set; }
 
     /// <summary>IETF language tag, such as <c>fr-CA</c>. Empty follows the saved choice, then the UI culture.</summary>
@@ -185,14 +179,10 @@ public sealed partial class FileManager
     /// <summary>Raised by the Select button in picker mode.</summary>
     [Parameter] public EventCallback<IReadOnlyList<SelectedFile>> OnSelected { get; set; }
 
-    /// <summary>
-    /// Gets or sets the callback raised for the navigated event.
-    /// </summary>
+    /// <summary>Raised after the open folder changes.</summary>
     [Parameter] public EventCallback<FileLocation> OnNavigated { get; set; }
 
-    /// <summary>
-    /// Gets or sets the additional attributes.
-    /// </summary>
+    /// <summary>Attributes that were not matched to a parameter, written onto the root element.</summary>
     [Parameter(CaptureUnmatchedValues = true)] public IReadOnlyDictionary<string, object>? AdditionalAttributes { get; set; }
 
     private string CurrentPath => listing?.Path ?? VirtualPath.Normalize(Path);

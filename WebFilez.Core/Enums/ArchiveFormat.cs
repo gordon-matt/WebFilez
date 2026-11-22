@@ -1,20 +1,14 @@
 namespace WebFilez.Enums;
 
-/// <summary>
-/// Specifies the archive format.
-/// </summary>
+/// <summary>The archive written by compress.</summary>
 public enum ArchiveFormat
 {
-    /// <summary>
-    /// The zip value.
-    /// </summary>
+    /// <summary>A zip file.</summary>
     Zip = 0,
-    /// <summary>
-    /// The tar value.
-    /// </summary>
+
+    /// <summary>An uncompressed tar.</summary>
     Tar = 1,
-    /// <summary>
-    /// The tar gz value.
-    /// </summary>
+
+    /// <summary>A gzipped tar.</summary>
     TarGz = 2,
 }

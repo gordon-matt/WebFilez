@@ -19,21 +19,18 @@ namespace WebFilez.Services.Access;
 /// </remarks>
 public interface IFileAccessPolicy
 {
+    /// <summary>What the current caller may do at <paramref name="path"/>, before the root's own clamp is applied.</summary>
     /// <param name="root">The root containing the path.</param>
     /// <param name="path">A normalized virtual path within the root, such as <c>/photos/2024</c>.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>The caller's permissions at that path.</returns>
     ValueTask<FilePermission> GetPermissionsAsync(FileRoot root, string path, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Grants every caller whatever the root allows.</summary>
 public sealed class RootFileAccessPolicy : IFileAccessPolicy
 {
-    /// <summary>
-    /// Gets the permissions.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the file permission.</returns>
+    /// <inheritdoc />
     public ValueTask<FilePermission> GetPermissionsAsync(
         FileRoot root,
         string path,

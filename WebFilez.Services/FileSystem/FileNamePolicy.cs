@@ -11,12 +11,14 @@ namespace WebFilez.Services.FileSystem;
 public sealed class FileNamePolicy(IOptionsMonitor<WebFilezOptions> options)
 {
     /// <summary>
-    /// Applies the value.
+    /// Cleans a name and checks its extension. A blank name, a reserved temporary suffix, and a blocked extension are invalid.
+    /// Every dotted suffix is checked, so a name such as <c>shell.php.jpg</c> is refused when <c>.php</c> is blocked.
+    /// When an allow list is set, the final extension must be on it.
     /// </summary>
-    /// <param name="requestedName">The requested name.</param>
-    /// <param name="isDirectory">The is directory.</param>
-    /// <param name="fieldName">The field name.</param>
-    /// <returns>The outcome for the string.</returns>
+    /// <param name="requestedName">The name the caller typed.</param>
+    /// <param name="isDirectory">Whether this is a folder. Folders are not checked against the extension lists.</param>
+    /// <param name="fieldName">The validation field the error is reported against.</param>
+    /// <returns>The cleaned name, or an invalid result.</returns>
     public Result<string> Apply(string? requestedName, bool isDirectory, string fieldName = "Name")
     {
         var settings = options.CurrentValue;

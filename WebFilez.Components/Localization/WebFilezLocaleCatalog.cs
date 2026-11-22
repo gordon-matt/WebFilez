@@ -13,17 +13,13 @@ public sealed class WebFilezLocaleCatalog : IWebFilezLocalizer
     private const string ResourcePrefix = "WebFilez.Components.Locales.";
     private const string RtlKey = "@rtl";
 
-    /// <summary>
-    /// Gets the shared.
-    /// </summary>
+    /// <summary>The catalogs used when the host has not registered its own.</summary>
     public static WebFilezLocaleCatalog Shared { get; } = new(new WebFilezLocalizationOptions());
 
     private readonly Dictionary<string, Dictionary<string, string>> catalogs = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>
-    /// Initializes a new instance of the WebFilezLocaleCatalog class.
-    /// </summary>
-    /// <param name="options">The options.</param>
+    /// <summary>Loads the embedded catalogs, then any JSON files in the configured directory and in WebFilez/Locales beside the app.</summary>
+    /// <param name="options">Where extra catalogs live. A missing directory is ignored.</param>
     public WebFilezLocaleCatalog(WebFilezLocalizationOptions options)
     {
         LoadEmbedded();
@@ -31,16 +27,10 @@ public sealed class WebFilezLocaleCatalog : IWebFilezLocalizer
         LoadDirectory(Path.Combine(AppContext.BaseDirectory, "WebFilez", "Locales"));
     }
 
-    /// <summary>
-    /// Gets or sets the languages.
-    /// </summary>
+    /// <inheritdoc />
     public IReadOnlyList<WebFilezLanguage> Languages { get; private set; } = [];
 
-    /// <summary>
-    /// Resolves the value.
-    /// </summary>
-    /// <param name="languageTag">The language tag.</param>
-    /// <returns>The web filez text.</returns>
+    /// <inheritdoc />
     public WebFilezText Resolve(string? languageTag)
     {
         string requested = string.IsNullOrWhiteSpace(languageTag) ? "en" : languageTag.Trim().Replace('_', '-');

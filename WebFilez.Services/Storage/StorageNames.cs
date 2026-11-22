@@ -4,11 +4,12 @@ namespace WebFilez.Services.Storage;
 public static class StorageNames
 {
     /// <summary>
-    /// Determines whether this instance is rejected.
+    /// Whether a single path segment is illegal, hidden, a temporary upload, or excluded.
+    /// A hidden name is rejected only when the root does not show hidden files.
     /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="segment">The segment.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <param name="root">The root the segment would be created in.</param>
+    /// <param name="segment">One path segment, not a full path.</param>
+    /// <returns><see langword="true"/> when the name must not be mapped.</returns>
     public static bool IsRejected(FileRoot root, string segment)
     {
         char[] invalid = Path.GetInvalidFileNameChars();

@@ -16,9 +16,7 @@ public sealed class PublicUrlProbe(
     IOptionsMonitor<WebFilezOptions> options,
     ILogger<PublicUrlProbe> logger)
 {
-    /// <summary>
-    /// The HTTP client name constant.
-    /// </summary>
+    /// <summary>The named HTTP client used for the anonymous request. Its timeout is 15 seconds.</summary>
     public const string HttpClientName = "WebFilez.PublicUrlProbe";
 
     /// <summary>Warning returned and logged when the insertable URL is not anonymously readable.</summary>
@@ -26,12 +24,14 @@ public sealed class PublicUrlProbe(
         "This URL is not publicly readable. Inserted files may not display for site visitors. See README: Storage setups.";
 
     /// <summary>
-    /// Checks the value.
+    /// Requests one insertable URL without credentials. When probing is off, nothing is requested and <see cref="PublicUrlProbeResult.Enabled"/> is false.
+    /// A missing root uses the first visible root. A relative URL is not requested. A 401, 403, or 404 is a warning and is logged.
+    /// Any other failure is a warning too. Cancellation is thrown.
     /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the public URL probe result.</returns>
+    /// <param name="rootId">The root to sample, or <see langword="null"/> for the first visible root.</param>
+    /// <param name="path">A file or folder to check, or <see langword="null"/> to pick one.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <returns>Whether the URL looks readable to an anonymous visitor.</returns>
     public async Task<PublicUrlProbeResult> CheckAsync(
         string? rootId,
         string? path,

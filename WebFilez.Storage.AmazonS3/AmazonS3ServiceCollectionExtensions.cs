@@ -4,7 +4,7 @@ using WebFilez.Services.Storage;
 namespace WebFilez.Storage.AmazonS3;
 
 /// <summary>
-/// Provides extension methods for amazon s3service collections.
+/// Registers the Amazon S3 storage provider.
 /// </summary>
 public static class AmazonS3ServiceCollectionExtensions
 {
@@ -15,8 +15,9 @@ public static class AmazonS3ServiceCollectionExtensions
         /// and supplies <c>AccessKey</c>, <c>SecretKey</c> and <c>Bucket</c> in <c>Settings</c>.
         /// <c>Region</c> defaults to <c>us-east-1</c>. <c>ServiceUrl</c> points at LocalStack or
         /// another S3-compatible endpoint. <c>Path</c>, or <c>Settings.Prefix</c>, is the folder
-        /// inside the bucket. The bucket is not created for you.
+        /// inside the bucket. The bucket is not created for you. Calling this again registers another provider.
         /// </summary>
+        /// <returns>The same builder.</returns>
         public TBuilder AddAmazonS3()
         {
             builder.Services.AddSingleton<IStorageProvider, AmazonS3StorageProvider>();

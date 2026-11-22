@@ -21,18 +21,14 @@ public sealed class ExcludeMatcher
         this.patterns = patterns;
     }
 
-    /// <summary>
-    /// Gets the for.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <returns>The for.</returns>
+    /// <summary>A matcher for the root's exclude patterns. An empty list matches nothing.</summary>
+    /// <param name="root">The root whose patterns to use.</param>
+    /// <returns>A cached matcher.</returns>
     public static ExcludeMatcher For(FileRoot root) => For(root.ExcludePatterns);
 
-    /// <summary>
-    /// Gets the for.
-    /// </summary>
-    /// <param name="patterns">The patterns.</param>
-    /// <returns>The for.</returns>
+    /// <summary>A matcher for these globs. The same pattern list returns the same matcher.</summary>
+    /// <param name="patterns">Glob patterns such as <c>*.bak</c>. <see langword="null"/> or empty matches nothing.</param>
+    /// <returns>A cached matcher.</returns>
     public static ExcludeMatcher For(IReadOnlyCollection<string>? patterns)
     {
         if (patterns is null || patterns.Count == 0)
@@ -44,11 +40,9 @@ public sealed class ExcludeMatcher
         return Cache.GetOrAdd(key, static (_, list) => Build(list), patterns);
     }
 
-    /// <summary>
-    /// Determines whether this instance is excluded.
-    /// </summary>
-    /// <param name="name">The name.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <summary>Whether <paramref name="name"/> matches any exclude glob.</summary>
+    /// <param name="name">One path segment.</param>
+    /// <returns><see langword="true"/> when the name should be hidden and unreachable.</returns>
     public bool IsExcluded(string name) =>
         patterns.Length != 0 && patterns.Any(p => p.IsMatch(name));
 

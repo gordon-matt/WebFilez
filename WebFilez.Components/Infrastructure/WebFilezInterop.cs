@@ -19,34 +19,28 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
         where T : class =>
         await (await Module).InvokeVoidAsync("attach", root, dropZone, callback);
 
-    /// <summary>
-    /// Detaches the value.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Removes the keyboard and drop listeners from one file manager.</summary>
+    /// <param name="root">The file manager's root element.</param>
+    /// <returns>A task that completes when the listeners are gone.</returns>
     public async ValueTask DetachAsync(ElementReference root) =>
         await (await Module).InvokeVoidAsync("detach", root);
 
-    /// <summary>
-    /// Performs the pick files operation.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="directories">The directories.</param>
-    /// <param name="accept">The accept.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Opens the browser's file picker.</summary>
+    /// <param name="root">The file manager's root element.</param>
+    /// <param name="directories">Whether the picker selects folders.</param>
+    /// <param name="accept">An HTML accept list, or <see langword="null"/> to accept every file.</param>
+    /// <returns>A task that completes when the picker has been opened.</returns>
     public async ValueTask PickFilesAsync(ElementReference root, bool directories, string? accept) =>
         await (await Module).InvokeVoidAsync("pickFiles", root, directories, accept);
 
-    /// <summary>
-    /// Uploads the pending.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="url">The URL.</param>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="instructions">Per-file upload, replace, rename, or skip. Null uploads everything.</param>
-    /// <param name="includeCredentials">The include credentials.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Sends the files the drop planned, including a relative folder for each one.</summary>
+    /// <param name="root">The file manager's root element.</param>
+    /// <param name="url">The upload endpoint.</param>
+    /// <param name="rootId">The root to store them in.</param>
+    /// <param name="path">The open folder.</param>
+    /// <param name="instructions">What to do with each name, or <see langword="null"/> when nothing is pending.</param>
+    /// <param name="includeCredentials">Whether the request sends cookies.</param>
+    /// <returns>A task that completes once the browser has started the uploads.</returns>
     public async ValueTask UploadPendingAsync(
         ElementReference root,
         string url,
@@ -56,37 +50,29 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
         bool includeCredentials) =>
         await (await Module).InvokeVoidAsync("uploadPending", root, url, rootId, path, instructions, includeCredentials);
 
-    /// <summary>
-    /// Cancels the upload.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="uploadId">The upload identifier.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Aborts one upload that is still sending.</summary>
+    /// <param name="root">The file manager's root element.</param>
+    /// <param name="uploadId">The upload id.</param>
+    /// <returns>A task that completes once the browser has been told to abort.</returns>
     public async ValueTask CancelUploadAsync(ElementReference root, long uploadId) =>
         await (await Module).InvokeVoidAsync("cancelUpload", root, uploadId);
 
-    /// <summary>
-    /// Downloads the value.
-    /// </summary>
-    /// <param name="url">The URL.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Starts a browser download of a URL.</summary>
+    /// <param name="url">The download or zip address.</param>
+    /// <returns>A task that completes once the navigation has started.</returns>
     public async ValueTask DownloadAsync(string url) =>
         await (await Module).InvokeVoidAsync("download", url);
 
-    /// <summary>
-    /// Copies the text.
-    /// </summary>
+    /// <summary>Copies text to the clipboard.</summary>
     /// <param name="text">The text.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is true when the condition is met; otherwise, false.</returns>
+    /// <returns><see langword="true"/> when the browser accepted it.</returns>
     public async ValueTask<bool> CopyTextAsync(string text) =>
         await (await Module).InvokeAsync<bool>("copyText", text);
 
-    /// <summary>
-    /// Performs the focus operation.
-    /// </summary>
+    /// <summary>Moves focus to an element.</summary>
     /// <param name="element">The element.</param>
-    /// <param name="selectStem">The select stem.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <param name="selectStem">Whether a file name's stem is selected, leaving the extension alone.</param>
+    /// <returns>A task that completes once focus has moved.</returns>
     public async ValueTask FocusAsync(ElementReference element, bool selectStem = false) =>
         await (await Module).InvokeVoidAsync("focus", element, selectStem);
 
@@ -94,28 +80,22 @@ public sealed class WebFilezInterop(IJSRuntime js) : IAsyncDisposable
     public async ValueTask FocusItemAsync(ElementReference root, string key) =>
         await (await Module).InvokeVoidAsync("focusItem", root, key);
 
-    /// <summary>
-    /// Performs the fit to viewport operation.
-    /// </summary>
+    /// <summary>Sizes an element so it fits the viewport.</summary>
     /// <param name="element">The element.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <returns>A task that completes once the size has been applied.</returns>
     public async ValueTask FitToViewportAsync(ElementReference element) =>
         await (await Module).InvokeVoidAsync("fitToViewport", element);
 
-    /// <summary>
-    /// Gets the stored.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the string.</returns>
+    /// <summary>Reads a value this file manager stored in the browser.</summary>
+    /// <param name="key">The storage key.</param>
+    /// <returns>The stored text, or <see langword="null"/> when there is none.</returns>
     public async ValueTask<string?> GetStoredAsync(string key) =>
         await (await Module).InvokeAsync<string?>("getStored", key);
 
-    /// <summary>
-    /// Sets the stored.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <param name="value">The value.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Stores a value in the browser for this file manager.</summary>
+    /// <param name="key">The storage key.</param>
+    /// <param name="value">The text to store.</param>
+    /// <returns>A task that completes once the value is stored.</returns>
     public async ValueTask SetStoredAsync(string key, string value) =>
         await (await Module).InvokeVoidAsync("setStored", key, value);
 

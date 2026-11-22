@@ -10,11 +10,9 @@ namespace WebFilez;
 /// </remarks>
 public static class ResultExtensions
 {
-    /// <summary>
-    /// Determines whether this instance is success status.
-    /// </summary>
-    /// <param name="result">The result.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <summary>Whether the result is success, created, or no content.</summary>
+    /// <param name="result">The result to test.</param>
+    /// <returns><see langword="true"/> for those three statuses.</returns>
     public static bool IsSuccessStatus(this IResult result) =>
         result.Status is ResultStatus.Ok or ResultStatus.Created or ResultStatus.NoContent;
 
@@ -23,6 +21,10 @@ public static class ResultExtensions
     /// status, error messages and validation errors across. Throws on a success, since there
     /// would be no value to carry.
     /// </summary>
+    /// <typeparam name="TTo">The value type of the failure that is returned.</typeparam>
+    /// <param name="result">A failed result.</param>
+    /// <returns>The same failure, with no value.</returns>
+    /// <exception cref="InvalidOperationException">The result succeeded.</exception>
     public static Result<TTo> To<TTo>(this IResult result)
     {
         if (result.IsSuccessStatus())
@@ -47,7 +49,9 @@ public static class ResultExtensions
         };
     }
 
-    /// <summary>Same as <see cref="To{TTo}"/> but for the non-generic <see cref="Result"/>.</summary>
+    /// <summary>Same as <see cref="To{TTo}"/> but for the non-generic <see cref="Result"/>. A success stays a success.</summary>
+    /// <param name="result">The result to reshape.</param>
+    /// <returns>The same status, without a value.</returns>
     public static Result ToVoid(this IResult result)
     {
         if (result.IsSuccessStatus())
@@ -72,8 +76,10 @@ public static class ResultExtensions
 
     /// <summary>
     /// The message to surface to a user, falling back to a status-appropriate default so the UI
-    /// never renders an empty alert.
+    /// never renders an empty alert. The first error wins, then the first validation message, then a sentence for the status.
     /// </summary>
+    /// <param name="result">The result to read.</param>
+    /// <returns>Text a page can show.</returns>
     public static string GetDisplayMessage(this IResult result)
     {
         string? first = result.Errors?.FirstOrDefault();

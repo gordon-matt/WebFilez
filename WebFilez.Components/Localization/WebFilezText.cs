@@ -8,9 +8,7 @@ namespace WebFilez.Components.Localization;
 /// </summary>
 public sealed class WebFilezText
 {
-    /// <summary>
-    /// Gets the english.
-    /// </summary>
+    /// <summary>The English catalog, used when a translation is missing.</summary>
     public static WebFilezText English { get; } = WebFilezLocaleCatalog.Shared.Resolve("en");
 
     private readonly IReadOnlyList<Dictionary<string, string>> chain;
@@ -23,33 +21,23 @@ public sealed class WebFilezText
         this.chain = chain;
     }
 
-    /// <summary>
-    /// Gets the language.
-    /// </summary>
+    /// <summary>The tag that was resolved, such as <c>fr-CA</c>.</summary>
     public string Language { get; }
 
-    /// <summary>
-    /// Gets the culture.
-    /// </summary>
+    /// <summary>The culture used to format numbers and dates.</summary>
     public CultureInfo Culture { get; }
 
-    /// <summary>
-    /// Gets a value indicating whether this instance is right to left.
-    /// </summary>
+    /// <summary>Whether the catalog asks for a right-to-left layout.</summary>
     public bool IsRightToLeft { get; }
 
-    /// <summary>
-    /// Gets or sets the item at the specified index.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>The item at the specified index.</returns>
+    /// <summary>The text for a key. A missing key falls back, and the key itself is returned when English has none.</summary>
+    /// <param name="key">The catalog key.</param>
+    /// <returns>The translated text, or the key.</returns>
     public string this[string key] => Get(key);
 
-    /// <summary>
-    /// Gets the value.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <returns>The string.</returns>
+    /// <summary>The text for a key. A missing key falls back, and the key itself is returned when English has none.</summary>
+    /// <param name="key">The catalog key.</param>
+    /// <returns>The translated text, or the key.</returns>
     public string Get(string key)
     {
         foreach (var catalog in chain)
@@ -63,12 +51,10 @@ public sealed class WebFilezText
         return key;
     }
 
-    /// <summary>
-    /// Formats the value.
-    /// </summary>
-    /// <param name="key">The key.</param>
-    /// <param name="args">The args.</param>
-    /// <returns>The string.</returns>
+    /// <summary>Formats the text for a key with <paramref name="args"/>. A format that does not match the arguments returns the template unchanged.</summary>
+    /// <param name="key">The catalog key.</param>
+    /// <param name="args">The values substituted into the template.</param>
+    /// <returns>The formatted text, or the template when the format is wrong.</returns>
     public string Format(string key, params object?[] args)
     {
         string template = Get(key);
@@ -86,6 +72,9 @@ public sealed class WebFilezText
     /// Picks <c>{key}.one</c>, <c>{key}.other</c> and the other CLDR categories this language uses.
     /// A missing category uses <c>.other</c>, then English.
     /// </summary>
+    /// <param name="key">The catalog key, without the category suffix.</param>
+    /// <param name="count">The number that selects the category and is formatted into the text.</param>
+    /// <returns>The chosen phrase.</returns>
     public string Plural(string key, int count)
     {
         foreach (string category in Categories(count))

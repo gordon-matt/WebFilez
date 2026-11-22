@@ -35,9 +35,7 @@ public interface IFileUrlResolver
 /// <summary>What <see cref="IFileUrlResolver"/> needs to build one file or folder URL.</summary>
 public sealed record FileUrlContext
 {
-    /// <summary>
-    /// Gets or sets the root.
-    /// </summary>
+    /// <summary>The root the file or folder belongs to.</summary>
     public required FileRoot Root { get; init; }
 
     /// <summary>The <see cref="IStorageProvider.Key"/> that stores this root, such as <c>amazon-s3</c>.</summary>

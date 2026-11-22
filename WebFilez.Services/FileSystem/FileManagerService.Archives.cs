@@ -8,12 +8,7 @@ namespace WebFilez.Services.FileSystem;
 
 public sealed partial class FileManagerService
 {
-    /// <summary>
-    /// Gets the compress.
-    /// </summary>
-    /// <param name="request">The request.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file system item.</returns>
+    /// <inheritdoc />
     public async Task<Result<FileSystemItemDto>> CompressAsync(
         CompressRequest request,
         CancellationToken cancellationToken = default)
@@ -127,12 +122,7 @@ public sealed partial class FileManagerService
         return Result<FileSystemItemDto>.Success(await ToItemAsync(written, destination.Value.Root, created.Value.VirtualPath, created.Value.Permissions, cancellationToken));
     }
 
-    /// <summary>
-    /// Extracts the value.
-    /// </summary>
-    /// <param name="request">The request.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the bulk operation result.</returns>
+    /// <inheritdoc />
     public async Task<Result<BulkOperationResultDto>> ExtractAsync(
         ExtractRequest request,
         CancellationToken cancellationToken = default)

@@ -83,9 +83,7 @@ public sealed class FileRoot
     /// </summary>
     public List<PathAccessRule> Rules { get; set; } = [];
 
-    /// <summary>
-    /// Gets the display name.
-    /// </summary>
+    /// <summary>The name shown in the UI. The id is used when <see cref="Name"/> is blank.</summary>
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Id : Name;
 
     /// <summary>The permissions the root itself allows, after the read-only clamp.</summary>

@@ -5,9 +5,7 @@ namespace WebFilez.Services;
 /// <summary>Configuration for WebFilez, bound from the <c>WebFilez</c> section.</summary>
 public sealed class WebFilezOptions
 {
-    /// <summary>
-    /// The section name constant.
-    /// </summary>
+    /// <summary>The configuration section these options bind from.</summary>
     public const string SectionName = "WebFilez";
 
     /// <summary>Where <c>MapWebFilezApi()</c> mounts the HTTP API.</summary>
@@ -47,19 +45,13 @@ public sealed class WebFilezOptions
         ".xht", ".xhtml",
     ];
 
-    /// <summary>
-    /// Gets or sets the file names.
-    /// </summary>
+    /// <summary>How names typed by the user are cleaned before they are stored.</summary>
     public FileNameOptions FileNames { get; set; } = new();
 
-    /// <summary>
-    /// Gets or sets the image resize.
-    /// </summary>
+    /// <summary>Whether large uploaded images are shrunk, and to what size.</summary>
     public ImageResizeOptions ImageResize { get; set; } = new();
 
-    /// <summary>
-    /// Gets or sets the thumbnails.
-    /// </summary>
+    /// <summary>Whether thumbnails are generated, where they are cached, and at what quality.</summary>
     public ThumbnailOptions Thumbnails { get; set; } = new();
 
     /// <summary>Largest file the text editor opens.</summary>
@@ -111,14 +103,10 @@ public sealed class FileNameOptions
     /// <summary>Replace spaces with <see cref="SpaceReplacement"/>. Useful when files are served by URL.</summary>
     public bool ReplaceSpaces { get; set; }
 
-    /// <summary>
-    /// Gets or sets the space replacement.
-    /// </summary>
+    /// <summary>What a space becomes when <see cref="ReplaceSpaces"/> is on. The default is an underscore.</summary>
     public string SpaceReplacement { get; set; } = "_";
 
-    /// <summary>
-    /// Gets or sets a value indicating whether this instance is lower case.
-    /// </summary>
+    /// <summary>Whether the stored name is lower case.</summary>
     public bool LowerCase { get; set; }
 
     /// <summary>Strip accents, so <c>Café.jpg</c> becomes <c>Cafe.jpg</c>.</summary>
@@ -128,9 +116,7 @@ public sealed class FileNameOptions
 /// <summary>Shrinks uploaded images that exceed a maximum size, preserving the aspect ratio.</summary>
 public sealed class ImageResizeOptions
 {
-    /// <summary>
-    /// Gets or sets a value indicating whether this instance is enabled.
-    /// </summary>
+    /// <summary>Whether an uploaded image larger than the limits is shrunk. Off by default.</summary>
     public bool Enabled { get; set; }
 
     /// <summary>Zero means no limit on this axis.</summary>
@@ -140,14 +126,10 @@ public sealed class ImageResizeOptions
     public int MaxHeight { get; set; } = 2560;
 }
 
-/// <summary>
-/// Represents the thumbnail options.
-/// </summary>
+/// <summary>Thumbnail generation and the disk cache.</summary>
 public sealed class ThumbnailOptions
 {
-    /// <summary>
-    /// Gets or sets a value indicating whether this instance is enabled.
-    /// </summary>
+    /// <summary>Whether thumbnails are generated. On by default. When off, a thumbnail request is not found.</summary>
     public bool Enabled { get; set; } = true;
 
     /// <summary>Defaults to a <c>webfilez-thumbnails</c> folder under the system temp directory.</summary>

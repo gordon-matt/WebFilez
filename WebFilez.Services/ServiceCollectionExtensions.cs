@@ -7,9 +7,7 @@ using WebFilez.Services.Transfers;
 
 namespace WebFilez.Services;
 
-/// <summary>
-/// Provides extension methods for service collections.
-/// </summary>
+/// <summary>Registers the file manager services.</summary>
 public static class ServiceCollectionExtensions
 {
     extension(IServiceCollection services)
@@ -19,12 +17,14 @@ public static class ServiceCollectionExtensions
         /// section when <paramref name="configuration"/> is supplied.
         /// </summary>
         /// <remarks>
-        /// Every extension point is registered with <c>TryAdd</c>, so register your own
-        /// <see cref="IFileRootProvider"/>, <see cref="IFileAccessPolicy"/>,
-        /// <see cref="IFileActivitySink"/> or <see cref="IFileUrlResolver"/> before or after
-        /// calling this and yours wins. <see cref="WebFilez.Services.Images.IThumbnailSource"/> is additive:
-        /// register one to thumbnail files Skia cannot decode. None are registered here.
+        /// The directory, access policy, activity sink, URL resolver, and index are registered with
+        /// <c>TryAdd</c>. Register your own before this call; a registration afterwards does not replace them.
+        /// Thumbnail sources are additive. Register one to thumbnail files the built-in decoder cannot read.
+        /// None are registered here. A second call does not register the same services twice.
         /// </remarks>
+        /// <param name="configuration">The application configuration. The <c>WebFilez</c> section is bound when this is set.</param>
+        /// <param name="configure">Further changes applied after the section is bound.</param>
+        /// <returns>The same collection, so storage packages can be chained.</returns>
         public IServiceCollection AddWebFilezServices(
             IConfiguration? configuration = null,
             Action<WebFilezOptions>? configure = null)

@@ -1,8 +1,6 @@
 namespace WebFilez;
 
-/// <summary>
-/// Provides constants.
-/// </summary>
+/// <summary>Paths, headers, and the names the component and the API share.</summary>
 public static class Constants
 {
     /// <summary>
@@ -26,9 +24,7 @@ public static class Constants
     /// </summary>
     public const string RequestHeaderName = "X-WebFilez";
 
-    /// <summary>
-    /// The request header value constant.
-    /// </summary>
+    /// <summary>The only accepted value of <see cref="RequestHeaderName"/>.</summary>
     public const string RequestHeaderValue = "1";
 
     /// <summary>
@@ -38,9 +34,7 @@ public static class Constants
     /// </summary>
     public const string ScopeHeaderName = "X-WebFilez-Scope";
 
-    /// <summary>
-    /// The scope query name constant.
-    /// </summary>
+    /// <summary>Query name that carries a scope token on a download, thumbnail, or upload URL.</summary>
     public const string ScopeQueryName = "scope";
 
     /// <summary>Largest file the built-in editor opens.</summary>
@@ -49,44 +43,32 @@ public static class Constants
     /// <summary>Largest single upload accepted unless configured otherwise.</summary>
     public const long DefaultMaxUploadBytes = 100L * 1024 * 1024;
 
-    /// <summary>
-    /// Provides themes.
-    /// </summary>
+    /// <summary>Values for the file manager's theme parameter.</summary>
     public static class Themes
     {
-        /// <summary>
-        /// The light constant.
-        /// </summary>
+        /// <summary>A light surface.</summary>
         public const string Light = "light";
-        /// <summary>
-        /// The dark constant.
-        /// </summary>
+
+        /// <summary>A dark surface.</summary>
         public const string Dark = "dark";
-        /// <summary>
-        /// The auto constant.
-        /// </summary>
+
+        /// <summary>Follows the operating system's color scheme.</summary>
         public const string Auto = "auto";
 
         /// <summary>Takes its colours from the host page's Bootstrap 5.3 variables.</summary>
         public const string Bootstrap = "bootstrap";
     }
 
-    /// <summary>
-    /// Provides selection modes.
-    /// </summary>
+    /// <summary>Values for the file manager's selection mode.</summary>
     public static class SelectionModes
     {
-        /// <summary>
-        /// The none constant.
-        /// </summary>
+        /// <summary>A file manager, with no Select button.</summary>
         public const string None = "none";
-        /// <summary>
-        /// The single constant.
-        /// </summary>
+
+        /// <summary>A picker that returns one file.</summary>
         public const string Single = "single";
-        /// <summary>
-        /// The multiple constant.
-        /// </summary>
+
+        /// <summary>A picker that returns every selected file.</summary>
         public const string Multiple = "multiple";
     }
 

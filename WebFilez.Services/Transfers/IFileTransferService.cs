@@ -4,12 +4,13 @@ namespace WebFilez.Services.Transfers;
 public interface IFileTransferService
 {
     /// <summary>
-    /// Opens the read.
+    /// Opens one file for download. A folder is invalid. The caller needs read and download permission.
+    /// The caller owns the stream. A successful open is recorded as a download.
     /// </summary>
-    /// <param name="rootId">The root identifier.</param>
-    /// <param name="path">The path.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the file download.</returns>
+    /// <param name="rootId">The root.</param>
+    /// <param name="path">The file.</param>
+    /// <param name="cancellationToken">Cancels the open.</param>
+    /// <returns>The stream and its headers, or invalid, not found, or forbidden.</returns>
     Task<Result<FileDownloadDto>> OpenReadAsync(string rootId, string path, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -25,10 +26,13 @@ public interface IFileTransferService
     Task<Result> WriteZipAsync(DownloadTicket ticket, Stream destination, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Uploads the value.
+    /// Stores an uploaded file. The name is cleaned, and a blocked or disallowed extension is invalid.
+    /// A folder of the same name is a conflict. An existing file is a conflict unless overwrite is set, which also needs modify permission.
+    /// Rename-on-conflict stores the file under a free name instead. A large image may be resized when that option is on.
+    /// A relative directory creates the missing folders under the destination.
     /// </summary>
-    /// <param name="request">The request.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the outcome for the upload result.</returns>
+    /// <param name="request">The destination, the name, and the bytes.</param>
+    /// <param name="cancellationToken">Cancels the save.</param>
+    /// <returns>The stored file, and whether it was resized.</returns>
     Task<Result<UploadResultDto>> UploadAsync(UploadRequest request, CancellationToken cancellationToken = default);
 }

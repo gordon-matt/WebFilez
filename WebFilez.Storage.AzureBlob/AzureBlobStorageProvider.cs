@@ -21,26 +21,16 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
 
     private readonly ConcurrentDictionary<string, BlobServiceClient> clients = new(StringComparer.Ordinal);
 
-    /// <summary>
-    /// Gets the key.
-    /// </summary>
+    /// <inheritdoc />
     public string Key => ProviderKey;
 
-    /// <summary>
-    /// Gets the name comparison.
-    /// </summary>
+    /// <inheritdoc />
     public StringComparison NameComparison => StringComparison.Ordinal;
 
     /// <summary>A folder change copies every blob and then deletes the originals, so undo stays off.</summary>
     public bool SupportsUndo => false;
 
-    /// <summary>
-    /// Attempts to map.
-    /// </summary>
-    /// <param name="root">The root.</param>
-    /// <param name="virtualPath">The virtual path.</param>
-    /// <param name="location">When this method returns, contains the location.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <inheritdoc />
     public bool TryMap(FileRoot root, string virtualPath, out StorageLocation location)
     {
         foreach (string segment in VirtualPath.GetSegments(virtualPath))
@@ -58,21 +48,11 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         return true;
     }
 
-    /// <summary>
-    /// Determines whether this instance is same.
-    /// </summary>
-    /// <param name="left">The left.</param>
-    /// <param name="right">The right.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <inheritdoc />
     public bool AreSame(StorageLocation left, StorageLocation right) =>
         string.Equals(left.NativePath.TrimEnd('/'), right.NativePath.TrimEnd('/'), StringComparison.Ordinal);
 
-    /// <summary>
-    /// Determines whether the collection contains the specified value.
-    /// </summary>
-    /// <param name="container">The container.</param>
-    /// <param name="candidate">The candidate.</param>
-    /// <returns>true when the condition is met; otherwise, false.</returns>
+    /// <inheritdoc />
     public bool Contains(StorageLocation container, StorageLocation candidate)
     {
         if (!string.Equals(container.Root.Id, candidate.Root.Id, StringComparison.Ordinal))
@@ -90,12 +70,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         return prefix.Length == 0 || path.StartsWith(prefix + "/", StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// Gets the value.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the storage entry.</returns>
+    /// <inheritdoc />
     public async ValueTask<StorageEntry?> GetAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         if (location.NativePath.Length == 0 || location.NativePath == AzureBlobPaths.Prefix(location.Root))
@@ -127,12 +102,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         return null;
     }
 
-    /// <summary>
-    /// Lists the value.
-    /// </summary>
-    /// <param name="directory">The directory.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>The storage entry i async enumerable.</returns>
+    /// <inheritdoc />
     public async IAsyncEnumerable<StorageEntry> ListAsync(
         StorageLocation directory,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -192,12 +162,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         }
     }
 
-    /// <summary>
-    /// Creates the directory.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task CreateDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         var container = Container(location.Root);
@@ -211,12 +176,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         await UploadAsync(container.GetBlobClient(marker), empty, overwrite: true, "application/x-directory", cancellationToken);
     }
 
-    /// <summary>
-    /// Creates the empty file.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task CreateEmptyFileAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         var blob = Container(location.Root).GetBlobClient(location.NativePath);
@@ -229,12 +189,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         await UploadAsync(blob, empty, overwrite: false, ContentType(location.NativePath), cancellationToken);
     }
 
-    /// <summary>
-    /// Opens the read.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result contains the stream.</returns>
+    /// <inheritdoc />
     public async Task<Stream> OpenReadAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         try
@@ -247,14 +202,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         }
     }
 
-    /// <summary>
-    /// Writes the value.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="content">The content.</param>
-    /// <param name="overwrite">The overwrite.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public Task WriteAsync(StorageLocation location, Stream content, bool overwrite, CancellationToken cancellationToken = default) =>
         UploadAsync(
             Container(location.Root).GetBlobClient(location.NativePath),
@@ -263,14 +211,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
             ContentType(location.NativePath),
             cancellationToken);
 
-    /// <summary>
-    /// Commits the local file.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="localFile">The local file.</param>
-    /// <param name="overwrite">The overwrite.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task CommitLocalFileAsync(
         StorageLocation location,
         string localFile,
@@ -285,12 +226,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         File.Delete(localFile);
     }
 
-    /// <summary>
-    /// Deletes the file.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task DeleteFileAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         try
@@ -303,12 +239,7 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         }
     }
 
-    /// <summary>
-    /// Deletes the directory.
-    /// </summary>
-    /// <param name="location">The location.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task DeleteDirectoryAsync(StorageLocation location, CancellationToken cancellationToken = default)
     {
         var container = Container(location.Root);
@@ -327,25 +258,11 @@ public sealed class AzureBlobStorageProvider : IStorageProvider
         }
     }
 
-    /// <summary>
-    /// Moves the value.
-    /// </summary>
-    /// <param name="source">The source.</param>
-    /// <param name="destination">The destination.</param>
-    /// <param name="overwrite">The overwrite.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public Task MoveAsync(StorageLocation source, StorageLocation destination, bool overwrite, CancellationToken cancellationToken = default) =>
         TransferAsync(source, destination, overwrite, deleteSource: true, cancellationToken);
 
-    /// <summary>
-    /// Copies the value.
-    /// </summary>
-    /// <param name="source">The source.</param>
-    /// <param name="destination">The destination.</param>
-    /// <param name="overwrite">The overwrite.</param>
-    /// <param name="cancellationToken">A token that can be used to cancel the operation.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public Task CopyAsync(StorageLocation source, StorageLocation destination, bool overwrite, CancellationToken cancellationToken = default) =>
         TransferAsync(source, destination, overwrite, deleteSource: false, cancellationToken);
 

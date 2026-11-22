@@ -10,14 +10,10 @@ public sealed class ToastService : IDisposable
     private readonly List<Toast> toasts = [];
     private readonly Dictionary<Guid, Timer> timers = [];
 
-    /// <summary>
-    /// Occurs when changed.
-    /// </summary>
+    /// <summary>Raised when a toast is shown or dismissed.</summary>
     public event Action? Changed;
 
-    /// <summary>
-    /// Gets the toasts.
-    /// </summary>
+    /// <summary>The toasts currently on screen, oldest first.</summary>
     public IReadOnlyList<Toast> Toasts
     {
         get
@@ -29,28 +25,20 @@ public sealed class ToastService : IDisposable
         }
     }
 
-    /// <summary>
-    /// Performs the success operation.
-    /// </summary>
-    /// <param name="message">The message.</param>
+    /// <summary>Shows a success that disappears after four seconds.</summary>
+    /// <param name="message">The text.</param>
     public void Success(string message) => Show(message, ToastLevel.Success);
 
-    /// <summary>
-    /// Performs the error operation.
-    /// </summary>
-    /// <param name="message">The message.</param>
+    /// <summary>Shows a failure that stays for eight seconds.</summary>
+    /// <param name="message">The text.</param>
     public void Error(string message) => Show(message, ToastLevel.Error, TimeSpan.FromSeconds(8));
 
-    /// <summary>
-    /// Performs the info operation.
-    /// </summary>
-    /// <param name="message">The message.</param>
+    /// <summary>Shows a notice that disappears after four seconds.</summary>
+    /// <param name="message">The text.</param>
     public void Info(string message) => Show(message, ToastLevel.Info);
 
-    /// <summary>
-    /// Performs the show failure operation.
-    /// </summary>
-    /// <param name="result">The result.</param>
+    /// <summary>Shows the result's display message as a failure.</summary>
+    /// <param name="result">A failed result.</param>
     public void ShowFailure(Ardalis.Result.IResult result) => Error(result.GetDisplayMessage());
 
     /// <summary>Summarises a bulk operation, naming the first failure so the user knows why.</summary>
@@ -72,10 +60,8 @@ public sealed class ToastService : IDisposable
             : $"{verb} {result.SucceededCount} {noun}; {result.FailedCount} failed. {reason}");
     }
 
-    /// <summary>
-    /// Performs the dismiss operation.
-    /// </summary>
-    /// <param name="id">The identifier.</param>
+    /// <summary>Removes one toast.</summary>
+    /// <param name="id">The toast id.</param>
     public void Dismiss(Guid id)
     {
         lock (gate)
@@ -120,30 +106,22 @@ public sealed class ToastService : IDisposable
         Changed?.Invoke();
     }
 
-    /// <summary>
-    /// Specifies the toast level.
-    /// </summary>
+    /// <summary>How a toast is styled.</summary>
     public enum ToastLevel
     {
-        /// <summary>
-        /// The success value.
-        /// </summary>
+        /// <summary>A completed action.</summary>
         Success,
-        /// <summary>
-        /// The error value.
-        /// </summary>
+
+        /// <summary>A failure.</summary>
         Error,
-        /// <summary>
-        /// The info value.
-        /// </summary>
+
+        /// <summary>A notice.</summary>
         Info,
     }
 
-    /// <summary>
-    /// Represents the toast.
-    /// </summary>
-    /// <param name="Id">The identifier.</param>
-    /// <param name="Message">The message.</param>
-    /// <param name="Level">The level.</param>
+    /// <summary>One toast.</summary>
+    /// <param name="Id">The id used to dismiss it.</param>
+    /// <param name="Message">The text.</param>
+    /// <param name="Level">How it is styled.</param>
     public sealed record Toast(Guid Id, string Message, ToastLevel Level);
 }

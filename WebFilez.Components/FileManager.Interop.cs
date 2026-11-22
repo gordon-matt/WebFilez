@@ -12,11 +12,9 @@ public sealed partial class FileManager
             ? Task.CompletedTask
             : interop.PickFilesAsync(rootElement, directories, IsPicker ? Accept : null).AsTask();
 
-    /// <summary>
-    /// Handles the shortcut event.
-    /// </summary>
-    /// <param name="combo">The combo.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Runs a keyboard shortcut from the browser. Escape closes a menu before it clears the selection.</summary>
+    /// <param name="combo">The key combination, such as <c>ctrl+c</c> or <c>F2</c>.</param>
+    /// <returns>A task that completes when the shortcut has been applied.</returns>
     [JSInvokable]
     public async Task OnShortcut(string combo)
     {
@@ -126,10 +124,11 @@ public sealed partial class FileManager
     }
 
     /// <summary>
-    /// Handles the files dropped event.
+    /// Starts an upload of the dropped files. A name that already exists is asked about first.
+    /// Files inside a folder that does not exist yet are not asked. Cancel skips the names not yet decided.
     /// </summary>
-    /// <param name="files">The files.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <param name="files">The dropped files, including a relative folder when one was dropped.</param>
+    /// <returns>A task that completes once the browser has been told which files to send.</returns>
     [JSInvokable]
     public async Task OnFilesDropped(DroppedFile[] files)
     {
@@ -152,13 +151,11 @@ public sealed partial class FileManager
         await interop.UploadPendingAsync(rootElement, urls.Upload, rootId, CurrentPath, plans, urls.IncludeCredentials);
     }
 
-    /// <summary>
-    /// Handles the upload progress event.
-    /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <param name="fileName">The file name.</param>
-    /// <param name="sent">The sent.</param>
-    /// <param name="total">The total.</param>
+    /// <summary>Updates the progress of one upload. A cancelled upload is ignored.</summary>
+    /// <param name="id">The upload id assigned by the browser.</param>
+    /// <param name="fileName">The name shown beside the progress.</param>
+    /// <param name="sent">How many bytes have been sent.</param>
+    /// <param name="total">The file size, in bytes.</param>
     [JSInvokable]
     public void OnUploadProgress(long id, string fileName, long sent, long total)
     {
@@ -174,13 +171,11 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
-    /// <summary>
-    /// Handles the upload complete event.
-    /// </summary>
-    /// <param name="id">The identifier.</param>
-    /// <param name="fileName">The file name.</param>
-    /// <param name="succeeded">The succeeded.</param>
-    /// <param name="error">The error.</param>
+    /// <summary>Marks one upload finished. A cancelled upload is removed and not shown as a failure.</summary>
+    /// <param name="id">The upload id.</param>
+    /// <param name="fileName">The name shown beside the result.</param>
+    /// <param name="succeeded">Whether the server stored the file.</param>
+    /// <param name="error">Why it failed, or <see langword="null"/> when it succeeded.</param>
     [JSInvokable]
     public void OnUploadComplete(long id, string fileName, bool succeeded, string? error)
     {
@@ -196,10 +191,8 @@ public sealed partial class FileManager
         StateHasChanged();
     }
 
-    /// <summary>
-    /// Handles the upload batch complete event.
-    /// </summary>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <summary>Shows the result of the batch and refreshes the folder. Failures stay on screen. A fully cancelled batch says nothing.</summary>
+    /// <returns>A task that completes once the listing has been refreshed.</returns>
     [JSInvokable]
     public async Task OnUploadBatchComplete()
     {

@@ -6,7 +6,7 @@ using WebFilez.Services.Images;
 namespace WebFilez.Plugins.Video;
 
 /// <summary>
-/// Provides extension methods for registering video thumbnails.
+/// Registers video thumbnails that grab a frame with ffmpeg.
 /// </summary>
 public static class VideoServiceCollectionExtensions
 {
@@ -23,6 +23,8 @@ public static class VideoServiceCollectionExtensions
         /// build is GPL-licensed. A missing ffmpeg does not throw and does not stop the host;
         /// video files keep their normal icon.
         /// </remarks>
+        /// <param name="configure">Where ffmpeg lives and whether it may be downloaded. <see langword="null"/> uses the defaults.</param>
+        /// <returns>The same builder.</returns>
         public TBuilder AddVideo(Action<VideoThumbnailOptions>? configure = null)
         {
             builder.Services.AddOptions<VideoThumbnailOptions>();
